@@ -1,0 +1,4 @@
+Put your license in this file
+
+A list of many open source licenses can be found here:
+http://www.opensource.org/licenses/category

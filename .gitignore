@@ -1,0 +1,9 @@
+*.log
+.DS_Store
+.config.ini
+*.sqlite3
+*.pyc
+*.swp
+static/
+/.idea
+.bash_history
