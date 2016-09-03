@@ -6,19 +6,13 @@ from setuptools import setup, find_packages
 setup(
     name='django-hordak',
     version=open('VERSION').read().strip(),
-    # Your name & email here
-    author='',
-    author_email='',
-    # If you had hordak.tests, you would also include that in this list
+    author='Adam Charnock',
+    author_email='adam@adamcharnock.com',
     packages=find_packages(),
-    # Any executable scripts, typically in 'bin'. E.g 'bin/do-something.py'
     scripts=[],
-    # REQUIRED: Your project's URL
-    url='',
-    # Put your license here. See LICENSE.txt for more information
-    license='',
-    # Put a nice one-liner description here
-    description='',
+    url='https://github.com/waldocollective/django-hordak',
+    license='MIT',
+    description='Double entry book keeping in Django',
     long_description=open('README.rst').read() if exists("README.rst") else "",
     install_requires=[
         'django>=1.10'
