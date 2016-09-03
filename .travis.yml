@@ -5,15 +5,19 @@ python:
   - "3.3"
   - "3.4"
   - "nightly"
+
 env:
   - DJANGO_VERSION=1.10.1
   - DJANGO_VERSION=1.9.9
   - DJANGO_VERSION=1.8.14
+
 install:
   - "python setup.py develop"
   - "pip install ."
   - "pip install pytest coveralls"
+
 script:
   - env PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
+
 after_success:
   coveralls
