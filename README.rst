@@ -32,7 +32,9 @@ Installation using pip::
 
     pip install django-hordak
 
-Requires Postgres, Django 1.10.
+Requires:
+
+
 
 Usage
 -----
