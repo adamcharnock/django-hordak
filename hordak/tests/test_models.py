@@ -28,6 +28,12 @@ class AccountTestCase(TestCase):
         account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='5')
         self.assertEqual(account1.type, Account.TYPES.asset)
 
+    def test_type_leaf(self):
+        """Check we can set the type on a root account"""
+        account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='1')
+        account2 = Account.objects.create(parent=account1, name='Account 2', code='1')
+        self.assertEqual(account2.type, Account.TYPES.asset)
+
     def test_type_leaf_create(self):
         """Check we CANNOT set the type upon creating a leaf account
 
