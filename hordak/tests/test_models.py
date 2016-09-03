@@ -1,5 +1,5 @@
 from django.db.utils import DatabaseError
-from django.test.testcases import TestCase, TransactionTestCase
+from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase
 from django.core.management import call_command
 from django.db import transaction as db_transaction
 
@@ -79,7 +79,7 @@ class AccountTestCase(TestCase):
         self.assertEqual(len(Account.TYPES), 5, msg='Did not test all account types. Update this test.')
 
 
-class LegTestCase(TransactionTestCase):
+class LegTestCase(DbTransactionTestCase):
 
     def test_manager(self):
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
@@ -106,3 +106,22 @@ class LegTestCase(TransactionTestCase):
         account = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
         transaction = Transaction.objects.create()
         self.assertRaises(DatabaseError, Leg.objects.create, transaction=transaction, account=account, amount=100)
+
+
+class TransactionTestCase(DbTransactionTestCase):
+
+    def setUp(self):
+        self.account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
+        self.account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+
+    def test_balance(self):
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=self.account1, amount=100)
+            Leg.objects.create(transaction=transaction, account=self.account2, amount=-100)
+
+        self.assertEqual(transaction.balance(), 0)
+
+    def test_balance_no_legs(self):
+        transaction = Transaction.objects.create()
+        self.assertEqual(transaction.balance(), 0)
