@@ -39,7 +39,6 @@ Usage
 
 TBA
 
-
 django-hordak is packaged using seed_.
 
 .. _seed: https://github.com/adamcharnock/seed/
