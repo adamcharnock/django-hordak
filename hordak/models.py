@@ -28,10 +28,11 @@ class Account(MPTTModel):
         unique_together = (('parent', 'code'),)
 
     def __str__(self):
+        name = self.name or 'Unnamed Account'
         if self.is_leaf_node():
-            return '{} [{}]'.format(self.name, self.full_code)
+            return '{} [{}]'.format(name, self.full_code or '-')
         else:
-            return self.name or 'Unnamed Account'
+            return name
 
     @property
     def full_code(self):
@@ -40,7 +41,11 @@ class Account(MPTTModel):
         Do this by concatenating this account's code with that
         of all the parent accounts.
         """
-        return ''.join(account.code for account in self.get_ancestors(include_self=True))
+        if not self.pk:
+            # Has not been saved to the DB so we cannot get ancestors
+            return None
+        else:
+            return ''.join(account.code for account in self.get_ancestors(include_self=True))
 
     @property
     def type(self):
@@ -58,7 +63,7 @@ class Account(MPTTModel):
         if self.is_root_node():
             self._type = value
         else:
-            raise exceptions.AccountTypeOnLeafNode()
+            raise exceptions.AccountTypeOnChildNode()
 
     @property
     def sign(self):

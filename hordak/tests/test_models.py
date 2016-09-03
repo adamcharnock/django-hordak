@@ -23,6 +23,29 @@ class AccountTestCase(TestCase):
         self.assertEqual(account2.full_code, '50')
         self.assertEqual(account3.full_code, '509')
 
+
+    def test_str_root(self):
+        # Account code should not be rendered as we should not
+        # associate transaction legs with non-leaf accounts
+        account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='5')
+        account2 = Account.objects.create(parent=account1, name='Account 2', code='1')
+        self.assertEqual(str(account1), 'Account 1')
+
+    def test_str_child(self):
+        account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='5')
+        account2 = Account.objects.create(parent=account1, name='Account 2', code='1')
+        self.assertEqual(str(account2), 'Account 2 [51]')
+
+    def test_str_root_no_data_unsaved(self):
+        account1 = Account()
+        account2 = Account(parent=account1)
+        self.assertEqual(str(account1), 'Unnamed Account [-]')
+
+    def test_str_child_no_data_unsaved(self):
+        account1 = Account()
+        account2 = Account(parent=account1)
+        self.assertEqual(str(account2), 'Unnamed Account [-]')
+
     def test_type_root(self):
         """Check we can set the type on a root account"""
         account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='5')
@@ -41,7 +64,7 @@ class AccountTestCase(TestCase):
         """
         account1 = Account.objects.create(name='Account 1', type=Account.TYPES.asset, code='5')
         self.assertRaises(
-            exceptions.AccountTypeOnLeafNode,
+            exceptions.AccountTypeOnChildNode,
             Account.objects.create,
             parent=account1, type=Account.TYPES.asset, name='Account 1', code='0')
 
@@ -58,7 +81,7 @@ class AccountTestCase(TestCase):
             account.type = Account.TYPES.asset
 
         self.assertRaises(
-            exceptions.AccountTypeOnLeafNode,
+            exceptions.AccountTypeOnChildNode,
             set_it,
             account2)
 

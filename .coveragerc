@@ -1,0 +1,5 @@
+[run]
+
+omit =
+    */admin.py
+    hordak/apps.py
