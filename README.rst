@@ -3,9 +3,7 @@ django-hordak
 
 **Double entry book keeping in Django.**
 
-The initial plan is to ensure the model layer working reliably
-as a matter of priority.
-
+The initial priority is to ensure the model layer works reliably.
 Ultimately the intention is to integrate this with swiftwind_ to provide
 an accounting & billing system for a communal household. This interface
 should be intuitive and suitable for non-experts.

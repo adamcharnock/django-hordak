@@ -174,6 +174,7 @@ class LegTestCase(DbTransactionTestCase):
 
     def test_type_zero(self):
         leg = Leg(amount=0)
+
         def get_type():
             leg.type
 

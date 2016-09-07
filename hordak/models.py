@@ -92,6 +92,8 @@ class Account(MPTTModel):
 
             0 = Liabilities + Equity + Income - Expenses - Assets
 
+        Further details here: https://en.wikipedia.org/wiki/Debits_and_credits
+
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
