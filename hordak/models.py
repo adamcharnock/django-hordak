@@ -6,6 +6,9 @@ from model_utils import Choices
 
 from hordak import exceptions
 
+DEBIT = 'debit'
+CREDIT = 'credit'
+
 
 class Account(MPTTModel):
     TYPES = Choices(
@@ -26,6 +29,13 @@ class Account(MPTTModel):
 
     class Meta:
         unique_together = (('parent', 'code'),)
+
+    @classmethod
+    def validate_accounting_equation(cls):
+        """Check that all accounts sum to 0"""
+        balances = [account.balance() for account in Account.objects.root_nodes()]
+        if sum(balances) != 0:
+            raise exceptions.AccountingEquationViolationError()
 
     def __str__(self):
         name = self.name or 'Unnamed Account'
@@ -73,8 +83,26 @@ class Account(MPTTModel):
         account.
 
         This is based on the account type as is standard accounting practice.
+        The signs can be derrived from the following expanded form of the
+        accounting equation:
+
+            Assets = Liabilities + Equity + (Income - Expenses)
+
+        Which can be rearranged as:
+
+            0 = Liabilities + Equity + Income - Expenses - Assets
+
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
+
+    def balance(self):
+        """Get the balance for this account, including child accounts"""
+        balances = [account.simple_balance() for account in self.get_descendants(include_self=True)]
+        return sum(balances)
+
+    def simple_balance(self):
+        """Get the balance for this account, ignoring all child accounts"""
+        return self.legs.sum_amount() * self.sign
 
 
 class Transaction(models.Model):
@@ -102,3 +130,26 @@ class Leg(models.Model):
     description = models.TextField(default='', blank=True)
 
     objects = LegManager
+
+    def save(self, *args, **kwargs):
+        if self.amount == 0:
+            raise exceptions.ZeroAmountError()
+        return super(Leg, self).save(*args, **kwargs)
+
+    @property
+    def type(self):
+        if self.amount < 0:
+            return DEBIT
+        elif self.amount > 0:
+            return CREDIT
+        else:
+            # This should have been caught earlier by the database integrity check.
+            # If you are seeing this then something is wrong with your DB checks.
+            raise exceptions.ZeroAmountError()
+
+    def is_debit(self):
+        return self.type == DEBIT
+
+    def is_credit(self):
+        return self.type == CREDIT
+
