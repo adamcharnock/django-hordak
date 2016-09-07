@@ -172,6 +172,14 @@ class LegTestCase(DbTransactionTestCase):
         self.assertEqual(leg2.is_debit(), True)
         self.assertEqual(leg2.is_credit(), False)
 
+    def test_type_zero(self):
+        leg = Leg(amount=0)
+        def get_type():
+            leg.type
+
+        self.assertRaises(exceptions.ZeroAmountError, get_type)
+
+
     def test_model_zero_check(self):
         """Check the model ensures non-zero leg amounts"""
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
