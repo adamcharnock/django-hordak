@@ -23,7 +23,7 @@ class ZeroAmountError(HordakError):
 
 
 class AccountingEquationViolationError(AccountingError):
-    """Raised if – upon checking – the accounting equation is found to be violated.
+    """Raised if - upon checking - the accounting equation is found to be violated.
 
     The accounting equation is:
 
