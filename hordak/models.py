@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.db import transaction as db_transaction
 
 from mptt.models import MPTTModel, TreeForeignKey
 from model_utils import Choices
@@ -105,6 +106,14 @@ class Account(MPTTModel):
     def simple_balance(self):
         """Get the balance for this account, ignoring all child accounts"""
         return self.legs.sum_amount() * self.sign
+
+    @db_transaction.atomic()
+    def transfer_to(self, to_account, amount):
+        """Create a transaction which transfers amount to to_account"""
+        transaction = Transaction.objects.create()
+        Leg.objects.create(transaction=transaction, account=self, amount=-amount)
+        Leg.objects.create(transaction=transaction, account=to_account, amount=+amount)
+        return transaction
 
 
 class Transaction(models.Model):

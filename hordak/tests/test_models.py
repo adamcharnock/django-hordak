@@ -126,6 +126,14 @@ class AccountTestCase(TestCase):
 
         self.assertEqual(account1.balance(), 100)
 
+    def transfer_to(self):
+        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
+        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        transaction = account1.transfer_to(account2, 500)
+        self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(account1.balance(), -500)
+        self.assertEqual(account2.balance(), 500)
+
 
 class LegTestCase(DbTransactionTestCase):
 
