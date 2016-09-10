@@ -134,6 +134,36 @@ class AccountTestCase(TestCase):
         self.assertEqual(account1.balance(), -500)
         self.assertEqual(account2.balance(), 500)
 
+    def test_transfer_pos_to_pos(self):
+        src = Account.objects.create(name='src', type=Account.TYPES.income, code='1')
+        dst = Account.objects.create(name='dst', type=Account.TYPES.income, code='2')
+        src.transfer_to(dst, 100)
+        self.assertEqual(src.balance(), -100)
+        self.assertEqual(dst.balance(), 100)
+
+    def test_transfer_pos_to_neg(self):
+        src = Account.objects.create(name='src', type=Account.TYPES.income, code='1')
+        dst = Account.objects.create(name='dst', type=Account.TYPES.asset, code='2')
+        src.transfer_to(dst, 100)
+        self.assertEqual(src.balance(), 100)
+        self.assertEqual(dst.balance(), 100)
+
+
+    def test_transfer_neg_to_pos(self):
+        src = Account.objects.create(name='src', type=Account.TYPES.asset, code='1')
+        dst = Account.objects.create(name='dst', type=Account.TYPES.income, code='2')
+        src.transfer_to(dst, 100)
+        self.assertEqual(src.balance(), -100)
+        self.assertEqual(dst.balance(), -100)
+
+
+    def test_transfer_neg_to_neg(self):
+        src = Account.objects.create(name='src', type=Account.TYPES.asset, code='1')
+        dst = Account.objects.create(name='dst', type=Account.TYPES.asset, code='2')
+        src.transfer_to(dst, 100)
+        self.assertEqual(src.balance(), -100)
+        self.assertEqual(dst.balance(), 100)
+
 
 class LegTestCase(DbTransactionTestCase):
 

@@ -115,6 +115,7 @@ class Account(MPTTModel):
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
+            # Question: Is this actually a good idea?
             direction = -1
         else:
             direction = 1
