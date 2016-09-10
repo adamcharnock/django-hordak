@@ -110,9 +110,18 @@ class Account(MPTTModel):
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount):
         """Create a transaction which transfers amount to to_account"""
+
+        if self.sign == to_account.sign == 1:
+            # Transferring from two positive-signed accounts implies that
+            # the caller wants to reduce the first account and increase the second
+            # (which is opposite to the implicit behaviour)
+            direction = -1
+        else:
+            direction = 1
+
         transaction = Transaction.objects.create()
-        Leg.objects.create(transaction=transaction, account=self, amount=-amount)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=+amount)
+        Leg.objects.create(transaction=transaction, account=self, amount=+amount * direction)
+        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount * direction)
         return transaction
 
 
