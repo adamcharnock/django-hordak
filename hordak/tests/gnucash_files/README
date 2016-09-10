@@ -1,0 +1,3 @@
+These files correspond to the test cases in test_worked_examples.py.
+The idea is to verify that hordak works correctly against an 
+implementation we can presume to be good.
