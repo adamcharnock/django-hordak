@@ -1,3 +1,4 @@
+from datetime import date
 from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase
 from django.core.management import call_command
@@ -297,8 +298,11 @@ class StatementLineTestCase(DbTransactionTestCase):
             statement_import=self.statement_import,
             amount=100,
         )
+        line.refresh_from_db()
+
         transaction = line.create_transaction(self.sales)
         self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(transaction.date, date(2016, 1, 1))
         self.assertEqual(self.bank.balance(), 100)
         self.assertEqual(self.sales.balance(), 100)
         line.refresh_from_db()
@@ -312,8 +316,11 @@ class StatementLineTestCase(DbTransactionTestCase):
             statement_import=self.statement_import,
             amount=-100,
         )
+        line.refresh_from_db()
+
         transaction = line.create_transaction(self.expenses)
         self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(transaction.date, date(2016, 1, 1))
         self.assertEqual(self.bank.balance(), -100)
         self.assertEqual(self.expenses.balance(), 100)
         line.refresh_from_db()

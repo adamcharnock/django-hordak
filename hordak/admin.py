@@ -18,9 +18,19 @@ class AccountAdmin(MPTTModelAdmin):
 
 @admin.register(models.Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ('timestamp',)
 
 
 @admin.register(models.Leg)
 class LegAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(models.StatementImport)
+class StatementImportAdmin(admin.ModelAdmin):
+    readonly_fields = ('timestamp',)
+
+
+@admin.register(models.StatementLine)
+class StatementLineAdmin(admin.ModelAdmin):
+    readonly_fields = ('timestamp',)

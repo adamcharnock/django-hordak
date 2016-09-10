@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
+from django.utils.timezone import make_aware
 
 from mptt.models import MPTTModel, TreeForeignKey
 from model_utils import Choices
@@ -137,7 +138,8 @@ class Account(MPTTModel):
 
 
 class Transaction(models.Model):
-    timestamp = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
+    date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
     description = models.TextField(default='', blank=True)
 
     def balance(self):
@@ -206,6 +208,7 @@ class StatementLine(models.Model):
     def is_reconciled(self):
         return bool(self.transaction)
 
+    @db_transaction.atomic()
     def create_transaction(self, to_account):
         """Create a transaction for this statement amount and acount, into to_account
 
@@ -221,6 +224,9 @@ class StatementLine(models.Model):
         """
         from_account = self.statement_import.bank_account
         transaction = from_account.transfer_to(to_account, self.amount * -1)
+        transaction.date = self.date
+        transaction.save()
+
         self.transaction = transaction
         self.save()
         return transaction
