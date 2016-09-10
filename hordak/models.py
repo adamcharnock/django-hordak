@@ -24,6 +24,9 @@ class Account(MPTTModel):
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     code = models.CharField(max_length=3)
     _type = models.CharField(max_length=2, choices=TYPES)
+    has_statements = models.BooleanField(default=False, blank=True,
+                                         help_text='Does this account have statements to reconcile against. '
+                                                   'This is typically the case for bank accounts.')
 
     class MPTTMeta:
         order_insertion_by = ['code']
@@ -34,9 +37,11 @@ class Account(MPTTModel):
     @classmethod
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
-        balances = [account.balance() for account in Account.objects.root_nodes()]
+        balances = [account.balance(raw=True) for account in Account.objects.root_nodes()]
         if sum(balances) != 0:
-            raise exceptions.AccountingEquationViolationError()
+            raise exceptions.AccountingEquationViolationError(
+                'Account balances do not sum to zero. They sum to {}'.format(sum(balances))
+            )
 
     def __str__(self):
         name = self.name or 'Unnamed Account'
@@ -98,14 +103,19 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
-    def balance(self):
+    def balance(self, raw=False):
         """Get the balance for this account, including child accounts"""
-        balances = [account.simple_balance() for account in self.get_descendants(include_self=True)]
+        balances = [account.simple_balance(raw) for account in self.get_descendants(include_self=True)]
         return sum(balances)
 
-    def simple_balance(self):
-        """Get the balance for this account, ignoring all child accounts"""
-        return self.legs.sum_amount() * self.sign
+    def simple_balance(self, raw=False):
+        """Get the balance for this account, ignoring all child accounts
+
+        Args:
+            raw (bool): If true the returned balance will not have its sign
+                        adjusted for display purposes.
+        """
+        return self.legs.sum_amount() * (1 if raw else self.sign)
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount):
@@ -174,3 +184,43 @@ class Leg(models.Model):
     def is_credit(self):
         return self.type == CREDIT
 
+
+class StatementImport(models.Model):
+    timestamp = models.DateTimeField(default=timezone.now)
+    # TODO: Add constraint to ensure destination account expects statements
+    bank_account = models.ForeignKey(Account, related_name='imports')
+
+
+class StatementLine(models.Model):
+    timestamp = models.DateTimeField(default=timezone.now)
+    date = models.DateField()
+    statement_import = models.ForeignKey(StatementImport, related_name='lines')
+    amount = models.DecimalField(max_digits=13, decimal_places=2)
+    description = models.TextField(default='', blank=True)
+    # TODO: Add constraint to ensure transaction amount = statement line amount
+    # TODO: Add constraint to ensure one statement line per transaction
+    transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
+                                    help_text='Reconcile this statement line to this transaction')
+
+    @property
+    def is_reconciled(self):
+        return bool(self.transaction)
+
+    def create_transaction(self, to_account):
+        """Create a transaction for this statement amount and acount, into to_account
+
+        This will also set this StatementLine's ``transaction`` attribute to the newly
+        created transaction.
+
+        Args:
+            to_account (Account): The account the transaction is into / out of
+
+        Returns:
+            Transaction: The newly created (and committed) transaction
+
+        """
+        from_account = self.statement_import.bank_account
+        transaction = from_account.transfer_to(to_account, self.amount * -1)
+        self.transaction = transaction
+        self.save()
+        return transaction

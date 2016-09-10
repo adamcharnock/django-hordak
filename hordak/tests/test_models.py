@@ -3,7 +3,7 @@ from django.test.testcases import TestCase, TransactionTestCase as DbTransaction
 from django.core.management import call_command
 from django.db import transaction as db_transaction
 
-from hordak.models import Account, Transaction, Leg, DEBIT, CREDIT
+from hordak.models import Account, Transaction, Leg, StatementImport, StatementLine, DEBIT, CREDIT
 from hordak import exceptions
 
 
@@ -139,6 +139,7 @@ class AccountTestCase(TestCase):
         src.transfer_to(dst, 100)
         self.assertEqual(src.balance(), -100)
         self.assertEqual(dst.balance(), 100)
+        Account.validate_accounting_equation()
 
     def test_transfer_pos_to_neg(self):
         src = Account.objects.create(name='src', type=Account.TYPES.income, code='1')
@@ -146,6 +147,7 @@ class AccountTestCase(TestCase):
         src.transfer_to(dst, 100)
         self.assertEqual(src.balance(), 100)
         self.assertEqual(dst.balance(), 100)
+        Account.validate_accounting_equation()
 
 
     def test_transfer_neg_to_pos(self):
@@ -154,6 +156,7 @@ class AccountTestCase(TestCase):
         src.transfer_to(dst, 100)
         self.assertEqual(src.balance(), -100)
         self.assertEqual(dst.balance(), -100)
+        Account.validate_accounting_equation()
 
 
     def test_transfer_neg_to_neg(self):
@@ -162,6 +165,7 @@ class AccountTestCase(TestCase):
         src.transfer_to(dst, 100)
         self.assertEqual(src.balance(), -100)
         self.assertEqual(dst.balance(), 100)
+        Account.validate_accounting_equation()
 
 
 class LegTestCase(DbTransactionTestCase):
@@ -265,3 +269,53 @@ class TransactionTestCase(DbTransactionTestCase):
     def test_balance_no_legs(self):
         transaction = Transaction.objects.create()
         self.assertEqual(transaction.balance(), 0)
+
+
+class StatementLineTestCase(DbTransactionTestCase):
+
+    def setUp(self):
+        self.bank = Account.objects.create(name='Bank', type=Account.TYPES.asset, code='1')
+        self.sales = Account.objects.create(name='Sales', type=Account.TYPES.income, code='2')
+        self.expenses = Account.objects.create(name='Expenses', type=Account.TYPES.expense, code='3')
+
+        self.statement_import = StatementImport.objects.create(bank_account=self.bank)
+
+    def test_is_reconciled(self):
+        line = StatementLine.objects.create(
+            date='2016-01-01',
+            statement_import=self.statement_import,
+            amount=100,
+        )
+        self.assertEqual(line.is_reconciled, False)
+        line.transaction = Transaction()
+        self.assertEqual(line.is_reconciled, True)
+
+    def test_create_transaction_money_in(self):
+        """Call StatementLine.create_transaction() for a sale"""
+        line = StatementLine.objects.create(
+            date='2016-01-01',
+            statement_import=self.statement_import,
+            amount=100,
+        )
+        transaction = line.create_transaction(self.sales)
+        self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(self.bank.balance(), 100)
+        self.assertEqual(self.sales.balance(), 100)
+        line.refresh_from_db()
+        self.assertEqual(line.transaction, transaction)
+        Account.validate_accounting_equation()
+
+    def test_create_transaction_money_out(self):
+        """Call StatementLine.create_transaction() for an expense"""
+        line = StatementLine.objects.create(
+            date='2016-01-01',
+            statement_import=self.statement_import,
+            amount=-100,
+        )
+        transaction = line.create_transaction(self.expenses)
+        self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(self.bank.balance(), -100)
+        self.assertEqual(self.expenses.balance(), 100)
+        line.refresh_from_db()
+        self.assertEqual(line.transaction, transaction)
+        Account.validate_accounting_equation()
