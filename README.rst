@@ -36,9 +36,11 @@ Tested against:
 - Python 2.7, 3.4, 3.5, nightly
 - Postgres 9
 
-Hordak may work with Postgres 8. It may be possible to run Hordak on a
-non-postgres RDBMS if once skips the '*_check_*' migrations (not
-recommended as this could lead to database inconsistency).
+Hordak *may* work with Postgres 8, but this is not tested for.
+
+It may also be possible to run Hordak on a
+non-Postgres RDBMS if one skips the '*_check_*' migrations, as these are Postgres-specific.
+However, this is not recommended as it could lead to database inconsistency.
 
 Usage
 -----
