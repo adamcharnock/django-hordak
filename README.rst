@@ -39,7 +39,7 @@ Tested against:
 Hordak *may* work with Postgres 8, but this is not tested for.
 
 It may also be possible to run Hordak on a
-non-Postgres RDBMS if one skips the '*_check_*' migrations, as these are Postgres-specific.
+non-Postgres RDBMS if one skips the ``*_check_*`` migrations, as these are Postgres-specific.
 However, this is not recommended as it could lead to database inconsistency.
 
 Usage
