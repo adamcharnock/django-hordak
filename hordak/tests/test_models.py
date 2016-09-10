@@ -23,7 +23,6 @@ class AccountTestCase(TestCase):
         self.assertEqual(account2.full_code, '50')
         self.assertEqual(account3.full_code, '509')
 
-
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
