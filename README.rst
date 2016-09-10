@@ -28,11 +28,17 @@ Installation
 
 Installation using pip::
 
-    pip install django-hordak
+    pip install django-hordak  # Release coming soon
 
-Requires:
+Tested against:
 
+- Django >= 1.8, <= 1.10
+- Python 2.7, 3.4, 3.5, nightly
+- Postgres 9
 
+Hordak may work with Postgres 8. It may be possible to run Hordak on a
+non-postgres RDBMS if once skips the '*_check_*' migrations (not
+recommended as this could lead to database inconsistency).
 
 Usage
 -----
