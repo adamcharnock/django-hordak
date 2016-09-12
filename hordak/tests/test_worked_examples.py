@@ -159,6 +159,8 @@ class CommunalHouseholdTestCase(TestCase):
 
         self.inc = Account.objects.create(name='Income', type=T.income, code='2')
         self.inc_housemate = Account.objects.create(name='Housemate Income', parent=self.inc, code='1')
+        self.inc_housemate_1 = Account.objects.create(name='Housemate 1 Income', parent=self.inc_housemate, code='1')
+        self.inc_housemate_2 = Account.objects.create(name='Housemate 2 Income', parent=self.inc_housemate, code='2')
         self.inc_donation = Account.objects.create(name='Donation', parent=self.inc, code='2')
 
         self.ex = Account.objects.create(name='Expenses', type=T.expense, code='3')
@@ -207,13 +209,13 @@ class CommunalHouseholdTestCase(TestCase):
 
         # Create two statement lines and assign each to the housemate income account
         line1, line2 = self.create_incoming_rent_payments(620, 620)
-        line1.create_transaction(self.inc_housemate)
-        line2.create_transaction(self.inc_housemate)
+        line1.create_transaction(self.inc_housemate_1)
+        line2.create_transaction(self.inc_housemate_2)
 
         # Create transaction for housemate1's payment
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date='2016-01-31')
-            Leg.objects.create(transaction=transaction, account=self.inc_housemate, amount=-620)
+            Leg.objects.create(transaction=transaction, account=self.inc_housemate_1, amount=-620)
             Leg.objects.create(transaction=transaction, account=self.ex_rent, amount=500)
             Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
             Leg.objects.create(transaction=transaction, account=self.ex_rates, amount=30)
@@ -225,7 +227,7 @@ class CommunalHouseholdTestCase(TestCase):
         # Create transaction for housemate2's payment
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date='2016-01-31')
-            Leg.objects.create(transaction=transaction, account=self.inc_housemate, amount=-620)
+            Leg.objects.create(transaction=transaction, account=self.inc_housemate_2, amount=-620)
             Leg.objects.create(transaction=transaction, account=self.ex_rent, amount=500)
             Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
             Leg.objects.create(transaction=transaction, account=self.ex_rates, amount=30)
@@ -238,7 +240,8 @@ class CommunalHouseholdTestCase(TestCase):
         self.assertEqual(self.bank.balance(), 1240 - 1000 - 70)  # money received - rent - food spending
         # The housemate income account should be empty as we've dispersed it to the relevant
         # expense accounts
-        self.assertEqual(self.inc_housemate.balance(), 0)
+        self.assertEqual(self.inc_housemate_1.balance(), 0)
+        self.assertEqual(self.inc_housemate_2.balance(), 0)
         self.assertEqual(self.ex_rent.balance(), 0)  # Rent had already been paid out, some incoming money has cancelled it out
         # Each expense account is negative (i.e. we're waiting for expenses to come in)
         self.assertEqual(self.ex_elec.balance(), -120 / 3)  # 120 per 3 months
