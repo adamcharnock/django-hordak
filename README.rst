@@ -1,9 +1,16 @@
 django-hordak
 ===========================================================
 
-**Double entry book keeping in Django.**
+**Double entry bookkeeping in Django.**
 
-The initial priority is to ensure the model layer works reliably.
+Django Hordak provides a `simple model layer`_ for a double-entry bookkeeping
+system. The intention is not to provide a full-featured app, but rather
+to provide a reliable foundation on which to build such apps.
+
+Data consistency is enforced in the model layer and by Postgres triggers.
+(It may be possible to use MySQL, MSSQL, Maria et al if one skips the
+installation of these triggers).
+
 Ultimately the intention is to integrate this with swiftwind_ to provide
 an accounting & billing system for a communal household. This interface
 should be intuitive and suitable for non-experts.
@@ -28,7 +35,7 @@ Installation
 
 Installation using pip::
 
-    pip install django-hordak  # Release coming soon
+    pip install django-hordak
 
 Tested against:
 
@@ -83,4 +90,6 @@ django-hordak is packaged using seed_.
 
 .. _seed: https://github.com/adamcharnock/seed/
 
-.. _swiftwind: https://github.com/adamcharnock/swiftwind/
+.. _swiftwind: https://github.com/waldocollective/swiftwind/
+
+.. _simple model layer: https://github.com/waldocollective/django-hordak/blob/master/hordak/models.py
