@@ -15,7 +15,7 @@ setup(
     description='Double entry book keeping in Django',
     long_description=open('README.rst').read() if exists("README.rst") else "",
     install_requires=[
-        'django>=1.10',
+        'django>=1.8',
         'django-mptt>=0.8',
         'django-model-utils>=2.5.0',
         'dj-database-url>=0.4.1',
