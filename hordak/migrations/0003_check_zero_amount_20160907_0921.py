@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('hordak', '0005_check_leg_trigger_20160903_1149'),
+        ('hordak', '0002_check_leg_trigger_20160903_1149'),
     ]
 
     operations = [
