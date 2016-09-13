@@ -21,5 +21,6 @@ setup(
         'dj-database-url>=0.4.1',
         'psycopg2>=2.6.2',
         'django-extensions>=1.7.3',
+        'django-smalluuid>=0.1.3',
     ],
 )

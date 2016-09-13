@@ -1,0 +1,77 @@
+[
+{
+  "model": "hordak.account",
+  "fields": {
+    "uuid": "JNoeszxBTlur-AMqvugX8w",
+    "name": "Assets",
+    "parent": null,
+    "code": "1",
+    "_type": "AS",
+    "has_statements": false,
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 1,
+    "level": 0
+  }
+},
+{
+  "model": "hordak.account",
+  "fields": {
+    "uuid": "HXkGHKAUQZ2v5gmB1z3eeQ",
+    "name": "Liabilities",
+    "parent": null,
+    "code": "2",
+    "_type": "LI",
+    "has_statements": false,
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 3,
+    "level": 0
+  }
+},
+{
+  "model": "hordak.account",
+  "fields": {
+    "uuid": "8LaL3VkORbCQvYt_c3fE5A",
+    "name": "Equity",
+    "parent": null,
+    "code": "3",
+    "_type": "IN",
+    "has_statements": false,
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 5,
+    "level": 0
+  }
+},
+{
+  "model": "hordak.account",
+  "fields": {
+    "uuid": "jF8x77xHSh2CPPmjR59JQw",
+    "name": "Income",
+    "parent": null,
+    "code": "4",
+    "_type": "EX",
+    "has_statements": false,
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 6,
+    "level": 0
+  }
+},
+{
+  "model": "hordak.account",
+  "fields": {
+    "uuid": "nHQLiRNjQR-X2j4lJ3DfhA",
+    "name": "Expenses",
+    "parent": null,
+    "code": "5",
+    "_type": "EQ",
+    "has_statements": false,
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 7,
+    "level": 0
+  }
+}
+]

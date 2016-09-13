@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
 from django.utils.timezone import make_aware
+from django_smalluuid.models import SmallUUIDField, uuid_default
 
 from mptt.models import MPTTModel, TreeForeignKey
 from model_utils import Choices
@@ -10,6 +11,12 @@ from hordak import exceptions
 
 DEBIT = 'debit'
 CREDIT = 'credit'
+
+
+class AccountManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
 
 
 class Account(MPTTModel):
@@ -21,6 +28,7 @@ class Account(MPTTModel):
         ('EQ', 'equity', 'Equity'),
     )
 
+    uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     code = models.CharField(max_length=3)
@@ -28,6 +36,8 @@ class Account(MPTTModel):
     has_statements = models.BooleanField(default=False, blank=True,
                                          help_text='Does this account have statements to reconcile against. '
                                                    'This is typically the case for bank accounts.')
+
+    objects = AccountManager()
 
     class MPTTMeta:
         order_insertion_by = ['code']
@@ -50,6 +60,9 @@ class Account(MPTTModel):
             return '{} [{}]'.format(name, self.full_code or '-')
         else:
             return name
+
+    def natural_key(self):
+        return (self.uuid,)
 
     @property
     def full_code(self):
@@ -137,13 +150,25 @@ class Account(MPTTModel):
         return transaction
 
 
+class TransactionManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
+
+
 class Transaction(models.Model):
+    uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
     date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
     description = models.TextField(default='', blank=True)
 
+    objects = TransactionManager()
+
     def balance(self):
         return self.legs.sum_amount()
+
+    def natural_key(self):
+        return (self.uuid,)
 
 
 class LegQuerySet(models.QuerySet):
@@ -152,22 +177,29 @@ class LegQuerySet(models.QuerySet):
         return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
 
 
-LegManager = LegQuerySet.as_manager()
+class LegManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
 
 
 class Leg(models.Model):
-    transaction = models.ForeignKey(Transaction, related_name='legs')
+    uuid = SmallUUIDField(default=uuid_default(), editable=False)
+    transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
     amount = models.DecimalField(max_digits=13, decimal_places=2,
                                  help_text='Record debits as positive, credits as negative')
     description = models.TextField(default='', blank=True)
 
-    objects = LegManager
+    objects = LegManager.from_queryset(LegQuerySet)()
 
     def save(self, *args, **kwargs):
         if self.amount == 0:
             raise exceptions.ZeroAmountError()
         return super(Leg, self).save(*args, **kwargs)
+
+    def natural_key(self):
+        return (self.uuid,)
 
     @property
     def type(self):
@@ -187,13 +219,32 @@ class Leg(models.Model):
         return self.type == CREDIT
 
 
+class StatementImportManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
+
+
 class StatementImport(models.Model):
+    uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     # TODO: Add constraint to ensure destination account expects statements
     bank_account = models.ForeignKey(Account, related_name='imports')
 
+    objects = StatementImportManager()
+
+    def natural_key(self):
+        return (self.uuid,)
+
+
+class StatementLineManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
+
 
 class StatementLine(models.Model):
+    uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     date = models.DateField()
     statement_import = models.ForeignKey(StatementImport, related_name='lines')
@@ -203,6 +254,11 @@ class StatementLine(models.Model):
     # TODO: Add constraint to ensure one statement line per transaction
     transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
                                     help_text='Reconcile this statement line to this transaction')
+
+    objects = StatementLineManager()
+
+    def natural_key(self):
+        return (self.uuid,)
 
     @property
     def is_reconciled(self):
