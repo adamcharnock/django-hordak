@@ -4,7 +4,7 @@ from django.db import transaction as db_transaction
 from django.utils.timezone import make_aware
 from django_smalluuid.models import SmallUUIDField, uuid_default
 
-from mptt.models import MPTTModel, TreeForeignKey
+from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from model_utils import Choices
 
 from hordak import exceptions
@@ -13,7 +13,7 @@ DEBIT = 'debit'
 CREDIT = 'credit'
 
 
-class AccountManager(models.Manager):
+class AccountManager(TreeManager):
 
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
