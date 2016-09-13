@@ -1,5 +1,6 @@
-Change-log for django-hordak.
-
-This file will be added to as part of each release
-
 ----
+
+Version 1.0.0 (first version), Tue 13 Sep 2016
+===============================================
+
+
