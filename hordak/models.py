@@ -32,7 +32,7 @@ class Account(MPTTModel):
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     code = models.CharField(max_length=3)
-    _type = models.CharField(max_length=2, choices=TYPES)
+    _type = models.CharField(max_length=2, choices=TYPES, blank=True)
     has_statements = models.BooleanField(default=False, blank=True,
                                          help_text='Does this account have statements to reconcile against. '
                                                    'This is typically the case for bank accounts.')
@@ -181,6 +181,12 @@ class LegManager(models.Manager):
 
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
+
+    def debits(self):
+        return self.filter(amount__gt=0)
+
+    def credits(self):
+        return self.filter(amount__lt=0)
 
 
 class Leg(models.Model):
