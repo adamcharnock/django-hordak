@@ -7,3 +7,5 @@
 static/
 /.idea
 .bash_history
+/build
+/dist
