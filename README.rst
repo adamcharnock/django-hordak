@@ -115,12 +115,12 @@ account) in the knowledge that you will pay the bill from this account when it a
 
 These accounts are income & liability accounts, so neither balance needs to be flipped. Therefore:
 
-- Balances
-   - *Rent Income*: £500
-   - *Electricity Payable* (liability): £0
-- Transaction: £100 from *Rent Income* to *Electricity Payable*
-   - *Rent Income*: £400
-   - *Electricity Payable* (liability): £100
+* Balances
+   * *Rent Income*: £500
+   * *Electricity Payable* (liability): £0
+* Transaction: £100 from *Rent Income* to *Electricity Payable*
+   * *Rent Income*: £400
+   * *Electricity Payable* (liability): £100
 
 This should also make intuitive sense. Some of the rent income will be used to pay the electricity
 bill, therefore the former decreases and the latter increases.
@@ -140,12 +140,12 @@ However, money cannot be injected from outside our double entry system, so how d
 
 Let's show how we represent a single housemate's payment:
 
-- Balances
-   - *Bank* (asset): £0
-   - *Rent Income*: £0
-- Transaction: £500 from *Bank* to *Rent Income*
-   - *Bank* (asset): -£500 * -1 = **£500**
-   - *Rent Income*: £500
+* Balances
+   * *Bank* (asset): £0
+   * *Rent Income*: £0
+* Transaction: £500 from *Bank* to *Rent Income*
+   * *Bank* (asset): -£500 * -1 = **£500**
+   * *Rent Income*: £500
 
 Because the bank account is an asset account, we flip the sign of its balance.
 **The result is that both accounts increase in value.**
