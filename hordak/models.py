@@ -138,7 +138,7 @@ class Account(MPTTModel):
         return self.legs.sum_amount() * (1 if raw else self.sign)
 
     @db_transaction.atomic()
-    def transfer_to(self, to_account, amount):
+    def transfer_to(self, to_account, amount, **transaction_kwargs):
         """Create a transaction which transfers amount to to_account"""
 
         if self.sign == to_account.sign == 1:
@@ -150,7 +150,7 @@ class Account(MPTTModel):
         else:
             direction = 1
 
-        transaction = Transaction.objects.create()
+        transaction = Transaction.objects.create(**transaction_kwargs)
         Leg.objects.create(transaction=transaction, account=self, amount=+amount * direction)
         Leg.objects.create(transaction=transaction, account=to_account, amount=-amount * direction)
         return transaction
