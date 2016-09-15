@@ -126,6 +126,17 @@ class AccountTestCase(TestCase):
 
         self.assertEqual(account1.balance(), 100)
 
+    def test_net_balance(self):
+        bank = Account.objects.create(name='bank', type=Account.TYPES.asset, code='0')
+        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
+        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+
+        bank.transfer_to(account1, -100)
+        bank.transfer_to(account2, -50)
+
+        self.assertEqual(Account.objects.filter(_type=Account.TYPES.income).net_balance(), 150)
+
+
     def test_transfer_to(self):
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
         account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')

@@ -13,6 +13,12 @@ DEBIT = 'debit'
 CREDIT = 'credit'
 
 
+class AccountQuerySet(models.QuerySet):
+
+    def net_balance(self, raw=False):
+        return sum(account.balance(raw) for account in self)
+
+
 class AccountManager(TreeManager):
 
     def get_by_natural_key(self, uuid):
@@ -37,7 +43,7 @@ class Account(MPTTModel):
                                          help_text='Does this account have statements to reconcile against. '
                                                    'This is typically the case for bank accounts.')
 
-    objects = AccountManager()
+    objects = AccountManager.from_queryset(AccountQuerySet)()
 
     class MPTTMeta:
         order_insertion_by = ['code']
