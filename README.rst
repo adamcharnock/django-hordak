@@ -133,7 +133,7 @@ This should also make intuitive sense. Some of the rent income will be used to p
 bill, therefore the former decreases and the latter increases.
 
 Example 2: Saving money to pay a bill (flipping)
-'''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''
 
 At the start of every month each housemate pays into the communal bank account. We
 should therefore represent this somehow in our double entry system.
