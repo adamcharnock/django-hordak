@@ -86,6 +86,20 @@ Usage
 
 TBA
 
+Explanation: Double Entry for Software Developers
+-------------------------------------------------
+
+The core of double entry accounting works as follows:
+
+- Each account has a 'type' (asset, liability, income, expense, equity)
+- **Debits decrease** the value of an account
+- **Credits increase** the value of an account
+- The sign of any *asset* or *expense* account balance is **always flipped** upon calculation (i.e. multiply by -1)
+- A transaction is comprised of 1 or more credits **and** 1 or more debits
+- The value of a transaction's debits and credits must be equal (money into transaction = money out of transaction).
+
+This explanation may be substantially easier to comprehend for those with a STEM background.
+
 django-hordak is packaged using seed_.
 
 .. _seed: https://github.com/adamcharnock/seed/
