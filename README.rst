@@ -1,5 +1,5 @@
 django-hordak
-===========================================================
+=============
 
 **Double entry bookkeeping in Django.**
 
@@ -101,13 +101,13 @@ The core of double entry accounting works as follows:
 - The value of a transaction's debits and credits must be equal (money into transaction = money out of transaction).
 
 Examples
-========
+~~~~~~~~
 
 You live in a shared house. Everyone pays their share into a communal bank account
 every month.
 
 Example 1: Saving money to pay a bill (no flipping)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''''''''''''''''
 
 You pay the electricity bill every three months. Therefore every month you take £100
 from everyone's contributions and put it into Electricity Payable account (a liability
@@ -126,7 +126,7 @@ This should also make intuitive sense. Some of the rent income will be used to p
 bill, therefore the former decreases and the latter increases.
 
 Example 2: Saving money to pay a bill (flipping)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''''''''''''''''
 
 At the start of every month each housemate pays into the communal bank account. We
 should therefore represent this somehow in our double entry system.
