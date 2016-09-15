@@ -89,6 +89,8 @@ TBA
 Explanation: Double Entry for Software Developers
 -------------------------------------------------
 
+This explanation may be substantially easier to comprehend for those with a STEM background.
+
 The core of double entry accounting works as follows:
 
 - Each account has a 'type' (asset, liability, income, expense, equity)
@@ -98,7 +100,56 @@ The core of double entry accounting works as follows:
 - A transaction is comprised of 1 or more credits **and** 1 or more debits
 - The value of a transaction's debits and credits must be equal (money into transaction = money out of transaction).
 
-This explanation may be substantially easier to comprehend for those with a STEM background.
+Examples
+========
+
+You live in a shared house. Everyone pays their share into a communal bank account
+every month.
+
+Example 1: Saving money to pay a bill (no flipping)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You pay the electricity bill every three months. Therefore every month you take £100
+from everyone's contributions and put it into Electricity Payable account (a liability
+account) in the knowledge that you will pay the bill from this account when it arrives:
+
+These accounts are income & liability accounts, so neither balance needs to be flipped. Therefore:
+
+- Balances
+  - *Rent Income*: £500
+  - *Electricity Payable* (liability): £0
+- Transaction: £100 from *Rent Income* to *Electricity Payable*
+  - *Rent Income*: £400
+  - *Electricity Payable* (liability): £100
+
+This should also make intuitive sense. Some of the rent income will be used to pay the electricity
+bill, therefore the former decreases and the latter increases.
+
+Example 2: Saving money to pay a bill (flipping)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At the start of every month each housemate pays into the communal bank account. We
+should therefore represent this somehow in our double entry system.
+
+We have an account called *Bank*, which is an asset account (because this is money
+we actually have). We also have a *Rent Income* account which, as the name implies, is an
+income account.
+
+Therefore, **to represent the fact that we have been paid money, we must create a transaction**.
+However, money cannot be injected from outside our double entry system, so how do we deal with this?
+
+Let's show how we represent a single housemate's payment:
+
+- Balances
+  - *Bank* (asset): £0
+  - *Rent Income*: £0
+- Transaction: £500 from *Bank* to *Rent Income*
+  - *Bank* (asset): -£500 * -1 = **£500**
+  - *Rent Income*: £500
+
+Because the bank account is an asset account, we flip the sign of its balance.
+**The result is that both accounts increase in value.**
+
 
 django-hordak is packaged using seed_.
 
