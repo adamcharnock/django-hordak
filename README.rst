@@ -18,9 +18,6 @@ should be intuitive and suitable for non-experts.
 .. image:: https://img.shields.io/pypi/v/django-hordak.svg
     :target: https://badge.fury.io/py/django-hordak
 
-.. image:: https://img.shields.io/pypi/dm/django-hordak.svg
-    :target: https://pypi.python.org/pypi/django-hordak
-
 .. image:: https://img.shields.io/github/license/waldocollective/django-hordak.svg
     :target: https://pypi.python.org/pypi/django-hordak/
 
