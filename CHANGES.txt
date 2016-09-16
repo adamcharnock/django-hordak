@@ -1,5 +1,24 @@
 ----
 
+Version 1.0.1, Fri 16 Sep 2016
+===============================
+
+3e45ccd3d1	Removing swiftwind fixture (Adam Charnock)
+66e0326e85	Whitespace (Adam Charnock)
+b3e39ba039	Work on transfer_to() logic (should be more sane now) (Adam Charnock)
+905f538761	Minor rst fix (Adam Charnock)
+5446460f3e	Trying to figure out github rst (Adam Charnock)
+730e238e9c	Trying to figure out github rst (Adam Charnock)
+4e7e6b2783	Adding examples to README (Adam Charnock)
+bcbf6d3ad5	Adding examples to README (Adam Charnock)
+ecb47c7a4b	Adding examples to README (Adam Charnock)
+fcedbefc09	Addition to README - Explanation: Double Entry for Software Developers (Adam Charnock)
+66069c405a	transfer_to() now accepts **transaction_kwargs (Adam Charnock)
+e02a753656	Adding net_balance() to account query manager (Adam Charnock)
+28ccdaf31f	Ignoring build dirs (Adam Charnock)
+9bc5ad3704	Updating README description (Adam Charnock)
+
+
 Version 1.0.0 (first version), Tue 13 Sep 2016
 ===============================================
 
