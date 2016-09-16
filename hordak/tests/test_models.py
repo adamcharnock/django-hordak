@@ -131,8 +131,8 @@ class AccountTestCase(TestCase):
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
         account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
 
-        bank.transfer_to(account1, -100)
-        bank.transfer_to(account2, -50)
+        bank.transfer_to(account1, 100)
+        bank.transfer_to(account2, 50)
 
         self.assertEqual(Account.objects.filter(_type=Account.TYPES.income).net_balance(), 150)
 
@@ -166,8 +166,8 @@ class AccountTestCase(TestCase):
         src = Account.objects.create(name='src', type=Account.TYPES.asset, code='1')
         dst = Account.objects.create(name='dst', type=Account.TYPES.income, code='2')
         src.transfer_to(dst, 100)
-        self.assertEqual(src.balance(), -100)
-        self.assertEqual(dst.balance(), -100)
+        self.assertEqual(src.balance(), 100)
+        self.assertEqual(dst.balance(), 100)
         Account.validate_accounting_equation()
 
 

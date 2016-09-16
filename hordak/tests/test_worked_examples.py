@@ -118,28 +118,30 @@ class UtilityBillTestCase(TestCase):
         self.gas_expense.transfer_to(self.gas_payable, 100)
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), -100)
-        self.assertEqual(self.gas_payable.balance(), -100)
+        self.assertEqual(self.gas_expense.balance(), 100)
+        self.assertEqual(self.gas_payable.balance(), 100)
 
         # Month 2
         self.gas_expense.transfer_to(self.gas_payable, 100)
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), -200)
-        self.assertEqual(self.gas_payable.balance(), -200)
+        self.assertEqual(self.gas_expense.balance(), 200)
+        self.assertEqual(self.gas_payable.balance(), 200)
 
         # Month 3
         self.gas_expense.transfer_to(self.gas_payable, 100)
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), -300)
-        self.assertEqual(self.gas_payable.balance(), -300)
+        self.assertEqual(self.gas_expense.balance(), 300)
+        self.assertEqual(self.gas_payable.balance(), 300)
 
-        # We receive the actual bill
-        self.gas_payable.transfer_to(self.cash, 300)
+        # We receive the actual bill (we are moving a negative amount of money,
+        # as this is an outgoing)
+        self.cash.transfer_to(self.gas_payable, -300)
 
-        self.assertEqual(self.cash.balance(), 300)
-        self.assertEqual(self.gas_expense.balance(), -300)
+        # We are now 300 overdrawn, but the payable account has been cleared
+        self.assertEqual(self.cash.balance(), -300)
+        self.assertEqual(self.gas_expense.balance(), 300)
         self.assertEqual(self.gas_payable.balance(), 0)
 
         Account.validate_accounting_equation()
@@ -260,8 +262,8 @@ class CommunalHouseholdTestCase(TestCase):
         # the contents of those expense accounts into the relevant
         # 'Payable' accounts (as we'll need it to pay the bills when they
         # eventually arrive)
-        self.ex_elec.transfer_to(self.lia_elec_payable, -120 / 3)
-        self.ex_rates.transfer_to(self.lia_rates_payable, -180 / 3)
+        self.ex_elec.transfer_to(self.lia_elec_payable, 120 / 3)
+        self.ex_rates.transfer_to(self.lia_rates_payable, 180 / 3)
 
         # The expense accounts should now be zeroed...
         self.assertEqual(self.ex_elec.balance(), 0)
