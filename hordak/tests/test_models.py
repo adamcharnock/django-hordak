@@ -161,7 +161,6 @@ class AccountTestCase(TestCase):
         self.assertEqual(dst.balance(), 100)
         Account.validate_accounting_equation()
 
-
     def test_transfer_neg_to_pos(self):
         src = Account.objects.create(name='src', type=Account.TYPES.asset, code='1')
         dst = Account.objects.create(name='dst', type=Account.TYPES.income, code='2')
@@ -169,7 +168,6 @@ class AccountTestCase(TestCase):
         self.assertEqual(src.balance(), 100)
         self.assertEqual(dst.balance(), 100)
         Account.validate_accounting_equation()
-
 
     def test_transfer_neg_to_neg(self):
         src = Account.objects.create(name='src', type=Account.TYPES.asset, code='1')
