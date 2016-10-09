@@ -37,7 +37,10 @@ class Account(MPTTModel):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    # TODO: Denormalise account code (in order to allow lookup by it)
     code = models.CharField(max_length=3)
+    # TODO: Implement this child_code_width field, as it is probably a good idea
+    # child_code_width = models.PositiveSmallIntegerField(default=1)
     _type = models.CharField(max_length=2, choices=TYPES, blank=True)
     has_statements = models.BooleanField(default=False, blank=True,
                                          help_text='Does this account have statements to reconcile against. '
@@ -123,19 +126,35 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
-    def balance(self, raw=False):
-        """Get the balance for this account, including child accounts"""
-        balances = [account.simple_balance(raw) for account in self.get_descendants(include_self=True)]
+    def balance(self, as_of=None, raw=False):
+        """Get the balance for this account, including child accounts
+
+        See simple_balance() for argument reference.
+
+        Returns:
+            Decimal:
+        """
+        balances = [
+            account.simple_balance(as_of=as_of, raw=raw)
+            for account
+            in self.get_descendants(include_self=True)
+        ]
         return sum(balances)
 
-    def simple_balance(self, raw=False):
+    def simple_balance(self, as_of=None, raw=False):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
             raw (bool): If true the returned balance will not have its sign
                         adjusted for display purposes.
+
+        Returns
+            Decimal:
         """
-        return self.legs.sum_amount() * (1 if raw else self.sign)
+        legs = self.legs
+        if as_of:
+            legs = legs.filter(transaction__date__lte=as_of)
+        return legs.sum_amount() * (1 if raw else self.sign)
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
@@ -181,17 +200,17 @@ class LegQuerySet(models.QuerySet):
     def sum_amount(self):
         return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
 
-
-class LegManager(models.Manager):
-
-    def get_by_natural_key(self, uuid):
-        return self.get(uuid=uuid)
-
     def debits(self):
         return self.filter(amount__gt=0)
 
     def credits(self):
         return self.filter(amount__lt=0)
+
+
+class LegManager(models.Manager):
+
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
 
 
 class Leg(models.Model):
