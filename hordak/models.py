@@ -126,7 +126,7 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
-    def balance(self, as_of=None, raw=False):
+    def balance(self, as_of=None, raw=False, **kwargs):
         """Get the balance for this account, including child accounts
 
         See simple_balance() for argument reference.
@@ -135,18 +135,20 @@ class Account(MPTTModel):
             Decimal:
         """
         balances = [
-            account.simple_balance(as_of=as_of, raw=raw)
+            account.simple_balance(as_of=as_of, raw=raw, **kwargs)
             for account
             in self.get_descendants(include_self=True)
         ]
         return sum(balances)
 
-    def simple_balance(self, as_of=None, raw=False):
+    def simple_balance(self, as_of=None, raw=False, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
+            as_of (Date): Only include transactions before this date
             raw (bool): If true the returned balance will not have its sign
                         adjusted for display purposes.
+            **kwargs (dict): Will be used to filter the transaction legs
 
         Returns
             Decimal:
@@ -154,6 +156,8 @@ class Account(MPTTModel):
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
+        if kwargs:
+            legs = legs.filter(**kwargs)
         return legs.sum_amount() * (1 if raw else self.sign)
 
     @db_transaction.atomic()

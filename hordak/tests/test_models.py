@@ -131,6 +131,21 @@ class AccountTestCase(TestCase):
         self.assertEqual(account1.simple_balance(as_of='2016-06-15'), 150)  # same date as second transaction
         self.assertEqual(account1.simple_balance(as_of='2020-01-01'), 150)  # after transactions
 
+    def test_balance_kwargs(self):
+        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
+        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create(date='2016-06-01')
+            Leg.objects.create(transaction=transaction, account=account1, amount=100)
+            Leg.objects.create(transaction=transaction, account=account2, amount=-100)
+
+            transaction = Transaction.objects.create(date='2016-06-15')
+            Leg.objects.create(transaction=transaction, account=account1, amount=50)
+            Leg.objects.create(transaction=transaction, account=account2, amount=-50)
+
+        self.assertEqual(account1.balance(transaction__date__gte='2016-06-15'), 50)
+
     def test_balance(self):
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
         account1_child = Account.objects.create(name='account1', code='1', parent=account1)
