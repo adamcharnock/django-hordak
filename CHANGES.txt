@@ -1,5 +1,11 @@
 ----
 
+Version 1.0.3, Sun 09 Oct 2016
+===============================
+
+3cb75d6ce8	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
+
+
 Version 1.0.2, Sun 09 Oct 2016
 ===============================
 
