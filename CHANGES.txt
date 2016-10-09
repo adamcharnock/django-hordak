@@ -1,5 +1,13 @@
 ----
 
+Version 1.0.2, Sun 09 Oct 2016
+===============================
+
+542bc60a45	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
+1b81dd8d27	Whitespace (Adam Charnock)
+3809a46919	Removing downloads badge (Adam Charnock)
+
+
 Version 1.0.1, Fri 16 Sep 2016
 ===============================
 
