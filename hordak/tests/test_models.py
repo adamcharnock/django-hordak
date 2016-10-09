@@ -68,7 +68,6 @@ class AccountTestCase(TestCase):
             Account.objects.create,
             parent=account1, type=Account.TYPES.asset, name='Account 1', code='0')
 
-
     def test_type_leaf_set(self):
         """Check we CANNOT set the type after we have created a leaf account
 
@@ -135,7 +134,6 @@ class AccountTestCase(TestCase):
         bank.transfer_to(account2, 50)
 
         self.assertEqual(Account.objects.filter(_type=Account.TYPES.income).net_balance(), 150)
-
 
     def test_transfer_to(self):
         account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
