@@ -1,7 +1,12 @@
 import os
+import six
 from datetime import date
 from unittest import skipUnless
-from unittest.mock import patch
+if six.PY2:
+    from mock import patch
+else:
+    from unittest.mock import patch
+
 import requests_mock
 
 from decimal import Decimal
