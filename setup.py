@@ -23,5 +23,6 @@ setup(
         'django-extensions>=1.7.3',
         'django-smalluuid>=0.1.3',
         'requests>=2',
+        'py-moneyed>=0.6.0',
     ],
 )

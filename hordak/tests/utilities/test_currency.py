@@ -2,6 +2,9 @@ import os
 import six
 from datetime import date
 from unittest import skipUnless
+
+from moneyed import Money
+
 if six.PY2:
     from mock import patch
 else:
@@ -14,7 +17,8 @@ from django.test import TestCase
 from django.test import override_settings
 from django.core.cache import cache
 
-from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter
+from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter, ExMoney, \
+    MoneyCollection
 
 DUMMY_CACHE = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
@@ -33,8 +37,9 @@ class TestBackend(BaseBackend):
                 GBP=Decimal(10),
                 USD=Decimal(20),
             )
-        self.cache_rate(currency, date_, rates[currency])
-        return rates[currency]
+        rate = rates[str(currency)]
+        self.cache_rate(currency, date_, rate)
+        return rate
 
 
 @override_settings(CACHES=DUMMY_CACHE)
@@ -60,7 +65,7 @@ class FunctionsTestCase(CacheTestCase):
 
 class BaseBackendTestCase(CacheTestCase):
 
-    @patch('hordak.utilities.currency._INTERNAL_CURRENCY', 'XXX')
+    @patch('hordak.defaults.INTERNAL_CURRENCY', 'XXX')
     def test_bad_currency(self):
         with self.assertRaises(ValueError):
             TestBackend()
@@ -151,17 +156,92 @@ class ConverterTestCase(CacheTestCase):
             Decimal('0.6666666666666666666666666666')
         )
 
-    def test_convert(self):
+    def test_convert_money_date(self):
+        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
         self.assertEqual(
-            self.converter.convert(Decimal('100'), 'GBP', 'USD', date(2000, 5, 15)),
-            Decimal('150')
+            self.converter.convert(money, 'USD'),
+            ExMoney('150', 'USD')
+        )
+
+    def test_convert_custom_date(self):
+        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
+        self.assertEqual(
+            self.converter.convert(money, 'USD', date=date(2015, 5, 15)),
+            ExMoney('200', 'USD')
         )
 
     @skipUnless(os.environ.get('TEST_MAKE_REQUESTS'), 'Making requests disabled')
     def test_against_live_api(self):
         live_converter = Converter(backend=FixerBackend())
-        converted = live_converter.convert(Decimal('100'), 'GBP', 'USD', date(2000, 5, 15))
-        self.assertEqual(
-            round(converted, 2),
-            Decimal('151.32')
-        )
+        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
+        converted = live_converter.convert(money, 'USD')
+        self.assertEqual(round(converted.amount, 2), Decimal('151.32'))
+        self.assertEqual(str(converted.currency), 'USD')
+
+
+@patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
+class ExMoneyTestCase(CacheTestCase):
+
+    def test_sum(self):
+        usd_100 = ExMoney('100', 'USD')
+        eur_100 = ExMoney('100', 'EUR')
+        gbp_100 = ExMoney('100', 'GBP')
+
+        self.assertEqual(usd_100 + usd_100, ExMoney('200', 'USD'))
+        self.assertEqual(usd_100 + eur_100, ExMoney('2100', 'USD'))
+        self.assertEqual(eur_100 + usd_100, ExMoney('105', 'EUR'))
+        self.assertEqual(eur_100 + gbp_100 + usd_100, ExMoney('115', 'EUR'))
+
+        self.assertEqual((usd_100 + eur_100).converted, True)
+        self.assertEqual((eur_100 + usd_100).converted, True)
+
+        self.assertEqual((usd_100 + usd_100).converted, False)
+        self.assertEqual((gbp_100 + gbp_100).converted, False)
+        self.assertEqual((eur_100 + eur_100).converted, False)
+
+
+@patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
+class MoneyCollectionTestCase(CacheTestCase):
+
+    def test_sum_simple(self):
+        collection = MoneyCollection('USD')
+        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))
+        sum = collection.sum()
+        self.assertEqual(sum.amount, Decimal('300'))
+        self.assertEqual(str(sum.currency), 'USD')
+        self.assertEqual(sum.converted, True)
+
+    def test_sum_to_same(self):
+        collection = MoneyCollection('USD')
+        collection.add(ExMoney('100', 'USD', date=date(2000, 5, 15)))
+        sum = collection.sum()
+        self.assertEqual(sum.amount, Decimal('100'))
+        self.assertEqual(sum.converted, False)
+
+    def test_sum_many(self):
+        collection = MoneyCollection('USD')
+        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
+        collection.add(ExMoney('100', 'USD', date=date(2000, 5, 15)))  # 100 USD
+        collection.add(ExMoney('100', 'GBP', date=date(2000, 5, 15)))  # 150 USD
+        sum = collection.sum()
+        self.assertEqual(sum.amount, Decimal('550'))
+        self.assertEqual(str(sum.currency), 'USD')
+        self.assertEqual(sum.converted, True)
+
+    def test_sum_different_dates(self):
+        collection = MoneyCollection('USD')
+        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
+        collection.add(ExMoney('100', 'GBP', date=date(2015, 5, 15)))  # 200 USD
+        sum = collection.sum()
+        self.assertEqual(sum.amount, Decimal('500'))
+        self.assertEqual(str(sum.currency), 'USD')
+        self.assertEqual(sum.converted, True)
+
+    def test_sum_explicit_date(self):
+        collection = MoneyCollection('USD')
+        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
+        collection.add(ExMoney('100', 'GBP', date=date(2015, 5, 15)))  # 200 USD
+        sum = collection.sum(date=date(2015, 5, 15))
+        self.assertEqual(sum.amount, Decimal('2200'))
+        self.assertEqual(str(sum.currency), 'USD')
+        self.assertEqual(sum.converted, True)
