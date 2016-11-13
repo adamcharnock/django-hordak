@@ -1,3 +1,6 @@
+""" Monetary values and currency conversion
+
+"""
 import logging
 from decimal import Decimal
 
@@ -31,7 +34,7 @@ class BaseBackend(object):
     supported_currencies = []
 
     def __init__(self):
-        if _INTERNAL_CURRENCY not in self.supported_currencies:
+        if not self.is_supported(_INTERNAL_CURRENCY):
             raise ValueError('Currency specified by INTERNAL_CURRENCY '
                              'is not supported by this backend: '.format(_INTERNAL_CURRENCY))
 
@@ -39,8 +42,8 @@ class BaseBackend(object):
         """
         Use the cache rates returned by your backend
         """
-        if currency not in self.supported_currencies:
-            logger.warn('Tried to cache unsupported currency "{}". Ignoring.'.format(currency))
+        if not self.is_supported(_INTERNAL_CURRENCY):
+            logger.info('Tried to cache unsupported currency "{}". Ignoring.'.format(currency))
         else:
             cache.set(_cache_key(currency, date), str(rate), _cache_timeout(date))
 
@@ -51,27 +54,25 @@ class BaseBackend(object):
 
         cached = cache.get(_cache_key(currency, date))
         if cached:
-            return cached
+            return Decimal(cached)
         else:
             # Expect self._get_rate() to implement caching
-            return self._get_rate(currency, date)
+            return Decimal(self._get_rate(currency, date))
 
     def _get_rate(self, currency, date):
         """Get the exchange rate for ``currency`` against ``_INTERNAL_CURRENCY``
 
         You should implement this in any custom backend. For each currency
         provided you should call ``self.cache_rate()``.
-
-        Returns:
-
-            Decimal
         """
         raise NotImplementedError()
 
     def ensure_supported(self, currency):
-        if currency not in self.supported_currencies:
+        if not self.is_supported(currency):
             raise ValueError('Currency not supported by backend: {}'.format(currency))
 
+    def is_supported(self, currency):
+        return currency in self.supported_currencies
 
 
 class FixerBackend(BaseBackend):
@@ -113,9 +114,9 @@ class Converter(object):
 
     def rate(self, from_currency, to_currency, date):
         """Get the exchange rate between the specified currencies"""
-        return self.backend.get_rate(from_currency, date) \
+        return (1 / self.backend.get_rate(from_currency, date)) \
                * \
-               (1 / self.backend.get_rate(to_currency, date))
+               self.backend.get_rate(to_currency, date)
 
 
 converter = Converter()

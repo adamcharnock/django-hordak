@@ -1,4 +1,6 @@
+import os
 from datetime import date
+from unittest import skipUnless
 from unittest.mock import patch
 import requests_mock
 
@@ -7,7 +9,7 @@ from django.test import TestCase
 from django.test import override_settings
 from django.core.cache import cache
 
-from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, converter, Converter
+from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter
 
 DUMMY_CACHE = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
@@ -18,13 +20,13 @@ class TestBackend(BaseBackend):
     def _get_rate(self, currency, date_):
         if date_ < date(2010, 1, 1):
             rates = dict(
-                GBP=Decimal(3),
-                USD=Decimal(2),
+                GBP=Decimal(2),
+                USD=Decimal(3),
             )
         else:
             rates = dict(
-                GBP=Decimal(20),
-                USD=Decimal(10),
+                GBP=Decimal(10),
+                USD=Decimal(20),
             )
         self.cache_rate(currency, date_, rates[currency])
         return rates[currency]
@@ -67,14 +69,22 @@ class BaseBackendTestCase(CacheTestCase):
         backend = TestBackend()
         self.assertEqual(
             backend.get_rate('GBP', date(2000, 5, 15)),
-            Decimal(3)
+            Decimal(2)
         )
-        self.assertEqual(cache.get('EUR-GBP-2000-05-15'), '3')
+        self.assertEqual(cache.get('EUR-GBP-2000-05-15'), '2')
         self.assertEqual(
             backend.get_rate('USD', date(2015, 5, 15)),
-            Decimal(10)
+            Decimal(20)
         )
-        self.assertEqual(cache.get('EUR-USD-2015-05-15'), '10')
+        self.assertEqual(cache.get('EUR-USD-2015-05-15'), '20')
+
+    def test_get_rate_cached(self):
+        backend = TestBackend()
+        cache.set('EUR-GBP-2000-05-15', '0.123')
+        self.assertEqual(
+            backend.get_rate('GBP', date(2000, 5, 15)),
+            Decimal('0.123')
+        )
 
     def test_ensure_supported(self):
         with self.assertRaises(ValueError):
@@ -140,4 +150,13 @@ class ConverterTestCase(CacheTestCase):
         self.assertEqual(
             self.converter.convert(Decimal('100'), 'GBP', 'USD', date(2000, 5, 15)),
             Decimal('150')
+        )
+
+    @skipUnless(os.environ.get('TEST_MAKE_REQUESTS'), 'Making requests disabled')
+    def test_against_live_api(self):
+        live_converter = Converter(backend=FixerBackend())
+        converted = live_converter.convert(Decimal('100'), 'GBP', 'USD', date(2000, 5, 15))
+        self.assertEqual(
+            round(converted, 2),
+            Decimal('151.32')
         )
