@@ -181,6 +181,7 @@ class ExMoney(Money):
         if isinstance(other, ExMoney):
             if other.currency != self.currency:
                 self._ensure_auto_convert()
+                other._ensure_auto_convert()
                 other = other.convert(self.currency)
                 converted = True
             else:

@@ -182,7 +182,7 @@ class ConverterTestCase(CacheTestCase):
 @patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
 class ExMoneyTestCase(CacheTestCase):
 
-    def test_sum(self):
+    def test_add(self):
         usd_100 = ExMoney('100', 'USD')
         eur_100 = ExMoney('100', 'EUR')
         gbp_100 = ExMoney('100', 'GBP')
@@ -198,6 +198,27 @@ class ExMoneyTestCase(CacheTestCase):
         self.assertEqual((usd_100 + usd_100).converted, False)
         self.assertEqual((gbp_100 + gbp_100).converted, False)
         self.assertEqual((eur_100 + eur_100).converted, False)
+
+    def test_add_auto_convert_disabled(self):
+        usd_100 = ExMoney('100', 'USD')
+        usd_100_nc = ExMoney('100', 'USD', auto_convert=False)
+        eur_100 = ExMoney('100', 'EUR')
+        eur_100_nc = ExMoney('100', 'EUR', auto_convert=False)
+
+        with self.assertRaises(ValueError):
+            usd_100 + eur_100_nc
+
+        with self.assertRaises(ValueError):
+            eur_100_nc + usd_100
+
+        with self.assertRaises(ValueError):
+            usd_100_nc + eur_100
+
+        with self.assertRaises(ValueError):
+            eur_100 + usd_100_nc
+
+        usd_100 + usd_100_nc
+        eur_100 + eur_100_nc
 
 
 @patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
