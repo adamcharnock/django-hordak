@@ -3,10 +3,12 @@ from django.utils import timezone
 from django.db import transaction as db_transaction
 from django.utils.timezone import make_aware
 from django_smalluuid.models import SmallUUIDField, uuid_default
+from djmoney.models.fields import MoneyField
 
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from model_utils import Choices
 
+from hordak import defaults
 from hordak import exceptions
 
 DEBIT = 'debit'
@@ -221,14 +223,15 @@ class Leg(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
-    amount = models.DecimalField(max_digits=13, decimal_places=2,
-                                 help_text='Record debits as positive, credits as negative')
+    amount = MoneyField(max_digits=13, decimal_places=2,
+                        help_text='Record debits as positive, credits as negative',
+                        default_currency=defaults.INTERNAL_CURRENCY)
     description = models.TextField(default='', blank=True)
 
     objects = LegManager.from_queryset(LegQuerySet)()
 
     def save(self, *args, **kwargs):
-        if self.amount == 0:
+        if self.amount.amount == 0:
             raise exceptions.ZeroAmountError()
         return super(Leg, self).save(*args, **kwargs)
 
@@ -237,9 +240,9 @@ class Leg(models.Model):
 
     @property
     def type(self):
-        if self.amount < 0:
+        if self.amount.amount < 0:
             return DEBIT
-        elif self.amount > 0:
+        elif self.amount.amount > 0:
             return CREDIT
         else:
             # This should have been caught earlier by the database integrity check.

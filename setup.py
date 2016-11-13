@@ -24,5 +24,6 @@ setup(
         'django-smalluuid>=0.1.3',
         'requests>=2',
         'py-moneyed>=0.6.0',
+        'django-money>=0.9.1',
     ],
 )
