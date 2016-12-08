@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
-from django.utils.timezone import make_aware
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
 
@@ -11,7 +10,9 @@ from model_utils import Choices
 from hordak import defaults
 from hordak import exceptions
 
+#: Debit
 DEBIT = 'debit'
+#: Credit
 CREDIT = 'credit'
 
 
@@ -28,6 +29,30 @@ class AccountManager(TreeManager):
 
 
 class Account(MPTTModel):
+    """ Represents an account
+
+    An account may have a parent, and may have zero or more children. Only root
+    accounts can have a type, all child accounts are assumed to have the same
+    type as their parent.
+
+    An account's balance is calculated as the sum of all of the transaction Leg's
+    referencing the account.
+
+    Attributes:
+
+        uuid (SmallUUID): UUID for account. Use to prevent leaking of IDs (if desired).
+        name (str): Name of the account. Required.
+        parent (Account|None): Parent account, nonen if root account
+        code (str): Account code. Must combine with account codes of parent
+            accounts to get fully qualified account code.
+        type (str): Type of account as defined by :attr:`Account.TYPES`. Can only be set on
+            root accounts. Child accounts are assumed to have the same time as their parent.
+        TYPES (Choices): Available account types. Uses ``Choices`` from ``django-model-utils``. Types can be
+            accessed in the form ``Account.TYPES.asset``, ``Account.TYPES.expense``, etc.
+        has_statements (bool): Does this account have statements? (i.e. a bank account)
+
+
+    """
     TYPES = Choices(
         ('AS', 'asset', 'Asset'),  # Cash in bank
         ('LI', 'liability', 'Liability'),
@@ -35,11 +60,10 @@ class Account(MPTTModel):
         ('EX', 'expense', 'Expense'),  # Shopping, outgoing rent
         ('EQ', 'equity', 'Equity'),
     )
-
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    # TODO: Denormalise account code (in order to allow lookup by it)
+    # TODO: Denormalise account code (in order to allow lookup by it). Or add a calculated field in postgres?
     code = models.CharField(max_length=3)
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
@@ -134,7 +158,7 @@ class Account(MPTTModel):
         See simple_balance() for argument reference.
 
         Returns:
-            Decimal:
+            Decimal
         """
         balances = [
             account.simple_balance(as_of=as_of, raw=raw, **kwargs)
@@ -152,8 +176,8 @@ class Account(MPTTModel):
                         adjusted for display purposes.
             **kwargs (dict): Will be used to filter the transaction legs
 
-        Returns
-            Decimal:
+        Returns:
+            Decimal
         """
         legs = self.legs
         if as_of:
@@ -164,7 +188,11 @@ class Account(MPTTModel):
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
-        """Create a transaction which transfers amount to to_account"""
+        """Create a transaction which transfers amount to to_account
+
+        This is a shortcut utility method which simplifies the process of
+        transferring between accounts.
+        """
         if to_account.sign == 1:
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
@@ -187,6 +215,20 @@ class TransactionManager(models.Manager):
 
 
 class Transaction(models.Model):
+    """ Represents a transaction
+
+    A transaction is a movement of funds between two accounts. Each transaction
+    will have two or more legs, each leg specifies an account and an amount.
+
+    Attributes:
+
+        uuid (SmallUUID): UUID for transaction. Use to prevent leaking of IDs (if desired).
+        timestamp (datetime): The datetime when the object was created.
+        date (date): The date when the transaction actually occurred, as this may be different to
+            :attr:`timestamp`.
+        description (str): Optional user-provided description
+
+    """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
     date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
@@ -206,12 +248,6 @@ class LegQuerySet(models.QuerySet):
     def sum_amount(self):
         return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
 
-    def debits(self):
-        return self.filter(amount__gt=0)
-
-    def credits(self):
-        return self.filter(amount__lt=0)
-
 
 class LegManager(models.Manager):
 
@@ -224,11 +260,23 @@ class Leg(models.Model):
 
     Represents a single amount either into or out of a transaction. All legs for a transaction
     must sum to zero, all legs must be of the same currency.
+
+    Attributes:
+
+        uuid (SmallUUID): UUID for transaction leg. Use to prevent leaking of IDs (if desired).
+        transaction (Transaction): Transaction to which the Leg belongs.
+        account (Account): Account the leg is transferring to/from.
+        amount (Money): The amount being transferred
+        description (str): Optional user-provided description
+        type (str): :attr:`hordak.models.DEBIT` or :attr:`hordak.models.CREDIT`.
+
     """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
     # TODO: Assert all legs sum to zero when grouped by currency
+    # TODO: Assert that the leg currency matches the account currency
+    # TODO: Can accounts have multiple currencies? Should this be technically possible for all accounts but only made available for trading accounts?
     amount = MoneyField(max_digits=13, decimal_places=2,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)
@@ -269,6 +317,16 @@ class StatementImportManager(models.Manager):
 
 
 class StatementImport(models.Model):
+    """ Records an import of a bank statement
+
+    Attributes:
+
+        uuid (SmallUUID): UUID for statement import. Use to prevent leaking of IDs (if desired).
+        timestamp (datetime): The datetime when the object was created.
+        bank_account (Account): The account the import is for (should normally point to an asset
+            account which represents your bank account)
+
+    """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     # TODO: Add constraint to ensure destination account expects statements
@@ -287,6 +345,26 @@ class StatementLineManager(models.Manager):
 
 
 class StatementLine(models.Model):
+    """ Records an single imported bank statement line
+
+    A StatementLine is purely a utility to aid in the creation of transactions
+    (in the process known as reconciliation). StatementLines have no impact on
+    account balances.
+
+    However, the :meth:`StatementLine.create_transaction()` method can be used to create
+    a transaction based on the information in the StatementLine.
+
+    Attributes:
+
+        uuid (SmallUUID): UUID for statement line. Use to prevent leaking of IDs (if desired).
+        timestamp (datetime): The datetime when the object was created.
+        date (date): The date given by the statement line
+        statement_import (StatementImport): The import to which the line belongs
+        amount (Decimal): The amount for the statement line, positive or nagative.
+        description (str): Any description/memo information provided
+        transaction (Transaction): Optionally, the transaction created for this statement line. This normally
+            occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
+    """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     date = models.DateField()
@@ -305,20 +383,27 @@ class StatementLine(models.Model):
 
     @property
     def is_reconciled(self):
+        """Has this statement line been reconciled?
+
+        Determined as ``True`` if :attr:`transaction` has been set.
+
+        Returns:
+            bool: ``True`` if reconciled, ``False`` if not.
+        """
         return bool(self.transaction)
 
     @db_transaction.atomic()
     def create_transaction(self, to_account):
-        """Create a transaction for this statement amount and acount, into to_account
+        """Create a transaction for this statement amount and account, into to_account
 
         This will also set this StatementLine's ``transaction`` attribute to the newly
         created transaction.
 
         Args:
-            to_account (Account): The account the transaction is into / out of
+            to_account (Account): The account the transaction is into / out of.
 
         Returns:
-            Transaction: The newly created (and committed) transaction
+            Transaction: The newly created (and committed) transaction.
 
         """
         from_account = self.statement_import.bank_account

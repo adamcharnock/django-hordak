@@ -1,11 +1,11 @@
 
 class HordakError(Exception):
-    """Abstract exception type"""
+    """Abstract exception type for all Hordak errors"""
     pass
 
 
 class AccountingError(HordakError):
-    """Abstract exception type"""
+    """Abstract exception type for errors specifically related to accounting"""
     pass
 
 
@@ -18,7 +18,10 @@ class AccountTypeOnChildNode(HordakError):
 
 
 class ZeroAmountError(HordakError):
-    """Raised when a zero amount is found on a transaction leg"""
+    """Raised when a zero amount is found on a transaction leg
+
+    Transaction leg amounts must be none zero.
+    """
     pass
 
 
