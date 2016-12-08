@@ -220,10 +220,15 @@ class LegManager(models.Manager):
 
 
 class Leg(models.Model):
+    """ The leg of a transaction
+
+    Represents a single amount either into or out of a transaction. All legs for a transaction
+    must sum to zero, all legs must be of the same currency.
+    """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
-    # TODO: Assert same currency for all legs
+    # TODO: Assert all legs sum to zero when grouped by currency
     amount = MoneyField(max_digits=13, decimal_places=2,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)
