@@ -256,7 +256,6 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(transaction=transaction, account=account, amount=Money(100, 'EUR'))
             Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, 'EUR'))
 
-
     def test_type(self):
         account1 = self.account()
         account2 = self.account()
