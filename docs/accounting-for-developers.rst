@@ -22,17 +22,6 @@ time I distilled it down to the following:
  #. A transaction is comprised of 1 or more credits **and** 1 or more debits (i.e. money most come from somewhere and then go somewhere).
  #. The value of a transaction's debits and credits must be equal (money into transaction = money out of transaction).
 
-That is it.
-
-In a little more detail
------------------------
-
-I found `Peter Selinger's tutorial`_ to be very enlightening and is less terse than the functional description above.
-The first section is short and covers single entry accounting, and then shows how one can expand that to create double
-entry accounting. I found this background useful.
-
-.. _Peter Selinger's tutorial: http://www.mathstat.dal.ca/~selinger/accounting/tutorial.html
-
 
 .. [1] This is absolutely not what accountancy teaches. You'll quickly see that there is a lot of wrangling over what
         account types get increased/decreased with a debit/credit. I've simplified this on the backend as I strongly feel
@@ -51,6 +40,15 @@ entry accounting. I found this background useful.
         If you debit (decrease) an account, then flip its sign, it will look like you have actually increased the
         account balance. This is because we are treating the sign of asset & expense accounts as a presentational issue,
         rather than something to be dealt with in the core business logic.
+
+In a little more detail
+-----------------------
+
+I found `Peter Selinger's tutorial`_ to be very enlightening and is less terse than the functional description above.
+The first section is short and covers single entry accounting, and then shows how one can expand that to create double
+entry accounting. I found this background useful.
+
+.. _Peter Selinger's tutorial: http://www.mathstat.dal.ca/~selinger/accounting/tutorial.html
 
 
 Examples
