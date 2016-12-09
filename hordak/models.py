@@ -50,7 +50,8 @@ class Account(MPTTModel):
             root accounts. Child accounts are assumed to have the same time as their parent.
         TYPES (Choices): Available account types. Uses ``Choices`` from ``django-model-utils``. Types can be
             accessed in the form ``Account.TYPES.asset``, ``Account.TYPES.expense``, etc.
-        has_statements (bool): Does this account have statements? (i.e. a bank account)
+        is_bank_account (bool): Is this a bank account. This implies we can import bank statements into
+            it and that it only supports a single currency.
 
 
     """
@@ -69,10 +70,9 @@ class Account(MPTTModel):
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     _type = models.CharField(max_length=2, choices=TYPES, blank=True)
-    # TODO: Rename has_statements -> is_bank_account. Implies that we can import to it and that it can only have one currency
-    has_statements = models.BooleanField(default=False, blank=True,
-                                         help_text='Does this account have statements to reconcile against. '
-                                                   'This is typically the case for bank accounts.')
+    is_bank_account = models.BooleanField(default=False, blank=True,
+                                          help_text='Is this a bank account. This implies we can import bank '
+                                                    'statements into it and that it only supports a single currency')
     currencies = ArrayField(models.CharField(max_length=3), db_index=True)
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
@@ -332,7 +332,7 @@ class StatementImport(models.Model):
     """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
-    # TODO: Add constraint to ensure destination account expects statements
+    # TODO: Add constraint to ensure destination account expects statements (copy 0007)
     bank_account = models.ForeignKey(Account, related_name='imports')
 
     objects = StatementImportManager()
