@@ -5,5 +5,6 @@ API Documentation
     :maxdepth: 2
 
     models
+    currency
     forms
     exceptions

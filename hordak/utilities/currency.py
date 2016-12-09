@@ -1,22 +1,22 @@
-""" Monetary values and currency conversion
+"""
 
-Monetary values are distinguished as follows:
+Monetary values are represented as follows:
 
-`Money`_:
+Money:
 
     Money is provided by `moneyd`_ and combines both an amount and a currency into a single value.
 
 `Balance`_:
 
-    An account can represent multiple currencies, and a `Balance`_ instance is how re represent this.
+    An account can represent multiple currencies, and a `Balance`_ instance is how we represent this.
 
     A `Balance`_ may contain one or more `Money`_ objects. There will be precisely one `Money`_ object
     for each currency which needs to be represented.
 
-    Balance objects may be added & subtracted. This will produce a new `Balance`_ object containing a
+    Balance objects may be added, subtracted etc. This will produce a new `Balance`_ object containing a
     union of all the currencies involved in the calculation, even where the result was zero.
 
-.. moneyd: https://github.com/limist/py-moneyed
+.. _moneyd: https://github.com/limist/py-moneyed
 
 """
 import logging
@@ -51,6 +51,11 @@ def _cache_timeout(date_):
 
 
 class BaseBackend(object):
+    """ Top-level exchange rate backend
+
+    This should be extended to hook into your preferred exchange rate service.
+    The primary method which needs defining is `_get_rate()`_.
+    """
     supported_currencies = []
 
     def __init__(self):
@@ -68,7 +73,11 @@ class BaseBackend(object):
             cache.set(_cache_key(currency, date), str(rate), _cache_timeout(date))
 
     def get_rate(self, currency, date):
-        """Get the exchange rate for ``currency`` against ``_INTERNAL_CURRENCY``"""
+        """Get the exchange rate for ``currency`` against ``_INTERNAL_CURRENCY``
+
+        If implementing your own backend, you should probably override `_get_rate()`_
+        rather than this.
+        """
         if str(currency) == defaults.INTERNAL_CURRENCY:
             return Decimal(1)
 
@@ -151,6 +160,19 @@ converter = Converter()
 
 
 class Balance(object):
+    """An account balance
+
+    Accounts may have multiple currencies. This class represents these multi-currency
+    balances and provides math functionality. Balances can be added, subtracted, multiplied,
+    divided, absolute'ed, and have their sign changed.
+
+    .. important:
+
+        Balances can also be compared, but note that this requires a currency conversion step.
+        Therefore it is possible that balances will compare differently as exchange rates
+        change over time.
+
+    """
 
     def __init__(self, _money_obs=None):
         self._money_obs = tuple(_money_obs or [])
@@ -177,7 +199,7 @@ class Balance(object):
 
     def __add__(self, other):
         by_currency = copy.deepcopy(self._by_currency)
-        for other_currency, other_money in other.items():
+        for other_currency, other_money in other._by_currency.items():
             by_currency[other_currency] = other_money + self[other_currency]
         return self.__class__(by_currency.values())
 
@@ -246,9 +268,6 @@ class Balance(object):
         """
         return [copy.copy(m) for m in self._money_obs]
 
-    def items(self):
-        return self._by_currency.items()
-
     def normalise(self, to_currency):
         """Normalise this balance into a single currency
 
@@ -256,7 +275,7 @@ class Balance(object):
             to_currency (str): Destination currency
 
         Returns:
-            (Balance): A new balance object containing a single Money value
+            (Balance): A new balance object containing a single Money value in the specified currency
         """
         out = Money(currency=to_currency)
         for money in self._money_obs:
