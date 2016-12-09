@@ -16,6 +16,7 @@ Exchange Rate Backends
 
 .. autoclass:: hordak.utilities.currency.BaseBackend
     :members:
+    :private-members:
 
 .. autoclass:: hordak.utilities.currency.FixerBackend
     :members:

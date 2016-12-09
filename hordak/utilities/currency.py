@@ -1,22 +1,44 @@
 """
 
-Monetary values are represented as follows:
+Overview
+--------
 
-Money:
+Hordak features multi currency support. Each account in Hordak can support one or more currencies.
+Hordak does provide currency conversion functionality, but should be as part of the display logic
+only. It is also a good idea to make it clear to users that you are showing converted values.
 
-    Money is provided by `moneyd`_ and combines both an amount and a currency into a single value.
+The preference for Hordak internals is to always store & process values in the intended currency. This
+is because currency conversion is an inherently lossy process. Exchange rates vary over time, and rounding
+errors mean that currency conversions are not reversible without data loss (e.g. ¥176.51 -> $1.54 -> ¥176.20).
 
-`Balance`_:
+Classes
+-------
 
-    An account can represent multiple currencies, and a `Balance`_ instance is how we represent this.
+``Money`` **instances**:
 
-    A `Balance`_ may contain one or more `Money`_ objects. There will be precisely one `Money`_ object
-    for each currency which needs to be represented.
+    The ``Money`` class is provided by `moneyd`_ and combines both an amount and a currency into a single value.
+    Hordak uses these these as the core unit of monetary value.
+
+``Balance`` **instances (see below for more details)**:
+
+    An account can hold multiple currencies, and a `Balance`_ instance is how we represent this.
+
+    A `Balance`_ may contain one or more ``Money`` objects. There will be precisely one ``Money`` object
+    for each currency which the account holds.
 
     Balance objects may be added, subtracted etc. This will produce a new `Balance`_ object containing a
     union of all the currencies involved in the calculation, even where the result was zero.
 
+    Accounts with ``is_bank_account=True`` may only support a single currency.
+
+Caching
+-------
+
+Currency conversion makes use of Django's cache. It is therefore recommended that you
+`setup your Django cache`_ to something other than the default in-memory store.
+
 .. _moneyd: https://github.com/limist/py-moneyed
+.. _setup your Django cache: https://docs.djangoproject.com/en/1.10/topics/cache/
 
 """
 import logging
@@ -54,7 +76,7 @@ class BaseBackend(object):
     """ Top-level exchange rate backend
 
     This should be extended to hook into your preferred exchange rate service.
-    The primary method which needs defining is `_get_rate()`_.
+    The primary method which needs defining is :meth:`_get_rate()`.
     """
     supported_currencies = []
 
@@ -65,7 +87,7 @@ class BaseBackend(object):
 
     def cache_rate(self, currency, date, rate):
         """
-        Use the cache rates returned by your backend
+        Cache a rate for future use
         """
         if not self.is_supported(defaults.INTERNAL_CURRENCY):
             logger.info('Tried to cache unsupported currency "{}". Ignoring.'.format(currency))
@@ -75,7 +97,7 @@ class BaseBackend(object):
     def get_rate(self, currency, date):
         """Get the exchange rate for ``currency`` against ``_INTERNAL_CURRENCY``
 
-        If implementing your own backend, you should probably override `_get_rate()`_
+        If implementing your own backend, you should probably override :meth:`_get_rate()`
         rather than this.
         """
         if str(currency) == defaults.INTERNAL_CURRENCY:
@@ -91,8 +113,19 @@ class BaseBackend(object):
     def _get_rate(self, currency, date):
         """Get the exchange rate for ``currency`` against ``INTERNAL_CURRENCY``
 
-        You should implement this in any custom backend. For each currency
-        provided you should call ``self.cache_rate()``.
+        You should implement this in any custom backend. For each rate
+        you should call :meth:`cache_rate()`.
+
+        Normally you will only need to call :meth:`cache_rate()` once. However, some
+        services provide multiple exchange rates in a single response,
+        in which it will likely be expedient to cache them all.
+
+        .. important::
+
+            Not calling :meth:`cache_rate()` will result in your backend service being called for
+            every currency conversion. This could be very slow and may result in your
+            software being rate limited (or, if you pay for your exchange rates, you may
+            get a big bill).
         """
         raise NotImplementedError()
 
@@ -166,7 +199,7 @@ class Balance(object):
     balances and provides math functionality. Balances can be added, subtracted, multiplied,
     divided, absolute'ed, and have their sign changed.
 
-    .. important:
+    .. important::
 
         Balances can also be compared, but note that this requires a currency conversion step.
         Therefore it is possible that balances will compare differently as exchange rates
@@ -261,7 +294,7 @@ class Balance(object):
         return self > other or self == other
 
     def monies(self):
-        """Get a list of the underlying `Money`_ instances
+        """Get a list of the underlying ``Money`` instances
 
         Returns:
             ([Money]): A list of zero or money money instances. Currencies will be unique.

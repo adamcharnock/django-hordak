@@ -163,7 +163,7 @@ class Account(MPTTModel):
         Returns:
             Decimal
         """
-        raise NotImplementedError('Should return some kind of object which can handles balances in different currencies')
+        raise NotImplementedError("Should return some kind of object which can handles balances in different currencies. Yep, we've done this now!")
         balances = [
             account.simple_balance(as_of=as_of, raw=raw, **kwargs)
             for account
