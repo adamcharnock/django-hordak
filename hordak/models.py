@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db import transaction as db_transaction
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
+from moneyed import Money
 
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from model_utils import Choices
@@ -12,6 +13,8 @@ from hordak import defaults
 from hordak import exceptions
 
 #: Debit
+from hordak.utilities.currency import Balance
+
 DEBIT = 'debit'
 #: Credit
 CREDIT = 'credit'
@@ -20,7 +23,7 @@ CREDIT = 'credit'
 class AccountQuerySet(models.QuerySet):
 
     def net_balance(self, raw=False):
-        return sum(account.balance(raw) for account in self)
+        return sum((account.balance(raw) for account in self), Balance())
 
 
 class AccountManager(TreeManager):
@@ -87,7 +90,7 @@ class Account(MPTTModel):
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
         balances = [account.balance(raw=True) for account in Account.objects.root_nodes()]
-        if sum(balances) != 0:
+        if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
                 'Account balances do not sum to zero. They sum to {}'.format(sum(balances))
             )
@@ -130,7 +133,7 @@ class Account(MPTTModel):
         """
         if self.is_root_node():
             self._type = value
-        else:
+        elif value is not None:
             raise exceptions.AccountTypeOnChildNode()
 
     @property
@@ -158,39 +161,43 @@ class Account(MPTTModel):
     def balance(self, as_of=None, raw=False, **kwargs):
         """Get the balance for this account, including child accounts
 
-        See simple_balance() for argument reference.
+        Args:
+            as_of (Date): Only include transactions on or before this date
+            raw (bool): If true the returned balance should not have its sign
+                        adjusted for display purposes.
+            **kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
-            Decimal
+            Balance
+
+        See Also:
+            :meth:`simple_balance()`
         """
-        raise NotImplementedError("Should return some kind of object which can handles balances in different currencies. Yep, we've done this now!")
         balances = [
             account.simple_balance(as_of=as_of, raw=raw, **kwargs)
             for account
             in self.get_descendants(include_self=True)
         ]
-        return sum(balances)
+        return sum(balances, Balance())
 
     def simple_balance(self, as_of=None, raw=False, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
-            as_of (Date): Only include transactions before this date
-            raw (bool): If true the returned balance will not have its sign
+            as_of (Date): Only include transactions on or before this date
+            raw (bool): If true the returned balance should not have its sign
                         adjusted for display purposes.
             **kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
-            Decimal
+            Balance
         """
-        raise NotImplementedError(
-            'Should return some kind of object which can handles balances in different currencies')
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
         if kwargs:
             legs = legs.filter(**kwargs)
-        return legs.sum_amount() * (1 if raw else self.sign)
+        return legs.sum_to_balance() * (1 if raw else self.sign)
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
@@ -198,7 +205,14 @@ class Account(MPTTModel):
 
         This is a shortcut utility method which simplifies the process of
         transferring between accounts.
+
+        Args:
+            to_account (Account): The destination account
+            amount (Money): The amount to be transferred
         """
+        if not isinstance(amount, Money):
+            raise TypeError('amount must be of type Money')
+
         if to_account.sign == 1:
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
@@ -243,7 +257,7 @@ class Transaction(models.Model):
     objects = TransactionManager()
 
     def balance(self):
-        return self.legs.sum_amount()
+        return self.legs.sum_to_balance()
 
     def natural_key(self):
         return (self.uuid,)
@@ -251,8 +265,13 @@ class Transaction(models.Model):
 
 class LegQuerySet(models.QuerySet):
 
-    def sum_amount(self):
-        return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
+    def sum_to_balance(self):
+        """Sum the Legs of the QuerySet to get a `Balance`_ object
+        """
+        result = self.values('amount_currency').annotate(total=models.Sum('amount'))
+        return Balance(
+            [Money(r['total'], r['amount_currency']) for r in result]
+        )
 
 
 class LegManager(models.Manager):

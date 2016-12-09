@@ -171,6 +171,13 @@ class BalanceTestCase(CacheTestCase):
         with self.assertRaises(ValueError):
             Balance([Money(0, 'USD'), Money(0, 'USD')])
 
+    def test_init_args(self):
+        b = Balance(100, 'USD', 200, 'EUR', 300, 'GBP')
+        return
+        self.assertEqual(b['USD'].amount, 100)
+        self.assertEqual(b['EUR'].amount, 200)
+        self.assertEqual(b['GBP'].amount, 300)
+
     def test_add(self):
         b = self.balance_1 + self.balance_2
         self.assertEqual(b['USD'].amount, 180)
@@ -242,6 +249,11 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(Balance([Money(100, 'USD'), Money(0, 'EUR')]) == Balance([Money(100, 'USD')]), True)
 
         self.assertEqual(Balance([Money(100, 'USD'), Money(10, 'EUR')]) == Balance([Money(100, 'USD')]), False)
+
+    def test_eq_zero(self):
+        self.assertEqual(Balance() == 0, True)
+        self.assertEqual(Balance([Money(0, 'USD')]) == 0, True)
+        self.assertEqual(self.balance_1 == 0, False)
 
     def test_neq(self):
         self.assertEqual(Balance() != Balance(), False)

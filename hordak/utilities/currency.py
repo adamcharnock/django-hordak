@@ -199,6 +199,13 @@ class Balance(object):
     balances and provides math functionality. Balances can be added, subtracted, multiplied,
     divided, absolute'ed, and have their sign changed.
 
+    Examples:
+
+        Balance([Money(100, 'USD'), Money(200, 'EUR')])
+
+        # Or in short form
+        Balance(100, 'USD', 200, 'EUR')
+
     .. important::
 
         Balances can also be compared, but note that this requires a currency conversion step.
@@ -207,7 +214,13 @@ class Balance(object):
 
     """
 
-    def __init__(self, _money_obs=None):
+    def __init__(self, _money_obs=None, *args):
+        all_args = [_money_obs] + list(args)
+        if len(all_args) % 2 == 0:
+            _money_obs = []
+            for i in range(0, len(all_args) - 1, 2):
+                _money_obs.append(Money(all_args[i], all_args[i+1]))
+
         self._money_obs = tuple(_money_obs or [])
         self._by_currency = {m.currency.code: m for m in self._money_obs}
         if len(self._by_currency) != len(self._money_obs):
@@ -231,6 +244,8 @@ class Balance(object):
             return Money(0, currency)
 
     def __add__(self, other):
+        if not isinstance(other, Balance):
+            raise TypeError('Can only add/subtract Balance instances, not Balance and {}.'.format(type(other)))
         by_currency = copy.deepcopy(self._by_currency)
         for other_currency, other_money in other._by_currency.items():
             by_currency[other_currency] = other_money + self[other_currency]
@@ -269,6 +284,12 @@ class Balance(object):
         __nonzero__ = __bool__
 
     def __eq__(self, other):
+        if other == 0:
+            # Support comparing to integer/Decimal zero as it is useful
+            return not self.__bool__()
+        elif not isinstance(other, Balance):
+            raise TypeError('Can only compare Balance objects to other '
+                            'Balance objects, not to type {}'.format(type(other)))
         return not self - other
 
     def __ne__(self, other):

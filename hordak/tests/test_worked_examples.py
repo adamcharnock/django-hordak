@@ -1,67 +1,69 @@
 from django.test import TestCase
 from django.db import transaction as db_transaction
+from moneyed import Money
 
 from hordak.models import Account, Transaction, Leg, StatementImport, StatementLine
+from hordak.tests.utils import DataProvider, BalanceUtils
+from hordak.utilities.currency import Balance
 
 
-class InitialEquityTestCase(TestCase):
+class InitialEquityTestCase(DataProvider, TestCase):
 
     def setUp(self):
-        self.cash = Account.objects.create(name='Cash', type=Account.TYPES.asset, code='1')
-        self.equity = Account.objects.create(name='Equity', type=Account.TYPES.equity, code='2')
+        self.cash = self.account(type=Account.TYPES.asset)
+        self.equity = self.account(type=Account.TYPES.equity)
 
     def test_initial_equity(self):
-        self.equity.transfer_to(self.cash, 100000)
-        self.assertEqual(self.cash.balance(), 100000)
-        self.assertEqual(self.equity.balance(), 100000)
+        self.equity.transfer_to(self.cash, Money(100000, 'EUR'))
+        self.assertEqual(self.cash.balance(), Balance(100000, 'EUR'))
+        self.assertEqual(self.equity.balance(), Balance(100000, 'EUR'))
 
 
-class CapitalGainsTestCase(TestCase):
+class CapitalGainsTestCase(DataProvider, BalanceUtils, TestCase):
 
     def setUp(self):
-        self.cash = Account.objects.create(name='Cash', type=Account.TYPES.asset, code='1')
-        self.equity = Account.objects.create(name='Equity', type=Account.TYPES.equity, code='2')
-        self.painting_cost = Account.objects.create(name='Painting - cost', type=Account.TYPES.asset, code='3')
-        self.painting_unrealised_gain = Account.objects.create(name='Painting - unrealised gain', type=Account.TYPES.asset, code='4')
-        self.income_realised_gain = Account.objects.create(name='Painting - unrealised gain', type=Account.TYPES.income, code='5')
-        self.income_unrealised_gain = Account.objects.create(name='Painting - unrealised gain', type=Account.TYPES.income, code='6')
+        self.cash = self.account(type=Account.TYPES.asset)
+        self.equity = self.account(type=Account.TYPES.equity)
+        self.painting_cost = self.account(type=Account.TYPES.asset)
+        self.painting_unrealised_gain = self.account(type=Account.TYPES.asset)
+        self.income_realised_gain = self.account(type=Account.TYPES.income)
+        self.income_unrealised_gain = self.account(type=Account.TYPES.income)
 
     def test_capital_gains(self):
         # Initial investment
-        self.equity.transfer_to(self.cash, 100000)
+        self.equity.transfer_to(self.cash, Money(100000, 'EUR'))
 
         # Buy the painting
-        self.cash.transfer_to(self.painting_cost, 100000)
+        self.cash.transfer_to(self.painting_cost, Money(100000, 'EUR'))
 
-        self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.painting_cost.balance(), 100000)
+        self.assertBalanceEqual(self.cash.balance(), 0)
+        self.assertBalanceEqual(self.painting_cost.balance(), 100000)
 
         # Painting goes up in value by 10k
-        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, 10000)
+        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, Money(10000, 'EUR'))
 
-        self.assertEqual(self.painting_unrealised_gain.balance(), 10000)
-        self.assertEqual(self.income_unrealised_gain.balance(), 10000)
+        self.assertBalanceEqual(self.painting_unrealised_gain.balance(), 10000)
+        self.assertBalanceEqual(self.income_unrealised_gain.balance(), 10000)
 
         # Painting goes up in value by 20k
-        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, 20000)
+        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, Money(20000, 'EUR'))
 
-        self.assertEqual(self.painting_unrealised_gain.balance(), 30000)
-        self.assertEqual(self.income_unrealised_gain.balance(), 30000)
+        self.assertBalanceEqual(self.painting_unrealised_gain.balance(), 30000)
+        self.assertBalanceEqual(self.income_unrealised_gain.balance(), 30000)
 
         # We sell the painting (having accurately estimated the gains in value)
-        self.income_unrealised_gain.transfer_to(self.income_realised_gain, 30000)
-        self.painting_cost.transfer_to(self.cash, 100000)
-        self.painting_unrealised_gain.transfer_to(self.cash, 30000)
+        self.income_unrealised_gain.transfer_to(self.income_realised_gain, Money(30000, 'EUR'))
+        self.painting_cost.transfer_to(self.cash, Money(100000, 'EUR'))
+        self.painting_unrealised_gain.transfer_to(self.cash, Money(30000, 'EUR'))
 
-        self.assertEqual(self.cash.balance(), 130000)
-        self.assertEqual(self.painting_cost.balance(), 0)
-        self.assertEqual(self.painting_unrealised_gain.balance(), 0)
-        self.assertEqual(self.income_realised_gain.balance(), 30000)
-        self.assertEqual(self.income_unrealised_gain.balance(), 0)
+        self.assertBalanceEqual(self.cash.balance(), 130000)
+        self.assertBalanceEqual(self.painting_cost.balance(), 0)
+        self.assertBalanceEqual(self.painting_unrealised_gain.balance(), 0)
+        self.assertBalanceEqual(self.income_realised_gain.balance(), 30000)
+        self.assertBalanceEqual(self.income_unrealised_gain.balance(), 0)
 
 
-
-class PrepaidRentTestCase(TestCase):
+class PrepaidRentTestCase(DataProvider, BalanceUtils, TestCase):
     """Prepay three months rent in advance
 
     Based on example here:
@@ -69,107 +71,106 @@ class PrepaidRentTestCase(TestCase):
     """
 
     def setUp(self):
-        self.cash = Account.objects.create(name='Cash', type=Account.TYPES.asset, code='1')
-        self.rent_expense = Account.objects.create(name='Rent Expense', type=Account.TYPES.expense, code='2')
-        self.prepaid_rent = Account.objects.create(name='Prepaid Rent', type=Account.TYPES.asset, code='2')
+        self.cash = self.account(type=Account.TYPES.asset)
+        self.rent_expense = self.account(type=Account.TYPES.expense)
+        self.prepaid_rent = self.account(type=Account.TYPES.asset)
 
     def test_prepaid_rent(self):
         # All accounts start at 0
-        self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.rent_expense.balance(), 0)
-        self.assertEqual(self.prepaid_rent.balance(), 0)
+        self.assertBalanceEqual(self.cash.balance(), 0)
+        self.assertBalanceEqual(self.rent_expense.balance(), 0)
+        self.assertBalanceEqual(self.prepaid_rent.balance(), 0)
 
         # Pay the rent to the landlord
-        self.cash.transfer_to(self.prepaid_rent, 3000)
-        self.assertEqual(self.cash.balance(), -3000)
-        self.assertEqual(self.rent_expense.balance(), 0)
-        self.assertEqual(self.prepaid_rent.balance(), 3000)
+        self.cash.transfer_to(self.prepaid_rent, Money(3000, 'EUR'))
+        self.assertBalanceEqual(self.cash.balance(), -3000)
+        self.assertBalanceEqual(self.rent_expense.balance(), 0)
+        self.assertBalanceEqual(self.prepaid_rent.balance(), 3000)
 
         # Now the end of the month, so turn 1k of rent into an expense
-        self.prepaid_rent.transfer_to(self.rent_expense, 1000)
-        self.assertEqual(self.cash.balance(), -3000)
-        self.assertEqual(self.rent_expense.balance(), 1000)
-        self.assertEqual(self.prepaid_rent.balance(), 2000)
+        self.prepaid_rent.transfer_to(self.rent_expense, Money(1000, 'EUR'))
+        self.assertBalanceEqual(self.cash.balance(), -3000)
+        self.assertBalanceEqual(self.rent_expense.balance(), 1000)
+        self.assertBalanceEqual(self.prepaid_rent.balance(), 2000)
 
         # Now two more months
-        self.prepaid_rent.transfer_to(self.rent_expense, 1000)
-        self.assertEqual(self.cash.balance(), -3000)
-        self.assertEqual(self.rent_expense.balance(), 2000)
-        self.assertEqual(self.prepaid_rent.balance(), 1000)
+        self.prepaid_rent.transfer_to(self.rent_expense, Money(1000, 'EUR'))
+        self.assertBalanceEqual(self.cash.balance(), -3000)
+        self.assertBalanceEqual(self.rent_expense.balance(), 2000)
+        self.assertBalanceEqual(self.prepaid_rent.balance(), 1000)
 
-        self.prepaid_rent.transfer_to(self.rent_expense, 1000)
-        self.assertEqual(self.cash.balance(), -3000)
-        self.assertEqual(self.rent_expense.balance(), 3000)
-        self.assertEqual(self.prepaid_rent.balance(), 0)
+        self.prepaid_rent.transfer_to(self.rent_expense, Money(1000, 'EUR'))
+        self.assertBalanceEqual(self.cash.balance(), -3000)
+        self.assertBalanceEqual(self.rent_expense.balance(), 3000)
+        self.assertBalanceEqual(self.prepaid_rent.balance(), 0)
 
         Account.validate_accounting_equation()
 
 
-class UtilityBillTestCase(TestCase):
+class UtilityBillTestCase(DataProvider, TestCase):
     """Pay an estimateable sum every 3 months"""
 
     def setUp(self):
-        self.cash = Account.objects.create(name='Cash', type=Account.TYPES.asset, code='1')
-        self.gas_expense = Account.objects.create(name='Gas Expense', type=Account.TYPES.expense, code='2')
-        self.gas_payable = Account.objects.create(name='Gas Payable', type=Account.TYPES.liability, code='3')
+        self.cash = self.account(name='Cash', type=Account.TYPES.asset)
+        self.gas_expense = self.account(name='Gas Expense', type=Account.TYPES.expense)
+        self.gas_payable = self.account(name='Gas Payable', type=Account.TYPES.liability)
 
     def test_utility_bill(self):
         # Month 1
-        self.gas_expense.transfer_to(self.gas_payable, 100)
+        self.gas_expense.transfer_to(self.gas_payable, Money(100, 'EUR'))
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), 100)
-        self.assertEqual(self.gas_payable.balance(), 100)
+        self.assertEqual(self.gas_expense.balance(), Balance(100, 'EUR'))
+        self.assertEqual(self.gas_payable.balance(), Balance(100, 'EUR'))
 
         # Month 2
-        self.gas_expense.transfer_to(self.gas_payable, 100)
+        self.gas_expense.transfer_to(self.gas_payable, Money(100, 'EUR'))
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), 200)
-        self.assertEqual(self.gas_payable.balance(), 200)
+        self.assertEqual(self.gas_expense.balance(), Balance(200, 'EUR'))
+        self.assertEqual(self.gas_payable.balance(), Balance(200, 'EUR'))
 
         # Month 3
-        self.gas_expense.transfer_to(self.gas_payable, 100)
+        self.gas_expense.transfer_to(self.gas_payable, Money(100, 'EUR'))
 
         self.assertEqual(self.cash.balance(), 0)
-        self.assertEqual(self.gas_expense.balance(), 300)
-        self.assertEqual(self.gas_payable.balance(), 300)
+        self.assertEqual(self.gas_expense.balance(), Balance(300, 'EUR'))
+        self.assertEqual(self.gas_payable.balance(), Balance(300, 'EUR'))
 
         # We receive the actual bill (we are moving a negative amount of money,
         # as this is an outgoing)
-        self.cash.transfer_to(self.gas_payable, -300)
+        self.cash.transfer_to(self.gas_payable, Money(-300, 'EUR'))
 
         # We are now 300 overdrawn, but the payable account has been cleared
-        self.assertEqual(self.cash.balance(), -300)
-        self.assertEqual(self.gas_expense.balance(), 300)
+        self.assertEqual(self.cash.balance(), Balance(-300, 'EUR'))
+        self.assertEqual(self.gas_expense.balance(), Balance(300, 'EUR'))
         self.assertEqual(self.gas_payable.balance(), 0)
 
         Account.validate_accounting_equation()
 
 
-class CommunalHouseholdTestCase(TestCase):
+class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
 
     def setUp(self):
         T = Account.TYPES
 
-        self.bank = Account.objects.create(name='Bank', type=T.asset, code='0')
+        self.bank = self.account(name='Bank', type=T.asset, code='0')
 
-        self.lia = Account.objects.create(name='Liabilities', type=T.liability, code='1')
-        # self.lia_deposits = Account.objects.create('Deposits', type=Account.TYPES.liability, code='1')
-        self.lia_elec_payable = Account.objects.create(name='Gas & Electricity Payable', parent=self.lia, code='2')
-        self.lia_rates_payable = Account.objects.create(name='Council Tax Payable', parent=self.lia, code='3')
+        self.lia = self.account(name='Liabilities', type=T.liability, code='1')
+        self.lia_elec_payable = self.account(name='Gas & Electricity Payable', parent=self.lia, code='2')
+        self.lia_rates_payable = self.account(name='Council Tax Payable', parent=self.lia, code='3')
 
-        self.inc = Account.objects.create(name='Income', type=T.income, code='2')
-        self.inc_housemate = Account.objects.create(name='Housemate Income', parent=self.inc, code='1')
-        self.inc_housemate_1 = Account.objects.create(name='Housemate 1 Income', parent=self.inc_housemate, code='1')
-        self.inc_housemate_2 = Account.objects.create(name='Housemate 2 Income', parent=self.inc_housemate, code='2')
-        self.inc_donation = Account.objects.create(name='Donation', parent=self.inc, code='2')
+        self.inc = self.account(name='Income', type=T.income, code='2')
+        self.inc_housemate = self.account(name='Housemate Income', parent=self.inc, code='1')
+        self.inc_housemate_1 = self.account(name='Housemate 1 Income', parent=self.inc_housemate, code='1')
+        self.inc_housemate_2 = self.account(name='Housemate 2 Income', parent=self.inc_housemate, code='2')
+        self.inc_donation = self.account(name='Donation', parent=self.inc, code='2')
 
-        self.ex = Account.objects.create(name='Expenses', type=T.expense, code='3')
-        self.ex_rent = Account.objects.create(name='Rent', parent=self.ex, code='1')
-        self.ex_elec = Account.objects.create(name='Gas & Electricity', parent=self.ex, code='2')
-        self.ex_rates = Account.objects.create(name='Council Tax', parent=self.ex, code='3')
-        self.ex_food = Account.objects.create(name='Food', parent=self.ex, code='4')
+        self.ex = self.account(name='Expenses', type=T.expense, code='3')
+        self.ex_rent = self.account(name='Rent', parent=self.ex, code='1')
+        self.ex_elec = self.account(name='Gas & Electricity', parent=self.ex, code='2')
+        self.ex_rates = self.account(name='Council Tax', parent=self.ex, code='3')
+        self.ex_food = self.account(name='Food', parent=self.ex, code='4')
 
     def create_incoming_rent_payments(self, amount1, amount2):
         statement_import = StatementImport.objects.create(bank_account=self.bank)
@@ -197,17 +198,17 @@ class CommunalHouseholdTestCase(TestCase):
         # We have two housemates
 
         # Firstly, before we even collect any money from housemates, we spend some on food
-        self.bank.transfer_to(self.ex_food, 35)
-        self.bank.transfer_to(self.ex_food, 35)
+        self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
+        self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
         # Now we have negative money in the bank, and food expenses recorded
-        self.assertEqual(self.bank.balance(), -70)
-        self.assertEqual(self.ex_food.balance(), 70)
+        self.assertBalanceEqual(self.bank.balance(), -70)
+        self.assertBalanceEqual(self.ex_food.balance(), 70)
 
         # Also, the landlord wants the rent in advance, so that gets paid
-        self.bank.transfer_to(self.ex_rent, 1000)
+        self.bank.transfer_to(self.ex_rent, Money(1000, 'EUR'))
         # Now we are even more overdrawn
-        self.assertEqual(self.bank.balance(), -70 + -1000)
-        self.assertEqual(self.ex_rent.balance(), 1000)
+        self.assertBalanceEqual(self.bank.balance(), -70 + -1000)
+        self.assertBalanceEqual(self.ex_rent.balance(), 1000)
 
         # Create two statement lines and assign each to the housemate income account
         line1, line2 = self.create_incoming_rent_payments(620, 620)
@@ -239,22 +240,22 @@ class CommunalHouseholdTestCase(TestCase):
             line2.save()
 
         # We should have a lot more money in the bank now
-        self.assertEqual(self.bank.balance(), 1240 - 1000 - 70)  # money received - rent - food spending
+        self.assertBalanceEqual(self.bank.balance(), 1240 - 1000 - 70)  # money received - rent - food spending
         # The housemate income account should be empty as we've dispersed it to the relevant
         # expense accounts
-        self.assertEqual(self.inc_housemate_1.balance(), 0)
-        self.assertEqual(self.inc_housemate_2.balance(), 0)
-        self.assertEqual(self.ex_rent.balance(), 0)  # Rent had already been paid out, some incoming money has cancelled it out
+        self.assertBalanceEqual(self.inc_housemate_1.balance(), 0)
+        self.assertBalanceEqual(self.inc_housemate_2.balance(), 0)
+        self.assertBalanceEqual(self.ex_rent.balance(), 0)  # Rent had already been paid out, some incoming money has cancelled it out
         # Each expense account is negative (i.e. we're waiting for expenses to come in)
-        self.assertEqual(self.ex_elec.balance(), -120 / 3)  # 120 per 3 months
-        self.assertEqual(self.ex_rates.balance(), -180 / 3)  # 180 per 3 months
-        self.assertEqual(self.ex_food.balance(), -140 + 70)
+        self.assertBalanceEqual(self.ex_elec.balance(), -120 / 3)  # 120 per 3 months
+        self.assertBalanceEqual(self.ex_rates.balance(), -180 / 3)  # 180 per 3 months
+        self.assertBalanceEqual(self.ex_food.balance(), -140 + 70)
 
         # Now we're half way through the month, so we need to order food a couple more times
-        self.bank.transfer_to(self.ex_food, 35)
-        self.bank.transfer_to(self.ex_food, 35)
-        self.assertEqual(self.bank.balance(), 1240 - 1000 - 70 - 70)  # money received - rent - two batches of food spending
-        self.assertEqual(self.ex_food.balance(), 0)  # Now we've spent all our food money for the month
+        self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
+        self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
+        self.assertBalanceEqual(self.bank.balance(), 1240 - 1000 - 70 - 70)  # money received - rent - two batches of food spending
+        self.assertBalanceEqual(self.ex_food.balance(), 0)  # Now we've spent all our food money for the month
 
         # Ok, it's the end of the month now, so time to do a little admin...
 
@@ -262,20 +263,20 @@ class CommunalHouseholdTestCase(TestCase):
         # the contents of those expense accounts into the relevant
         # 'Payable' accounts (as we'll need it to pay the bills when they
         # eventually arrive)
-        self.ex_elec.transfer_to(self.lia_elec_payable, 120 / 3)
-        self.ex_rates.transfer_to(self.lia_rates_payable, 180 / 3)
+        self.ex_elec.transfer_to(self.lia_elec_payable, Money(120 / 3, 'EUR'))
+        self.ex_rates.transfer_to(self.lia_rates_payable, Money(180 / 3, 'EUR'))
 
         # The expense accounts should now be zeroed...
-        self.assertEqual(self.ex_elec.balance(), 0)
-        self.assertEqual(self.ex_rates.balance(), 0)
+        self.assertBalanceEqual(self.ex_elec.balance(), 0)
+        self.assertBalanceEqual(self.ex_rates.balance(), 0)
 
         # ...and the payable accounts now have a positive balance
         # (and we'll pay the bills out of these accounts when they
         # eventually come in)
-        self.assertEqual(self.lia_elec_payable.balance(), 120 / 3)
-        self.assertEqual(self.lia_rates_payable.balance(), 180 / 3)
+        self.assertBalanceEqual(self.lia_elec_payable.balance(), 120 / 3)
+        self.assertBalanceEqual(self.lia_rates_payable.balance(), 180 / 3)
         # And we have that money sat in the bank account
-        self.assertEqual(self.bank.balance(), 120 / 3 + 180 / 3)
+        self.assertBalanceEqual(self.bank.balance(), 120 / 3 + 180 / 3)
 
         # See! Accounting is fun!
 
