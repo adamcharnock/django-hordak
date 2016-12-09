@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields.array import ArrayField
 from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
@@ -68,9 +69,11 @@ class Account(MPTTModel):
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     _type = models.CharField(max_length=2, choices=TYPES, blank=True)
+    # TODO: Rename has_statements -> is_bank_account. Implies that we can import to it and that it can only have one currency
     has_statements = models.BooleanField(default=False, blank=True,
                                          help_text='Does this account have statements to reconcile against. '
                                                    'This is typically the case for bank accounts.')
+    currencies = ArrayField(models.CharField(max_length=3), db_index=True)
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
 
@@ -160,6 +163,7 @@ class Account(MPTTModel):
         Returns:
             Decimal
         """
+        raise NotImplementedError('Should return some kind of object which can handles balances in different currencies')
         balances = [
             account.simple_balance(as_of=as_of, raw=raw, **kwargs)
             for account
@@ -179,6 +183,8 @@ class Account(MPTTModel):
         Returns:
             Decimal
         """
+        raise NotImplementedError(
+            'Should return some kind of object which can handles balances in different currencies')
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
@@ -274,9 +280,7 @@ class Leg(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
-    # TODO: Assert all legs sum to zero when grouped by currency
     # TODO: Assert that the leg currency matches the account currency
-    # TODO: Can accounts have multiple currencies? Should this be technically possible for all accounts but only made available for trading accounts?
     amount = MoneyField(max_digits=13, decimal_places=2,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)

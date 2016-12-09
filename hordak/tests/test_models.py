@@ -3,9 +3,11 @@ from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase
 from django.core.management import call_command
 from django.db import transaction as db_transaction
+from moneyed.classes import Money
 
 from hordak.models import Account, Transaction, Leg, StatementImport, StatementLine, DEBIT, CREDIT
 from hordak import exceptions
+from hordak.tests.dataprovider import DataProvider
 
 
 class AccountTestCase(TestCase):
@@ -210,11 +212,11 @@ class AccountTestCase(TestCase):
         Account.validate_accounting_equation()
 
 
-class LegTestCase(DbTransactionTestCase):
+class LegTestCase(DataProvider, DbTransactionTestCase):
 
     def test_manager(self):
-        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
-        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        account1 = self.account()
+        account2 = self.account()
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
@@ -234,13 +236,20 @@ class LegTestCase(DbTransactionTestCase):
         as the trigger is only run when changes are committed to the DB
         (which the normal TestCase will not do)
         """
-        account = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
+        account = self.account()
         transaction = Transaction.objects.create()
-        self.assertRaises(DatabaseError, Leg.objects.create, transaction=transaction, account=account, amount=100)
+
+        with self.assertRaises(DatabaseError):
+            Leg.objects.create(transaction=transaction, account=account, amount=100)
+
+        with self.assertRaises(DatabaseError), db_transaction.atomic():
+            # Also ensure we distinguish between currencies
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(100, 'EUR'))
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, 'GBP'))
 
     def test_type(self):
-        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
-        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        account1 = self.account()
+        account2 = self.account()
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
@@ -258,40 +267,35 @@ class LegTestCase(DbTransactionTestCase):
     def test_type_zero(self):
         leg = Leg(amount=0)
 
-        def get_type():
+        with self.assertRaises(exceptions.ZeroAmountError):
             leg.type
-
-        self.assertRaises(exceptions.ZeroAmountError, get_type)
-
 
     def test_model_zero_check(self):
         """Check the model ensures non-zero leg amounts"""
-        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
-        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        account1 = self.account()
+        account2 = self.account()
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg1 = Leg.objects.create(transaction=transaction, account=account1, amount=100)
             leg2 = Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
-        leg3 = Leg(transaction=transaction, account=account2, amount=0)
+        leg3 = Leg(transaction=transaction, account=account2, amount=Money(0, 'EUR'))
         self.assertRaises(exceptions.ZeroAmountError, leg3.save)
 
     def test_db_zero_check(self):
         """Check the DB ensures non-zero leg amounts"""
-        account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
-        account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        account1 = self.account()
+        account2 = self.account()
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg1 = Leg.objects.create(transaction=transaction, account=account1, amount=100)
             leg2 = Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
-        def set_zero_leg():
+        with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
-            Leg.objects.filter(pk=leg1.pk).update(amount=0)
-
-        self.assertRaises(IntegrityError, set_zero_leg)
+            Leg.objects.filter(pk=leg1.pk).update(amount=Money(0, 'EUR'))
 
 
 class TransactionTestCase(DbTransactionTestCase):
