@@ -34,3 +34,20 @@ class AccountingEquationViolationError(AccountingError):
 
     """
     pass
+
+
+class LossyCalculationError(HordakError):
+    """Raised to prevent a lossy or imprecise calculation from occurring.
+
+    Typically this may happen when trying to multiply/divide a monetary value
+    by a float.
+    """
+    pass
+
+
+class BalanceComparisonError(HordakError):
+    """Raised when comparing a balance to an invalid value
+
+    A balance must be compared against another balance or a Money instance
+    """
+    pass

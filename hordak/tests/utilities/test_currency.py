@@ -5,6 +5,8 @@ from unittest import skipUnless
 
 from moneyed import Money
 
+from hordak.exceptions import LossyCalculationError
+
 if six.PY2:
     from mock import patch
 else:
@@ -17,8 +19,7 @@ from django.test import TestCase
 from django.test import override_settings
 from django.core.cache import cache
 
-from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter, ExMoney, \
-    MoneyCollection
+from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter, Balance
 
 DUMMY_CACHE = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
@@ -156,113 +157,190 @@ class ConverterTestCase(CacheTestCase):
             Decimal('0.6666666666666666666666666666')
         )
 
-    def test_convert_money_date(self):
-        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
-        self.assertEqual(
-            self.converter.convert(money, 'USD'),
-            ExMoney('150', 'USD')
-        )
 
-    def test_convert_custom_date(self):
-        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
-        self.assertEqual(
-            self.converter.convert(money, 'USD', date=date(2015, 5, 15)),
-            ExMoney('200', 'USD')
-        )
-
-    @skipUnless(os.environ.get('TEST_MAKE_REQUESTS'), 'Making requests disabled')
-    def test_against_live_api(self):
-        live_converter = Converter(backend=FixerBackend())
-        money = ExMoney('100', 'GBP', date=date(2000, 5, 15))
-        converted = live_converter.convert(money, 'USD')
-        self.assertEqual(round(converted.amount, 2), Decimal('151.32'))
-        self.assertEqual(str(converted.currency), 'USD')
-
-
+@override_settings(CACHES=DUMMY_CACHE)
 @patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
-class ExMoneyTestCase(CacheTestCase):
+class BalanceTestCase(CacheTestCase):
+
+    def setUp(self):
+        self.balance_1 = Balance([Money(100, 'USD'), Money(100, 'EUR')])
+        self.balance_2 = Balance([Money(80, 'USD'), Money(150, 'GBP')])
+        self.balance_neg = Balance([Money(-10, 'USD'), Money(-20, 'GBP')])
+
+    def test_unique_currency(self):
+        with self.assertRaises(ValueError):
+            Balance([Money(0, 'USD'), Money(0, 'USD')])
 
     def test_add(self):
-        usd_100 = ExMoney('100', 'USD')
-        eur_100 = ExMoney('100', 'EUR')
-        gbp_100 = ExMoney('100', 'GBP')
+        b = self.balance_1 + self.balance_2
+        self.assertEqual(b['USD'].amount, 180)
+        self.assertEqual(b['EUR'].amount, 100)
+        self.assertEqual(b['GBP'].amount, 150)
 
-        self.assertEqual(usd_100 + usd_100, ExMoney('200', 'USD'))
-        self.assertEqual(usd_100 + eur_100, ExMoney('2100', 'USD'))
-        self.assertEqual(eur_100 + usd_100, ExMoney('105', 'EUR'))
-        self.assertEqual(eur_100 + gbp_100 + usd_100, ExMoney('115', 'EUR'))
+    def test_sub(self):
+        b = self.balance_1 - self.balance_2
+        self.assertEqual(b['USD'].amount, 20)
+        self.assertEqual(b['EUR'].amount, 100)
+        self.assertEqual(b['GBP'].amount, -150)
 
-        self.assertEqual((usd_100 + eur_100).converted, True)
-        self.assertEqual((eur_100 + usd_100).converted, True)
+    def test_sub_rev(self):
+        b = self.balance_2 - self.balance_1
+        self.assertEqual(b['USD'].amount, -20)
+        self.assertEqual(b['EUR'].amount, -100)
+        self.assertEqual(b['GBP'].amount, 150)
 
-        self.assertEqual((usd_100 + usd_100).converted, False)
-        self.assertEqual((gbp_100 + gbp_100).converted, False)
-        self.assertEqual((eur_100 + eur_100).converted, False)
+    def test_neg(self):
+        b = -self.balance_1
+        self.assertEqual(b['USD'].amount, -100)
+        self.assertEqual(b['EUR'].amount, -100)
+        self.assertEqual(b['GBP'].amount, 0)
 
-    def test_add_auto_convert_disabled(self):
-        usd_100 = ExMoney('100', 'USD')
-        usd_100_nc = ExMoney('100', 'USD', auto_convert=False)
-        eur_100 = ExMoney('100', 'EUR')
-        eur_100_nc = ExMoney('100', 'EUR', auto_convert=False)
+    def test_pos(self):
+        b = +self.balance_1
+        self.assertEqual(b['USD'].amount, 100)
+        self.assertEqual(b['EUR'].amount, 100)
+        self.assertEqual(b['GBP'].amount, 0)
 
-        with self.assertRaises(ValueError):
-            usd_100 + eur_100_nc
+    def test_mul(self):
+        b = self.balance_1 * 2
+        self.assertEqual(b['USD'].amount, 200)
+        self.assertEqual(b['EUR'].amount, 200)
+        self.assertEqual(b['GBP'].amount, 0)
 
-        with self.assertRaises(ValueError):
-            eur_100_nc + usd_100
+    def test_mul_error(self):
+        with self.assertRaises(LossyCalculationError):
+            self.balance_1 / 1.123
 
-        with self.assertRaises(ValueError):
-            usd_100_nc + eur_100
+    def test_div(self):
+        b = self.balance_1 / 2
+        self.assertEqual(b['USD'].amount, 50)
+        self.assertEqual(b['EUR'].amount, 50)
+        self.assertEqual(b['GBP'].amount, 0)
 
-        with self.assertRaises(ValueError):
-            eur_100 + usd_100_nc
+    def test_div_error(self):
+        with self.assertRaises(LossyCalculationError):
+            self.balance_1 / 1.123
 
-        usd_100 + usd_100_nc
-        eur_100 + eur_100_nc
+    def test_abs(self):
+        b = abs(self.balance_neg)
+        self.assertEqual(b['USD'].amount, 10)
+        self.assertEqual(b['EUR'].amount, 0)
+        self.assertEqual(b['GBP'].amount, 20)
 
+    def test_bool(self):
+        self.assertEqual(bool(Balance()), False)
+        self.assertEqual(bool(Balance([Money(0, 'USD')])), False)
+        self.assertEqual(bool(self.balance_1), True)
 
-@patch('hordak.utilities.currency.converter', Converter(backend=TestBackend()))
-class MoneyCollectionTestCase(CacheTestCase):
+    def test_eq(self):
+        self.assertEqual(Balance() == Balance(), True)
+        self.assertEqual(Balance([Money(0, 'USD')]) == Balance(), True)
 
-    def test_sum_simple(self):
-        collection = MoneyCollection('USD')
-        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))
-        sum = collection.sum()
-        self.assertEqual(sum.amount, Decimal('300'))
-        self.assertEqual(str(sum.currency), 'USD')
-        self.assertEqual(sum.converted, True)
+        self.assertEqual(self.balance_1 == +self.balance_1, True)
+        self.assertEqual(self.balance_1 == self.balance_2, False)
+        self.assertEqual(Balance([Money(100, 'USD')]) == Balance([Money(100, 'USD')]), True)
+        self.assertEqual(Balance([Money(100, 'USD'), Money(0, 'EUR')]) == Balance([Money(100, 'USD')]), True)
 
-    def test_sum_to_same(self):
-        collection = MoneyCollection('USD')
-        collection.add(ExMoney('100', 'USD', date=date(2000, 5, 15)))
-        sum = collection.sum()
-        self.assertEqual(sum.amount, Decimal('100'))
-        self.assertEqual(sum.converted, False)
+        self.assertEqual(Balance([Money(100, 'USD'), Money(10, 'EUR')]) == Balance([Money(100, 'USD')]), False)
 
-    def test_sum_many(self):
-        collection = MoneyCollection('USD')
-        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
-        collection.add(ExMoney('100', 'USD', date=date(2000, 5, 15)))  # 100 USD
-        collection.add(ExMoney('100', 'GBP', date=date(2000, 5, 15)))  # 150 USD
-        sum = collection.sum()
-        self.assertEqual(sum.amount, Decimal('550'))
-        self.assertEqual(str(sum.currency), 'USD')
-        self.assertEqual(sum.converted, True)
+    def test_neq(self):
+        self.assertEqual(Balance() != Balance(), False)
+        self.assertEqual(Balance([Money(0, 'USD')]) != Balance(), False)
 
-    def test_sum_different_dates(self):
-        collection = MoneyCollection('USD')
-        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
-        collection.add(ExMoney('100', 'GBP', date=date(2015, 5, 15)))  # 200 USD
-        sum = collection.sum()
-        self.assertEqual(sum.amount, Decimal('500'))
-        self.assertEqual(str(sum.currency), 'USD')
-        self.assertEqual(sum.converted, True)
+        self.assertEqual(self.balance_1 != +self.balance_1, False)
+        self.assertEqual(self.balance_1 != self.balance_2, True)
+        self.assertEqual(Balance([Money(100, 'USD')]) != Balance([Money(100, 'USD')]), False)
+        self.assertEqual(Balance([Money(100, 'USD'), Money(0, 'EUR')]) != Balance([Money(100, 'USD')]), False)
 
-    def test_sum_explicit_date(self):
-        collection = MoneyCollection('USD')
-        collection.add(ExMoney('100', 'EUR', date=date(2000, 5, 15)))  # 300 USD
-        collection.add(ExMoney('100', 'GBP', date=date(2015, 5, 15)))  # 200 USD
-        sum = collection.sum(date=date(2015, 5, 15))
-        self.assertEqual(sum.amount, Decimal('2200'))
-        self.assertEqual(str(sum.currency), 'USD')
-        self.assertEqual(sum.converted, True)
+        self.assertEqual(Balance([Money(100, 'USD'), Money(10, 'EUR')]) != Balance([Money(100, 'USD')]), True)
+
+    def test_lt(self):
+        self.assertEqual(
+            Balance() < Balance(),
+            False
+        )
+        self.assertEqual(
+            self.balance_1 < self.balance_1,
+            False
+        )
+        self.assertEqual(
+            Balance() < Balance([Money(1, 'USD')]),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) < Balance(),
+            False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) < Balance([Money(1, 'EUR')]),
+            True
+        )
+
+    def test_gt(self):
+        self.assertEqual(
+            Balance() > Balance(),
+            False
+        )
+        self.assertEqual(
+            self.balance_1 > self.balance_1,
+            False
+        )
+        self.assertEqual(
+            Balance() > Balance([Money(1, 'USD')]),
+            False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) > Balance(),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) > Balance([Money(1, 'EUR')]),
+            False
+        )
+
+    def test_lte(self):
+        self.assertEqual(
+            Balance() <= Balance(),
+            True
+        )
+        self.assertEqual(
+            self.balance_1 <= self.balance_1,
+            True
+        )
+        self.assertEqual(
+            Balance() <= Balance([Money(1, 'USD')]),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) <= Balance(),
+            False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) <= Balance([Money(1, 'EUR')]),
+            True
+        )
+
+    def test_gte(self):
+        self.assertEqual(
+            Balance() >= Balance(),
+            True
+        )
+        self.assertEqual(
+            self.balance_1 >= self.balance_1,
+            True
+        )
+        self.assertEqual(
+            Balance() >= Balance([Money(1, 'USD')]),
+            False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) >= Balance(),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) >= Balance([Money(1, 'EUR')]),
+            False
+        )
+
+    def test_normalise(self):
+        self.assertEqual(self.balance_1.normalise('EUR'), Balance([Money(105, 'EUR')]))

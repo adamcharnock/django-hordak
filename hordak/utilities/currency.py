@@ -1,16 +1,37 @@
 """ Monetary values and currency conversion
 
+Monetary values are distinguished as follows:
+
+`Money`_:
+
+    Money is provided by `moneyd`_ and combines both an amount and a currency into a single value.
+
+`Balance`_:
+
+    An account can represent multiple currencies, and a `Balance`_ instance is how re represent this.
+
+    A `Balance`_ may contain one or more `Money`_ objects. There will be precisely one `Money`_ object
+    for each currency which needs to be represented.
+
+    Balance objects may be added & subtracted. This will produce a new `Balance`_ object containing a
+    union of all the currencies involved in the calculation, even where the result was zero.
+
+.. moneyd: https://github.com/limist/py-moneyed
+
 """
 import logging
 from decimal import Decimal
 
 import requests
 import datetime
+
+import six
+import copy
 from django.core.cache import cache
 from moneyed import Money
 
 from hordak import defaults
-
+from hordak.exceptions import LossyCalculationError, BalanceComparisonError
 
 logger = logging.getLogger(__name__)
 
@@ -113,13 +134,10 @@ class Converter(object):
         If ``date`` is omitted then the date given by ``money.date`` will be used.
         """
         if str(money.currency) == str(to_currency):
-            return money.copy()
-        date = money.date if date is None else date
-        return ExMoney(
-            amount=money.amount * self.rate(money.currency, to_currency, date),
+            return copy.copy(money)
+        return Money(
+            amount=money.amount * self.rate(money.currency, to_currency, date or datetime.date.today()),
             currency=to_currency,
-            date=date,
-            converted=True
         )
 
     def rate(self, from_currency, to_currency, date):
@@ -132,98 +150,115 @@ class Converter(object):
 converter = Converter()
 
 
-class ExMoney(Money):
-    """Exchange-rate enabled money
+class Balance(object):
 
-    Will automatically convert as required. Note that the
-    ``converted`` property will be set to ``true`` on objects
-    which have been through a currency conversion.
-    """
+    def __init__(self, _money_obs=None):
+        self._money_obs = tuple(_money_obs or [])
+        self._by_currency = {m.currency.code: m for m in self._money_obs}
+        if len(self._by_currency) != len(self._money_obs):
+            raise ValueError('Duplicate currency provided. All Money instances must have a unique currency.')
 
-    def __init__(self, amount=Decimal('0.0'), currency=defaults.INTERNAL_CURRENCY,
-                 date=None, converted=False, auto_convert=True):
-        super(ExMoney, self).__init__(amount, currency)
-        self.date = date or datetime.date.today()
-        self.converted = converted
-        self.auto_convert = auto_convert
+    def __str__(self):
+        return ', '.join(map(str, self._money_obs)) or 'No values'
 
-    @classmethod
-    def from_naive_money(cls, money, date):
-        if isinstance(money, ExMoney):
-            return money
-        else:
-            return cls(money.amount, money.currency, date=date)
+    def __repr__(self):
+        return 'Balance: {}'.format(self.__str__())
 
-    def copy(self):
-        return self.__class__(
-            amount=self.amount,
-            currency=self.currency,
-            date=self.date,
-            converted=self.converted,
-            auto_convert=self.auto_convert,
-        )
+    def __getitem__(self, currency):
+        if hasattr(currency, 'code'):
+            currency = currency.code
+        elif not type(currency) in six.string_types or len(currency) != 3:
+            raise ValueError('Currencies must be a string of length three, not {}'.format(currency))
 
-    def convert(self, currency, date=None):
-        return converter.convert(self, currency, date)
-
-    def _ensure_auto_convert(self):
-        if not self.auto_convert:
-            raise ValueError(
-                'Automatic currency conversion disabled, '
-                'cannot convert values with different currencies.')
+        try:
+            return self._by_currency[currency]
+        except KeyError:
+            return Money(0, currency)
 
     def __add__(self, other):
-        """Add two money values together, performing conversion as necessary
+        by_currency = copy.deepcopy(self._by_currency)
+        for other_currency, other_money in other.items():
+            by_currency[other_currency] = other_money + self[other_currency]
+        return self.__class__(by_currency.values())
 
-        Conversion will always be done at the current rate. To
-        perform conversion at historical rates use ``MoneyCollection``.
-        """
-        if isinstance(other, ExMoney):
-            if other.currency != self.currency:
-                self._ensure_auto_convert()
-                other._ensure_auto_convert()
-                other = other.convert(self.currency)
-                converted = True
-            else:
-                converted = self.converted or other.converted
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __neg__(self):
+        return self.__class__([-m for m in self._money_obs])
+
+    def __pos__(self):
+        return self.__class__([+m for m in self._money_obs])
+
+    def __mul__(self, other):
+        if isinstance(other, Balance):
+            raise TypeError('Cannot multiply two Balance instances.')
+        elif isinstance(other, float):
+            raise LossyCalculationError('Cannot multiply a Balance by a float. Use a Decimal or an int.')
+        return self.__class__([m * other for m in self._money_obs])
+
+    def __truediv__(self, other):
+        if isinstance(other, Balance):
+            raise TypeError('Cannot multiply two Balance instances.')
+        elif isinstance(other, float):
+            raise LossyCalculationError('Cannot divide a Balance by a float. Use a Decimal or an int.')
+        return self.__class__([m / other for m in self._money_obs])
+
+    def __abs__(self):
+        return self.__class__([abs(m) for m in self._money_obs])
+
+    def __bool__(self):
+        return any([bool(m) for m in self._money_obs])
+
+    if six.PY2:
+        __nonzero__ = __bool__
+
+    def __eq__(self, other):
+        return not self - other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, Money):
+            other = self.__class__([other])
+        if not isinstance(other, Balance):
+            raise BalanceComparisonError(other)
         else:
-            converted = self.converted
+            money = self.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
+            other_money = other.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
+            return money < other_money
 
-        added = super(ExMoney, self).__add__(other)
-        added.date = self.date
-        added.converted = converted
-        return added
+    def __gt__(self, other):
+        return not self < other and not self == other
 
+    def __le__(self, other):
+        return self < other or self == other
 
-class MoneyCollection(object):
+    def __ge__(self, other):
+        return self > other or self == other
 
-    def __init__(self, currency=None):
-        self._collection = []
-        self.currency = currency or defaults.INTERNAL_CURRENCY
-
-    def add(self, money):
-        """Add a money value to the collection"""
-        self._collection.append(money)
-
-    def sum(self, date=None):
-        """Get sum of all values
-
-        Args:
-            date (datetime.date): Use the exchange rate at this date (defaults to
-                                  the date of each transaction)
+    def monies(self):
+        """Get a list of the underlying `Money`_ instances
 
         Returns:
-            ExMoney: ExMoney instance with ``converted`` set to True
+            ([Money]): A list of zero or money money instances. Currencies will be unique.
         """
-        sum = None
-        for money in self._collection:
-            converted = converter.convert(money, self.currency, date)
-            if sum is None:
-                sum = converted
-            else:
-                sum += converted
-        return sum
+        return [copy.copy(m) for m in self._money_obs]
 
-    @property
-    def amount(self):
-        return self.sum(date=datetime.date.today())
+    def items(self):
+        return self._by_currency.items()
+
+    def normalise(self, to_currency):
+        """Normalise this balance into a single currency
+
+        Args:
+            to_currency (str): Destination currency
+
+        Returns:
+            (Balance): A new balance object containing a single Money value
+        """
+        out = Money(currency=to_currency)
+        for money in self._money_obs:
+            out += converter.convert(money, to_currency)
+        return Balance([out])
