@@ -280,7 +280,6 @@ class Leg(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs')
-    # TODO: Assert that the leg currency matches the account currency
     amount = MoneyField(max_digits=13, decimal_places=2,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)

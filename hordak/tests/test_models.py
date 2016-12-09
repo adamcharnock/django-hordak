@@ -227,7 +227,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account1.legs.sum_amount(), 100)
         self.assertEqual(account2.legs.sum_amount(), -100)
 
-    def test_postgres_trigger(self):
+    def test_postgres_trigger_sum_zero(self):
         """"
         Check the database enforces leg amounts summing to zero
 
@@ -246,6 +246,16 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             # Also ensure we distinguish between currencies
             Leg.objects.create(transaction=transaction, account=account, amount=Money(100, 'EUR'))
             Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, 'GBP'))
+
+    def test_postgres_trigger_currency(self):
+        """Check the database enforces that leg currencies must be supported by the leg's account"""
+        account = self.account(currencies=('USD', 'GBP'))
+        transaction = Transaction.objects.create()
+
+        with self.assertRaises(DatabaseError):
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(100, 'EUR'))
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, 'EUR'))
+
 
     def test_type(self):
         account1 = self.account()
