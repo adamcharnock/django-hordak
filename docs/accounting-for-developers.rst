@@ -51,3 +51,70 @@ entry accounting. I found this background useful.
         If you debit (decrease) an account, then flip its sign, it will look like you have actually increased the
         account balance. This is because we are treating the sign of asset & expense accounts as a presentational issue,
         rather than something to be dealt with in the core business logic.
+
+
+Examples
+--------
+
+You live in a shared house. Everyone pays their share into a communal bank account
+every month.
+
+Example 1: Saving money to pay a bill (no sign flipping)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You pay the electricity bill every three months. Therefore every month you take £100
+from everyone's contributions and put it into Electricity Payable account (a liability
+account) in the knowledge that you will pay the bill from this account when it eventually arrives:
+
+These accounts are income & liability accounts, so neither balance needs to be flipped (flipping
+only applies to asset & expense accounts). Therefore:
+
+* Balances before:
+
+  * *Housemate Contribution* (income): £500
+  * *Electricity Payable* (liability): £0
+
+* **Transaction**:
+
+  * £100 from *Housemate Contribution* to *Electricity Payable*
+
+* Balances after:
+
+  * *Housemate Contribution* (income): £400
+  * *Electricity Payable* (liability): £100
+
+This should also make intuitive sense. Some of the housemate contributions will be used to pay the electricity
+bill, therefore the former decreases and the latter increases.
+
+Example 2: Saving money to pay a bill (with sign flipping)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At the start of every month each housemate pays into the communal bank account. We
+should therefore represent this somehow in our double entry system (something we ignored in
+example 1).
+
+We have an account called *Bank* which is an asset account (because this is money
+we actually have). We also have a *Housemate Contribution* account which is an
+income account.
+
+Therefore, **to represent the fact that we have been paid money, we must create a transaction**.
+However, money cannot be injected from outside our double entry system, so how do we deal with this?
+
+Let's show how we represent a single housemate's payment:
+
+* Balances before:
+
+  * *Bank* (asset): £0
+  * *Housemate Contribution* (income): £0
+
+* **Transaction:**
+
+  * £500 from *Bank* to *Housemate Contribution*
+
+* Balances after:
+
+  * *Bank* (asset): -£500 * -1 = **£500**
+  * *Housemate Contribution*  (income): £500
+
+Because the bank account is an asset account, we flip the sign of its balance.
+**The result is that both accounts increase in value.**
