@@ -308,11 +308,11 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.filter(pk=leg1.pk).update(amount=Money(0, 'EUR'))
 
 
-class TransactionTestCase(DbTransactionTestCase):
+class TransactionTestCase(DataProvider, DbTransactionTestCase):
 
     def setUp(self):
-        self.account1 = Account.objects.create(name='account1', type=Account.TYPES.income, code='1')
-        self.account2 = Account.objects.create(name='account2', type=Account.TYPES.income, code='2')
+        self.account1 = self.account()
+        self.account2 = self.account()
 
     def test_balance(self):
         with db_transaction.atomic():
