@@ -79,11 +79,12 @@ class Account(MPTTModel):
 
     """
     TYPES = Choices(
-        ('AS', 'asset', 'Asset'),  # Cash in bank
-        ('LI', 'liability', 'Liability'),
-        ('IN', 'income', 'Income'),  # Incoming rent, contributions
-        ('EX', 'expense', 'Expense'),  # Shopping, outgoing rent
-        ('EQ', 'equity', 'Equity'),
+        ('AS', 'asset', 'Asset'),              # Eg. Cash in bank
+        ('LI', 'liability', 'Liability'),      # Eg. Loans, bills paid after the fact (in arrears)
+        ('IN', 'income', 'Income'),            # Eg. Sales, housemate contributions
+        ('EX', 'expense', 'Expense'),          # Eg. Office supplies, paying bills
+        ('EQ', 'equity', 'Equity'),            # Eg. Money from shares
+        ('TR', 'trading', 'Currency Trading')  # Used to represent currency conversions
     )
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)

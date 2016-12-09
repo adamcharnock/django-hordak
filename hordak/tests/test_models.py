@@ -91,6 +91,7 @@ class AccountTestCase(DataProvider, TestCase):
         income = self.account(type=Account.TYPES.income)
         expense = self.account(type=Account.TYPES.expense)
         equity = self.account(type=Account.TYPES.equity)
+        trading = self.account(type=Account.TYPES.trading)
 
         self.assertEqual(asset.sign, -1)
         self.assertEqual(expense.sign, -1)
@@ -98,8 +99,9 @@ class AccountTestCase(DataProvider, TestCase):
         self.assertEqual(liability.sign, 1)
         self.assertEqual(income.sign, 1)
         self.assertEqual(equity.sign, 1)
+        self.assertEqual(trading.sign, 1)
 
-        self.assertEqual(len(Account.TYPES), 5, msg='Did not test all account types. Update this test.')
+        self.assertEqual(len(Account.TYPES), 6, msg='Did not test all account types. Update this test.')
 
     def test_balance_simple(self):
         account1 = self.account()
@@ -255,6 +257,12 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(DatabaseError):
             Leg.objects.create(transaction=transaction, account=account, amount=Money(100, 'EUR'))
             Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, 'EUR'))
+
+    def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
+        """Check the database enforces that only asset accounts can be bank accounts"""
+        self.account(is_bank_account=True, type=Account.TYPES.asset)
+        with self.assertRaises(DatabaseError):
+            self.account(is_bank_account=True, type=Account.TYPES.income)
 
     def test_type(self):
         account1 = self.account()
