@@ -261,6 +261,28 @@ class Transaction(models.Model):
     A transaction is a movement of funds between two accounts. Each transaction
     will have two or more legs, each leg specifies an account and an amount.
 
+    .. note:
+
+        When working with Hordak Transaction objects you will typically need to do so
+        within a database transaction. This is because the database has integrity checks in
+        place to ensure the validity of the transaction (i.e. money in = money out).
+
+    See Also:
+
+        :meth:`Account.transfer_to()` is a useful shortcut to avoid having to create transactions manually.
+
+    Examples:
+
+        You can manually create a transaction as follows::
+
+            from django.db import transaction as db_transaction
+            from hordak.models import Transaction, Leg
+
+            with db_transaction.atomic():
+                transaction = Transaction.objects.create()
+                Leg.objects.create(transaction=transaction, account=my_account1, amount=Money(100, 'EUR'))
+                Leg.objects.create(transaction=transaction, account=my_account2, amount=Money(-100, 'EUR'))
+
     Attributes:
 
         uuid (SmallUUID): UUID for transaction. Use to prevent leaking of IDs (if desired).

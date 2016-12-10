@@ -6,6 +6,8 @@ from unittest import skipUnless
 from moneyed import Money
 
 from hordak.exceptions import LossyCalculationError
+from hordak.models import Account
+from hordak.tests.utils import DataProvider, BalanceUtils
 
 if six.PY2:
     from mock import patch
@@ -19,7 +21,8 @@ from django.test import TestCase
 from django.test import override_settings
 from django.core.cache import cache
 
-from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter, Balance
+from hordak.utilities.currency import _cache_key, _cache_timeout, BaseBackend, FixerBackend, Converter, Balance, \
+    currency_exchange
 
 DUMMY_CACHE = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
@@ -356,3 +359,67 @@ class BalanceTestCase(CacheTestCase):
 
     def test_normalise(self):
         self.assertEqual(self.balance_1.normalise('EUR'), Balance([Money(105, 'EUR')]))
+
+
+class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
+
+    def test_peter_selinger_tutorial_table_4_4(self):
+        """Test the example given by Peter Selinger in his muticurrency accounting tutorial. Table 4.4"""
+        cad_cash = self.account(type=Account.TYPES.asset, currencies=['CAD'])
+        usd_cash = self.account(type=Account.TYPES.asset, currencies=['USD'])
+        initial_capital = self.account(type=Account.TYPES.equity, currencies=['CAD'])
+        food = self.account(type=Account.TYPES.expense, currencies=['CAD'])
+        trading = self.account(type=Account.TYPES.trading, currencies=['CAD', 'USD'])
+
+        # Put CAD 200 into cad_cash
+        initial_capital.transfer_to(cad_cash, Money(200, 'CAD'))
+        self.assertEqual(initial_capital.balance(), Balance(200, 'CAD'))
+        self.assertEqual(cad_cash.balance(), Balance(200, 'CAD'))
+
+        # Exchange CAD 120 to USD 100 (1 USD = 1.20 CAD)
+        currency_exchange(cad_cash, Money(120, 'CAD'), usd_cash, Money(100, 'USD'), trading)
+        self.assertEqual(cad_cash.balance(), Balance(80, 'CAD'))
+        self.assertEqual(usd_cash.balance(), Balance(100, 'USD'))
+        self.assertEqual(trading.balance(), Balance(100, 'USD', -120, 'CAD'))
+
+        # Buy food (1 USD = 1.30 CAD)
+        currency_exchange(usd_cash, Money(40, 'USD'), food, Money(52, 'CAD'), trading)
+        self.assertEqual(usd_cash.balance(), Balance(60, 'USD'))
+        self.assertEqual(food.balance(), Balance(52, 'CAD'))
+        self.assertEqual(trading.balance(), Balance(60, 'USD', -68, 'CAD'))
+
+        # Exchange all USD back to CAD (1 USD = 1.25 CAD)
+        currency_exchange(usd_cash, Money(60, 'USD'), cad_cash, Money(75, 'CAD'), trading)
+        self.assertEqual(cad_cash.balance(), Balance(155, 'CAD'))
+        self.assertEqual(usd_cash.balance(), Balance(0, 'USD'))
+        self.assertEqual(trading.balance(), Balance(0, 'USD', 7, 'CAD'))
+
+        # Buy food in CAD
+        cad_cash.transfer_to(food, Money(20, 'CAD'))
+        self.assertEqual(cad_cash.balance(), Balance(135, 'CAD'))
+        self.assertEqual(food.balance(), Balance(72, 'CAD'))
+
+    def test_fees(self):
+        cad_cash = self.account(type=Account.TYPES.asset, currencies=['CAD'])
+        usd_cash = self.account(type=Account.TYPES.asset, currencies=['USD'])
+        initial_capital = self.account(type=Account.TYPES.equity, currencies=['CAD'])
+        trading = self.account(type=Account.TYPES.trading, currencies=['CAD', 'USD'])
+        banking_fees = self.account(type=Account.TYPES.expense, currencies=['CAD'])
+
+        initial_capital.transfer_to(cad_cash, Money(200, 'CAD'))
+        currency_exchange(
+            source=cad_cash,
+            source_amount=Money(120, 'CAD'),
+            destination=usd_cash,
+            destination_amount=Money(100, 'USD'),
+            trading_account=trading,
+            fee_destination=banking_fees,
+            fee_amount=Money(1.50, 'CAD')
+        )
+        self.assertEqual(cad_cash.balance(), Balance(80, 'CAD'))
+        self.assertEqual(usd_cash.balance(), Balance(100, 'USD'))
+        self.assertEqual(banking_fees.balance(), Balance(1.50, 'CAD'))
+
+
+
+

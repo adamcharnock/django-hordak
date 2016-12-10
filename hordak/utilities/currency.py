@@ -50,10 +50,12 @@ import datetime
 import six
 import copy
 from django.core.cache import cache
+from django.db import transaction as db_transaction
 from moneyed import Money
 
 from hordak import defaults
-from hordak.exceptions import LossyCalculationError, BalanceComparisonError
+from hordak.exceptions import LossyCalculationError, BalanceComparisonError, TradingAccountRequiredError, \
+    InvalidFeeCurrency
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,119 @@ def _cache_timeout(date_):
     else:
         # None = cache forever
         return None
+
+
+def currency_exchange(source, source_amount, destination, destination_amount, trading_account,
+                      fee_destination=None, fee_amount=None,
+                      date=None, description=None
+                      ):
+    """ Exchange funds from one currency to another
+
+    Use this method to represent a real world currency transfer. Note this
+    process doesn't care about exchange rates, only about the value
+    of currency going in and out of the transaction.
+
+    You can also record any exchange fees by syphoning off funds to ``fee_account`` of amount ``fee_amount``. Note
+    that the free currency must be the same as the source currency.
+
+    Examples:
+
+        For example, imagine our Canadian bank has obligingly transferred 120 CAD into our US bank account.
+        We sent CAD 120, and received USD 100. We were also changed 1.50 CAD in fees.
+
+        We can represent this exchange in Hordak as follows::
+
+            from hordak.utilities.currency import currency_exchange
+
+            currency_exchange(
+                # Source account and amount
+                source=cad_cash,
+                source_amount=Money(120, 'CAD'),
+                # Destination account and amount
+                destination=usd_cash,
+                destination_amount=Money(100, 'USD'),
+                # Trading account the exchange will be done through
+                trading_account=trading,
+                # We also incur some fees
+                fee_destination=banking_fees,
+                fee_amount=Money(1.50, 'CAD')
+            )
+
+        We should now find that:
+
+         1. ``cad_cash.balance()`` has decreased by ``CAD 120``
+         2. ``usd_cash.balance()`` has increased by ``USD 100``
+         3. ``banking_fees.balance()`` is ``CAD 1.50``
+         4. ``trading_account.balance()`` is ``USD 100, CAD -120``
+
+        You can perform ``trading_account.normalise()`` to discover your unrealised gains/losses
+        on currency traded through that account.
+
+    Args:
+        source (Account): The account the funds will be taken from
+        source_amount (Money): A ``Money`` instance containing the inbound amount and currency.
+        destination (Account): The account the funds will be placed into
+        destination_amount (Money): A ``Money`` instance containing the outbound amount and currency
+        trading_account (Account): The trading account to be used. The normalised balance of this account will indicate
+            gains/losses you have made as part of your activity via this account. Note that the normalised balance
+            fluctuates with the current exchange rate.
+        fee_destination (Account): Your exchange may incur fees. Specifying this will move incurred fees
+            into this account (optional).
+        fee_amount (Money): The amount and currency of any incurred fees (optional).
+        description (str): Description for the transaction. Will default to describing funds in/out & fees (optional).
+        date (datetime.date): The date on which the transaction took place. Defaults to today (optional).
+
+    Returns:
+        (Transaction): The transaction created
+
+    See Also:
+        You can see the above example in practice in ``CurrencyExchangeTestCase.test_fees`` in `test_currency.py`_.
+
+    .. _test_currency.py: https://github.com/adamcharnock/django-hordak/blob/master/hordak/tests/utilities/test_currency.py
+    """
+    from hordak.models import Account, Transaction, Leg
+
+    if trading_account.type != Account.TYPES.trading:
+        raise TradingAccountRequiredError('Account {} must be a trading account'.format(trading_account))
+
+    if (fee_destination or fee_amount) and not (fee_destination and fee_amount):
+        raise RuntimeError('You must specify either neither or both fee_destination and fee_amount.')
+
+    if fee_amount is None:
+        # If fees are not specified then set fee_amount to be zero
+        fee_amount = Money(0, source_amount.currency)
+    else:
+        # If we do have fees then make sure the fee currency matches the source currency
+        if fee_amount.currency != source_amount.currency:
+            raise InvalidFeeCurrency('Fee amount currency ({}) must match source amount currency ({})'.format(
+                fee_amount.currency,
+                source_amount.currency
+            ))
+
+    # Checks over and done now. Let's create the transaction
+    with db_transaction.atomic():
+        transaction = Transaction.objects.create(
+            date=date or datetime.date.today(),
+            description=description or 'Exchange of {} to {}, incurring {} fees'.format(
+                source_amount,
+                destination_amount,
+                'no' if fee_amount is None else fee_amount
+            )
+        )
+
+        # Source currency into trading account
+        Leg.objects.create(transaction=transaction, account=source, amount=source_amount)
+        Leg.objects.create(transaction=transaction, account=trading_account, amount=-(source_amount - fee_amount))
+
+        # Any fees
+        if fee_amount and fee_destination:
+            Leg.objects.create(transaction=transaction, account=fee_destination, amount=-fee_amount, description='Fees')
+
+        # Destination currency out of trading account
+        Leg.objects.create(transaction=transaction, account=trading_account, amount=destination_amount)
+        Leg.objects.create(transaction=transaction, account=destination, amount=-destination_amount)
+
+    return transaction
 
 
 class BaseBackend(object):
@@ -201,10 +316,12 @@ class Balance(object):
 
     Examples:
 
-        Balance([Money(100, 'USD'), Money(200, 'EUR')])
+        Example use::
 
-        # Or in short form
-        Balance(100, 'USD', 200, 'EUR')
+            Balance([Money(100, 'USD'), Money(200, 'EUR')])
+
+            # Or in short form
+            Balance(100, 'USD', 200, 'EUR')
 
     .. important::
 

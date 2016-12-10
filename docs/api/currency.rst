@@ -5,6 +5,14 @@ Currency
 
 .. automodule:: hordak.utilities.currency
 
+Currency Exchange
+-----------------
+
+The ``currency_exchange()`` helper function is provided to assist in creating
+currency conversion Transactions.
+
+.. autofunction:: hordak.utilities.currency.currency_exchange
+
 Balance
 -------
 

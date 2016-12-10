@@ -51,3 +51,13 @@ class BalanceComparisonError(HordakError):
     A balance must be compared against another balance or a Money instance
     """
     pass
+
+
+class TradingAccountRequiredError(HordakError):
+    """Raised when trying to perform a currency exchange via an account other than a 'trading' account"""
+    pass
+
+
+class InvalidFeeCurrency(HordakError):
+    """Raised when fee currency does not match source currency"""
+    pass

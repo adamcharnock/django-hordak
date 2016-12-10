@@ -5,6 +5,11 @@ class DataProvider(object):
     """Utility methods for providing data to test cases"""
 
     def account(self, name=None, parent=None, type=Account.TYPES.income, code=None, currencies=('EUR',), **kwargs):
+        """ Utility for creating accounts for use in test cases
+
+        Returns:
+            Account
+        """
         name = name or 'Account {}'.format(Account.objects.count() + 1)
         code = code if code is not None else Account.objects.filter(parent=parent).count()
 

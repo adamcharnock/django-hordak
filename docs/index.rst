@@ -29,8 +29,7 @@ ensure data integrity. MySQL could be certainly supported in future, volunteers 
     installation
     accounting-for-developers
     api/index
-
-
+    notes
 
 Indices and tables
 ==================
