@@ -42,6 +42,7 @@ Currency conversion makes use of Django's cache. It is therefore recommended tha
 .. _setup your Django cache: https://docs.djangoproject.com/en/1.10/topics/cache/
 
 """
+from __future__ import division
 import logging
 from decimal import Decimal
 
@@ -353,7 +354,7 @@ class Balance(object):
     def __getitem__(self, currency):
         if hasattr(currency, 'code'):
             currency = currency.code
-        elif not type(currency) in six.string_types or len(currency) != 3:
+        elif not isinstance(currency, six.string_types) or len(currency) != 3:
             raise ValueError('Currencies must be a string of length three, not {}'.format(currency))
 
         try:

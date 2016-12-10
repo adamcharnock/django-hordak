@@ -1,8 +1,6 @@
-import os
+from __future__ import division
 import six
 from datetime import date
-from unittest import skipUnless
-
 from moneyed import Money
 
 from hordak.exceptions import LossyCalculationError
