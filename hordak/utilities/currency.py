@@ -419,6 +419,10 @@ class Balance(object):
             other = self.__class__([other])
         if not isinstance(other, Balance):
             raise BalanceComparisonError(other)
+
+        if len(self._money_obs) == 1 and self.currencies() == other.currencies():
+            # Shortcut if we have a single value with the same currency
+            return self._money_obs[0] < other._money_obs[0]
         else:
             money = self.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
             other_money = other.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
@@ -440,6 +444,10 @@ class Balance(object):
             ([Money]): A list of zero or money money instances. Currencies will be unique.
         """
         return [copy.copy(m) for m in self._money_obs]
+
+    def currencies(self):
+        """Get all currencies with non-zero values"""
+        return [m.currency.code for m in self.monies() if m.amount]
 
     def normalise(self, to_currency):
         """Normalise this balance into a single currency

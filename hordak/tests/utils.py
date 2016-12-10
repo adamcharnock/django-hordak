@@ -1,4 +1,4 @@
-from hordak.models import Account
+from hordak.models import Account, StatementImport
 
 
 class DataProvider(object):
@@ -21,6 +21,13 @@ class DataProvider(object):
             currencies=currencies,
             **kwargs
         )
+
+    def statement_import(self, bank_account=None, **kwargs):
+        return StatementImport.objects.create(
+            bank_account=bank_account or self.account(type=Account.TYPES.asset),
+            **kwargs
+        )
+
 
 
 class BalanceUtils(object):

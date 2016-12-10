@@ -289,6 +289,10 @@ class BalanceTestCase(CacheTestCase):
             True
         )
 
+    def test_lt_shortcut(self):
+        self.assertEqual(Balance(1, 'USD') < Balance(2, 'USD'), True)
+        self.assertEqual(Balance(2, 'USD') < Balance(1, 'USD'), False)
+
     def test_gt(self):
         self.assertEqual(
             Balance() > Balance(),
@@ -357,6 +361,10 @@ class BalanceTestCase(CacheTestCase):
 
     def test_normalise(self):
         self.assertEqual(self.balance_1.normalise('EUR'), Balance([Money(105, 'EUR')]))
+
+    def test_currencies(self):
+        self.assertEqual(self.balance_1.currencies(), ['USD', 'EUR'])
+        self.assertEqual(self.balance_2.currencies(), ['USD', 'GBP'])
 
 
 class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):

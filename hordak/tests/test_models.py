@@ -221,13 +221,13 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100, 'USD'))
-            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-80, 'USD'))
-            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-20, 'USD'))
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100.12, 'USD'))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-80.06, 'USD'))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-20.06, 'USD'))
 
         self.assertEqual(Leg.objects.sum_to_balance(), Balance())
-        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money(100, 'USD')]))
-        self.assertEqual(account2.legs.sum_to_balance(), Balance([Money(-100, 'USD')]))
+        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money('100.12', 'USD')]))
+        self.assertEqual(account2.legs.sum_to_balance(), Balance([Money('-100.12', 'USD')]))
 
     def test_postgres_trigger_sum_zero(self):
         """"
