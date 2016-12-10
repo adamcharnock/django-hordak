@@ -1,5 +1,39 @@
 ----
 
+Version 1.1.0, Sat 10 Dec 2016
+===============================
+
+ff1a0e07c8	Adding changelog (Adam Charnock)
+8b95087434	Tweaks as a result of work on swiftwind (Adam Charnock)
+383895fe11	Fixing old URLS (Adam Charnock)
+4cc2e7146a	Python 2 fixes (Adam Charnock)
+43ea6a33f9	Specifying encoding for python 2.7 (Adam Charnock)
+6512d572e1	Adding currency_exchange() method & docs (Adam Charnock)
+87da427e47	Adding trading account and postgres check to ensure bank accounts are asset accounts (Adam Charnock)
+d82b424f69	Moving footnotes (Adam Charnock)
+5397290d89	Work on docs (Adam Charnock)
+4cbd28b7b0	Fixing tests for multicurrency work (Adam Charnock)
+c19861133d	Doc updates (Adam Charnock)
+a27aa44053	Updates to docs (Adam Charnock)
+68a9b047f6	Work on currency conversion utilities. Adding Balance class. (Adam Charnock)
+c03db337ef	whitespace fix (Adam Charnock)
+c7308df66e	Fixing transaction test (Adam Charnock)
+8f3ce5c74c	Renaming has_statements -> is_bank_account (Adam Charnock)
+17bdd3cacd	Work on currency constraints (Adam Charnock)
+aed8897ed3	Asserting that all legs sum to zero for each currency (Adam Charnock)
+2b4638b7f7	Adding Peter Selinger tutorial (for posterity, in case the site vanishes) (Adam Charnock)
+e6cb485f5a	Link updates (Adam Charnock)
+54a0b9cd18	Adding docs (Adam Charnock)
+41d4bdd42e	Adding comment, correcting todo (Adam Charnock)
+794ae143d3	Adding todo (Adam Charnock)
+4ec34d29d6	Now using MoneyField for transaction leg amount, thanks to django-money (Adam Charnock)
+1aae3404e7	Adding tests for auto_convert flag (Adam Charnock)
+ee95757eba	Integration with py-moneyed, supporting calculations and auto conversion (Adam Charnock)
+10cf0ca3bd	Python 2.7 fixes (Adam Charnock)
+234a931ca6	Currency conversion fixes. Adding skippable test to test against fixer api (Adam Charnock)
+80fad3e2fc	Work on currency converting system (Adam Charnock)
+
+
 Version 1.0.3, Sun 09 Oct 2016
 ===============================
 
