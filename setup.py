@@ -10,7 +10,7 @@ setup(
     author_email='adam@adamcharnock.com',
     packages=find_packages(),
     scripts=[],
-    url='https://github.com/waldocollective/django-hordak',
+    url='https://github.com/adamcharnock/django-hordak',
     license='MIT',
     description='Double entry book keeping in Django',
     long_description=open('README.rst').read() if exists("README.rst") else "",

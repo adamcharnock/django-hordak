@@ -10,14 +10,14 @@ to provide a reliable foundation on which to build such apps.
 .. image:: https://img.shields.io/pypi/v/django-hordak.svg
     :target: https://badge.fury.io/py/django-hordak
 
-.. image:: https://img.shields.io/github/license/waldocollective/django-hordak.svg
+.. image:: https://img.shields.io/github/license/adamcharnock/django-hordak.svg
     :target: https://pypi.python.org/pypi/django-hordak/
 
-.. image:: https://travis-ci.org/waldocollective/django-hordak.svg?branch=master
-    :target: https://travis-ci.org/waldocollective/django-hordak/
+.. image:: https://travis-ci.org/adamcharnock/django-hordak.svg?branch=master
+    :target: https://travis-ci.org/adamcharnock/django-hordak/
 
-.. image:: https://coveralls.io/repos/github/waldocollective/django-hordak/badge.svg?branch=master
-    :target: https://coveralls.io/github/waldocollective/django-hordak?branch=master
+.. image:: https://coveralls.io/repos/github/adamcharnock/django-hordak/badge.svg?branch=master
+    :target: https://coveralls.io/github/adamcharnock/django-hordak?branch=master
 
 Documentation
 -------------
