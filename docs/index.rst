@@ -30,6 +30,7 @@ ensure data integrity. MySQL could be certainly supported in future, volunteers 
     accounting-for-developers
     api/index
     notes
+    changelog
 
 Indices and tables
 ==================
