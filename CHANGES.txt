@@ -1,5 +1,13 @@
 ----
 
+Version 1.1.1, Mon 12 Dec 2016
+===============================
+
+725c86126f	Expanding on docs change in pull request #6 (Adam Charnock)
+a0695c52c8	Adding `debits()` and `credits()` back to LegManager (Adam Charnock)
+2fae0ef542	Add mptt to installation docs (Kevin Dice)
+
+
 Version 1.1.0, Sat 10 Dec 2016
 ===============================
 
