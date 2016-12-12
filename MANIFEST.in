@@ -2,3 +2,8 @@ include *.txt
 include *.rst
 recursive-include docs *
 include VERSION
+
+# added by check_manifest.py
+include *.py
+include .coveragerc
+recursive-include hordak *.json
