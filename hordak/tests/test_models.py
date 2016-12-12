@@ -314,6 +314,16 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             # Use update() to bypass the check in Leg.save()
             Leg.objects.filter(pk=leg1.pk).update(amount=Money(0, 'EUR'))
 
+    def test_debits(self):
+        src = self.account(type=Account.TYPES.asset)
+        dst = self.account(type=Account.TYPES.asset)
+        src.transfer_to(dst, Money(100, 'EUR'))
+
+        debit = Leg.objects.debits().get()
+        credit = Leg.objects.credits().get()
+        self.assertEqual(debit.account, src)
+        self.assertEqual(credit.account, dst)
+
 
 class TransactionTestCase(DataProvider, DbTransactionTestCase):
 

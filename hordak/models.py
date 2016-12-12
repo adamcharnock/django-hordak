@@ -322,6 +322,14 @@ class LegManager(models.Manager):
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
+    def debits(self):
+        """Filter for legs that were debits"""
+        return self.filter(amount__gt=0)
+
+    def credits(self):
+        """Filter for legs that were credits"""
+        return self.filter(amount__lt=0)
+
 
 class Leg(models.Model):
     """ The leg of a transaction
