@@ -11,6 +11,7 @@ Add to installed apps:
 
     INSTALLED_APPS = [
         ...
+        'mptt',
         'hordak',
     ]
 
