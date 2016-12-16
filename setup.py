@@ -14,6 +14,7 @@ setup(
     license='MIT',
     description='Double entry book keeping in Django',
     long_description=open('README.rst').read() if exists("README.rst") else "",
+    include_package_data=True,
     install_requires=[
         'django>=1.8',
         'django-mptt>=0.8',
