@@ -1,5 +1,13 @@
 ----
 
+Version 1.1.2, Fri 16 Dec 2016
+===============================
+
+4dba6719eb	setting include_package_data=True in setup.py to ensure static files are included (Adam Charnock)
+4ad1576aa9	Add missing migration for account model (Kevin Dice)
+652c1a372e	Adding settings to MANIFEST (Adam Charnock)
+
+
 Version 1.1.1, Mon 12 Dec 2016
 ===============================
 
