@@ -1,6 +1,6 @@
 """
-Design
-------
+Design Overview
+---------------
 
 The core models consist of:
 
@@ -32,9 +32,10 @@ from model_utils import Choices
 from hordak import defaults
 from hordak import exceptions
 
-#: Debit
 from hordak.utilities.currency import Balance
 
+
+#: Debit
 DEBIT = 'debit'
 #: Credit
 CREDIT = 'credit'
@@ -227,9 +228,25 @@ class Account(MPTTModel):
         This is a shortcut utility method which simplifies the process of
         transferring between accounts.
 
+        This method attempts to perform the transaction in an intuitive mannor.
+        For example:
+
+          * Transferring income -> income will result in the former decreasing and the latter increasing
+          * Transferring asset (i.e. bank) -> income will result in the balance of both increasing
+          * Transferring asset -> asset will result in the former decreasing and the latter increasing
+
+        .. note::
+
+            Transferrs in any direction between ``{asset | expense} <-> {income | liability | equity}``
+            will always result in both balances increasing. This may change in future if it is
+            found to be unhelpful.
+
         Args:
-            to_account (Account): The destination account
-            amount (Money): The amount to be transferred
+
+            to_account (Account): The destination account.
+            amount (Money): The amount to be transferred.
+            transaction_kwargs: Passed through to transaction creation. Useful for setting the
+                transaction `description` field.
         """
         if not isinstance(amount, Money):
             raise TypeError('amount must be of type Money')
@@ -238,7 +255,6 @@ class Account(MPTTModel):
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
-            # Question: Is this actually a good idea?
             direction = -1
         else:
             direction = 1
