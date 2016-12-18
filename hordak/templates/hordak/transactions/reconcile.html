@@ -31,7 +31,7 @@
                                 {% endif %}
                             {% endfor %}
                         {% elif line != reconcile_line %}
-                            <form action="{% url 'transactions_reconcile' %}#L{{ line.uuid }}" method="get">
+                            <form action="#L{{ line.uuid }}" method="get">
                                 <input type="hidden" name="reconcile" value="{{ line.uuid }}">
                                 <input type="hidden" name="page" value="{{ page_obj.number }}">
                                 <input type="submit" value="Reconcile" class="btn btn-primary btn-xs">
@@ -50,7 +50,7 @@
                                 </ul>
                             {% endif %}
 
-                            <form action="{% url 'transactions_reconcile' %}" method="post">
+                            <form action="" method="post">
                                 {% csrf_token %}
                                 <input type="hidden" name="reconcile" value="{{ line.uuid }}">
                                 <input type="hidden" name="page" value="{{ page_obj.number }}">

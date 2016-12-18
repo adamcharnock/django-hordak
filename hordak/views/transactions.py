@@ -9,6 +9,8 @@ from hordak.models import StatementLine, Leg
 
 class CreateTransactionView(CreateView):
     form_class = SimpleTransactionForm
+    success_url = None
+    template_name = 'hordak/transactions/transaction_create.html'
 
 
 class ReconcileTransactionsView(ListView):
@@ -17,11 +19,12 @@ class ReconcileTransactionsView(ListView):
     Note that this only extends ListView, and we implement the form
     processing functionality manually.
     """
-    template_name = 'transactions/reconcile.html'
+    template_name = 'hordak/transactions/reconcile.html'
     model = StatementLine
     paginate_by = 50
     context_object_name = 'statement_lines'
     ordering = ['-date', '-pk']
+    success_url = None
 
     def get_uuid(self):
         return self.request.POST.get('reconcile') or self.request.GET.get('reconcile')

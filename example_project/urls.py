@@ -20,7 +20,5 @@ from hordak.views.transactions import ReconcileTransactionsView
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
-    url(r'^transactions/reconcile/$', ReconcileTransactionsView.as_view(
-        template_name='hordak/transactions/reconcile.html',
-    ), name='transactions_reconcile')
+    url(r'^transactions/reconcile/$', ReconcileTransactionsView.as_view(success_url='/'), name='transactions_reconcile')
 ]
