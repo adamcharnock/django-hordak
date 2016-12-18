@@ -38,6 +38,26 @@ class SimpleTransactionForm(forms.ModelForm):
 
 
 class TransactionForm(forms.ModelForm):
+    """A form for managing transactions with an arbitrary number of legs.
+
+    You will almost certainly
+    need to combine this with :class:`LegFormSet` in order to
+    create & edit transactions.
+
+    .. note::
+
+        For simple transactions (with a single credit and single debit) you a probably
+        better of using the :class:`SimpleTransactionForm`. This significantly simplifies
+        both the interface and implementation.
+
+    Attributes:
+
+        description (forms.CharField): Optional description/notes for this transaction
+
+    See Also:
+
+        This is a `ModelForm` for the :class:`Transaction model <hordak.models.Transaction>`.
+    """
     description = forms.CharField(label='Transaction notes', required=False)
 
     class Meta:
@@ -49,6 +69,19 @@ class TransactionForm(forms.ModelForm):
 
 
 class LegForm(forms.ModelForm):
+    """A form for representing a single transaction leg
+
+    Attributes:
+
+        account (TreeNodeChoiceField): Choose an account the leg will interact with
+        description (forms.CharField): Optional description/notes for this leg
+        amount (MoneyField): The amount for this leg. Positive values indicate money coming into the transaction,
+            negative values indicate money leaving the transaction.
+
+    See Also:
+
+        This is a `ModelForm` for the :class:`Leg model <hordak.models.Leg>`.
+    """
     account = TreeNodeChoiceField(Account.objects.all(), to_field_name='uuid')
     description = forms.CharField(required=False)
     amount = MoneyField(required=True, decimal_places=2)
@@ -58,7 +91,7 @@ class LegForm(forms.ModelForm):
         fields = ('amount', 'account', 'description')
 
     def __init__(self, *args, **kwargs):
-        self.statement_line = kwargs.pop('statement_line')
+        self.statement_line = kwargs.pop('statement_line', None)
         super(LegForm, self).__init__(*args, **kwargs)
 
     def clean_amount(self):
@@ -66,7 +99,7 @@ class LegForm(forms.ModelForm):
         if amount.amount <= 0:
             raise ValidationError('Amount must be greater than zero')
 
-        if self.statement_line.amount < 0:
+        if self.statement_line and self.statement_line.amount < 0:
             amount *= -1
 
         return amount
