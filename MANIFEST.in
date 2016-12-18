@@ -7,3 +7,5 @@ include VERSION
 include *.py
 include .coveragerc
 recursive-include hordak *.json
+recursive-include example_project *.txt
+recursive-include hordak *.html
