@@ -1,0 +1,98 @@
+{% extends 'hordak/base.html' %}
+{% load bootstrap3 %}
+{% load hordak %}
+
+{% block page_name %}Reconcile Bank Statements{% endblock %}
+{% block page_description %}What did you spend money on?{% endblock %}
+
+{% block content %}
+    <h1>Reconcile</h1>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Account</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in statement_lines %}
+                <tr id="L{{ line.uuid }}">
+                    <td>{{ line.date }}</td>
+                    <td>{{ line.amount|color_currency }}</td>
+                    <td>{{ line.description }}</td>
+                    <td>
+                        {% if line.transaction %}
+                            {% for leg in line.transaction.legs.all %}
+                                {% if leg.account != line.statement_import.bank_account %}
+                                    {{ leg.account }}
+                                {% endif %}
+                            {% endfor %}
+                        {% elif line != reconcile_line %}
+                            <form action="{% url 'transactions_reconcile' %}#L{{ line.uuid }}" method="get">
+                                <input type="hidden" name="reconcile" value="{{ line.uuid }}">
+                                <input type="hidden" name="page" value="{{ page_obj.number }}">
+                                <input type="submit" value="Reconcile" class="btn btn-primary btn-xs">
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if line == reconcile_line %}
+                    <tr>
+                        <td colspan="4">
+                            {% if leg_formset.non_form_errors %}
+                                <ul>
+                                    {% for error in leg_formset.non_form_errors %}
+                                    <li class="error">{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+
+                            <form action="{% url 'transactions_reconcile' %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="reconcile" value="{{ line.uuid }}">
+                                <input type="hidden" name="page" value="{{ page_obj.number }}">
+                                {% bootstrap_form transaction_form %}
+                                {{ leg_formset.management_form }}
+                                <table class="table table-striped">
+                                    {% for form in leg_formset %}
+                                        <tr>
+                                            <td>{% bootstrap_field form.amount show_label=False show_help=False %}</td>
+                                            <td>{% bootstrap_field form.description show_label=False %}</td>
+                                            <td>{% bootstrap_field form.account show_label=False %}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                                <input type="submit" value="Reconcile" class="btn btn-success pull-right">
+                            </form>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% empty %}
+                <tr>
+                    <td colspan="4">Nothing to reconcile, you are up to date</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+            {% endif %}
+        </span>
+    </div>
+
+
+{% endblock %}

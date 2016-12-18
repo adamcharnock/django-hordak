@@ -16,6 +16,7 @@ env:
 install:
   - "python setup.py develop"
   - "pip install ."
+  - "pip install -r example_project/requirements.txt"
   - "pip install requests-mock mock pytest coveralls"
 
 script:
