@@ -1,5 +1,20 @@
 ----
 
+Version 1.2.0, Sun 18 Dec 2016
+===============================
+
+d62b271e3c	Python 2 fix (Adam Charnock)
+ae84161285	Adding missing __init__.py file (Adam Charnock)
+11a1b2357e	Mopping up some remaining errors. Adding transaction_create.html (Adam Charnock)
+4e08b669f0	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
+da9fd9e75c	Adding docs for forms (Adam Charnock)
+3824d1624d	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
+335756b10c	Moving ReconcileTransactionsView from Swiftwind -> Hordak (Adam Charnock)
+bd23268e86	Moving CreateTransactionView from Swiftwind -> Hordak (Adam Charnock)
+541434b864	Moving transaction forms from Swiftwind -> Hordak (Adam Charnock)
+7bd594c7ce	Expanding on model docs (esp Account.transfer_to()) (Adam Charnock)
+
+
 Version 1.1.2, Fri 16 Dec 2016
 ===============================
 
