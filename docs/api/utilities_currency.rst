@@ -1,5 +1,5 @@
-Currency
-========
+Currency Utilities
+==================
 
 .. contents::
 
