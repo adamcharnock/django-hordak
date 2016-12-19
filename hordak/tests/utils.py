@@ -29,7 +29,6 @@ class DataProvider(object):
         )
 
 
-
 class BalanceUtils(object):
 
     def assertBalanceEqual(self, balance, value):

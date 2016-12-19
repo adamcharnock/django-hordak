@@ -1,0 +1,40 @@
+{% extends 'hordak/base.html' %}
+{% load bootstrap3 %}
+
+{% block page_name %}Create Transaction{% endblock %}
+{% block page_description %}Move money between accounts{% endblock %}
+
+{% block content %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Balance</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td>
+                    <div style="padding-left: {% widthratio account.get_level 1 15 %}px;">
+                        {{ account.name }}
+                    </div>
+                </td>
+                <td>{{ account.get__type_display }}</td>
+                <td>{{ account.balance }}</td>
+                <td>
+                    {# This really should use {% url %}, but we don't know what your URLs will be called #}
+                    {# For a most robust implementation you should override this template #}
+                    <a href="update/{{ account.uuid }}/" class="btn btn-default btn-xs">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+                <tr>
+                <td colspan="3" class="text-center">No accounts exist</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
