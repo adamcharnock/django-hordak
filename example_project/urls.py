@@ -17,12 +17,12 @@ from django.conf.urls import url
 from django.contrib import admin
 
 from hordak.views.accounts import AccountListView, AccountCreateView, AccountUpdateView
-from hordak.views.transactions import ReconcileTransactionsView
+from hordak.views.transactions import TransactionsReconcileView
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
-    url(r'^transactions/reconcile/$', ReconcileTransactionsView.as_view(success_url='/'), name='transactions_reconcile'),
+    url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(success_url='/'), name='transactions_reconcile'),
     url(r'^accounts/list/$', AccountListView.as_view(), name='accounts_list'),
     url(r'^accounts/create/$', AccountCreateView.as_view(success_url='/'), name='accounts_create'),
     url(r'^accounts/update/(?P<uuid>.+)/$', AccountUpdateView.as_view(success_url='/'), name='accounts_update'),

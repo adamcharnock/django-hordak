@@ -15,7 +15,7 @@ class SimpleTransactionForm(forms.ModelForm):
 
     See Also:
 
-        * :meth:`Account.transfer_to()`.
+        * :meth:`hordak.models.Account.transfer_to()`.
     """
     from_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
     to_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')

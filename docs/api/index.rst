@@ -5,6 +5,7 @@ API Documentation
     :maxdepth: 2
 
     models
+    views
     forms
     utilities_money
     utilities_currency

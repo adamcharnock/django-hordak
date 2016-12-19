@@ -4,6 +4,13 @@ from hordak.models import Account
 
 
 class AccountForm(forms.ModelForm):
+    """Form for updating & creating accounts
+
+    Note that this form prevents the ``_type`` and ``currencies``
+    fields from being updated as this could be a problem for accounts
+    which transactions have been created for. This could be made more
+    liberal in future as required.
+    """
 
     class Meta:
         model = Account

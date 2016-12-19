@@ -3,6 +3,10 @@ Forms
 
 .. contents::
 
+As with views, Hordak provides a number of off-the-shelf forms. You may
+need to implement your own version of (or extend) these forms in order
+to provide customised functionality.
+
 SimpleTransactionForm
 ---------------------
 

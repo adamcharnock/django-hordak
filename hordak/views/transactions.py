@@ -7,17 +7,44 @@ from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
 from hordak.models import StatementLine, Leg
 
 
-class CreateTransactionView(CreateView):
+class TransactionCreateView(CreateView):
+    """ View for creation of simple transactions.
+
+    This functionality is provided by :class:`hordak.models.Account.transfer_to()`,
+    see the method's documentation for additional details.
+
+    Examples:
+
+        .. code-block:: python
+
+            urlpatterns = [
+                ...
+                url(r'^transactions/create/$', TransactionCreateView.as_view(
+                    success_url=reverse_lazy('accounts_list')
+                ), name='transactions_create'),
+            ]
+    """
     form_class = SimpleTransactionForm
     success_url = None
     template_name = 'hordak/transactions/transaction_create.html'
 
 
-class ReconcileTransactionsView(ListView):
+class TransactionsReconcileView(ListView):
     """ Handle rendering and processing in the reconciliation view
 
     Note that this only extends ListView, and we implement the form
     processing functionality manually.
+
+    Examples:
+
+        .. code-block:: python
+
+            urlpatterns = [
+                ...
+                url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(
+                    success_url=reverse_lazy('accounts_list')
+                ), name='transactions_reconcile'),
+            ]
     """
     template_name = 'hordak/transactions/reconcile.html'
     model = StatementLine
@@ -48,7 +75,7 @@ class ReconcileTransactionsView(ListView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        return super(ReconcileTransactionsView, self).get(request, *args, **kwargs)
+        return super(TransactionsReconcileView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -105,7 +132,7 @@ class ReconcileTransactionsView(ListView):
                 leg_formset=self.get_leg_formset(),
                 reconcile_line=self.object,
             )
-        return super(ReconcileTransactionsView, self).get_context_data(**kwargs)
+        return super(TransactionsReconcileView, self).get_context_data(**kwargs)
 
     def get_transaction_form(self):
         return TransactionForm(

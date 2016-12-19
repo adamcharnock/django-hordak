@@ -11,3 +11,7 @@ from .transactions import (
     LegForm,
     LegFormSet,
 )
+
+from .accounts import (
+    AccountForm,
+)
