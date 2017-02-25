@@ -8,7 +8,7 @@
     <form action="{% url 'hordak:transactions_create' %}" method="post">
         {% csrf_token %}
         {% bootstrap_form form %}
-        <input type="submit">
+        <input type="submit" value="Create Transaction">
     </form>
 
     <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
