@@ -30,7 +30,7 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
             amount_1='EUR',
         ))
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/accounts/list/')
+        self.assertEqual(response['Location'], '/')
         self.assertEqual(self.bank_account.balance(), Balance('123.45', 'EUR'))
         self.assertEqual(self.income_account.balance(), Balance('123.45', 'EUR'))
 
