@@ -1,3 +1,5 @@
+.. _accounting_for_developers:
+
 Double Entry Accounting for Developers
 ======================================
 
@@ -19,7 +21,7 @@ time I distilled it down to the following:
  #. **Debits decrease** the value of an account. Always. [1]_
  #. **Credits increase** the value of an account. Always. [1]_
  #. The sign of any **asset** or **expense** account balance is **always flipped** upon display (i.e. multiply by -1) [2]_ [3]_.
- #. A transaction is comprised of 1 or more credits **and** 1 or more debits (i.e. money most come from somewhere and then go somewhere).
+ #. A transaction is comprised of 1 or more credits **and** 1 or more debits (i.e. money must come from somewhere and then go somewhere).
  #. The value of a transaction's debits and credits must be equal (money into transaction = money out of transaction).
 
 
