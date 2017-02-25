@@ -28,6 +28,8 @@ And changes it as follows, copying in the patterns from hordak's root ``urls.py`
 .. code:: python
 
     # With this
+    from hordak import views as hordak_views
+
     hordak_urls = [
         ... patterns from Hordak's root urls.py ...
     ]
