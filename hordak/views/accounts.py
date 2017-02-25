@@ -1,3 +1,4 @@
+from django.urls.base import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
@@ -38,6 +39,7 @@ class AccountCreateView(CreateView):
     """
     form_class = account_forms.AccountForm
     template_name = 'hordak/accounts/account_create.html'
+    success_url = reverse_lazy('hordak:accounts_list')
 
 
 class AccountUpdateView(UpdateView):
@@ -63,5 +65,6 @@ class AccountUpdateView(UpdateView):
     slug_field = 'uuid'
     slug_url_kwarg = 'uuid'
     context_object_name = 'account'
+    success_url = reverse_lazy('hordak:accounts_list')
 
 

@@ -1,6 +1,7 @@
 from django.db import transaction as db_transaction
 from django.http import Http404
 from django.urls import reverse
+from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
@@ -19,13 +20,11 @@ class TransactionCreateView(CreateView):
 
             urlpatterns = [
                 ...
-                url(r'^transactions/create/$', TransactionCreateView.as_view(
-                    success_url=reverse_lazy('accounts_list')
-                ), name='transactions_create'),
+                url(r'^transactions/create/$', TransactionCreateView.as_view(), name='transactions_create'),
             ]
     """
     form_class = SimpleTransactionForm
-    success_url = None
+    success_url = reverse_lazy('hordak:accounts_list')
     template_name = 'hordak/transactions/transaction_create.html'
 
 
@@ -41,9 +40,7 @@ class TransactionsReconcileView(ListView):
 
             urlpatterns = [
                 ...
-                url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(
-                    success_url=reverse_lazy('accounts_list')
-                ), name='transactions_reconcile'),
+                url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(), name='transactions_reconcile'),
             ]
     """
     template_name = 'hordak/transactions/reconcile.html'
@@ -51,7 +48,7 @@ class TransactionsReconcileView(ListView):
     paginate_by = 50
     context_object_name = 'statement_lines'
     ordering = ['-date', '-pk']
-    success_url = None
+    success_url = reverse_lazy('hordak:accounts_list')
 
     def get_uuid(self):
         return self.request.POST.get('reconcile') or self.request.GET.get('reconcile')

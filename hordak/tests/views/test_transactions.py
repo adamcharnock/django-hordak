@@ -6,6 +6,34 @@ from hordak.models import Account, StatementImport, StatementLine, Transaction
 from hordak.tests.utils import DataProvider
 from moneyed import Money
 
+from hordak.utilities.currency import Balance
+
+
+class TransactionCreateViewTestCase(DataProvider, TestCase):
+
+    def setUp(self):
+        self.view_url = reverse('hordak:transactions_create')
+
+        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
+
+    def test_get(self):
+        response = self.client.get(self.view_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+
+    def test_submit(self):
+        response = self.client.post(self.view_url, data=dict(
+            from_account=self.bank_account.uuid,
+            to_account=self.income_account.uuid,
+            amount_0='123.45',
+            amount_1='EUR',
+        ))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/accounts/list/')
+        self.assertEqual(self.bank_account.balance(), Balance('123.45', 'EUR'))
+        self.assertEqual(self.income_account.balance(), Balance('123.45', 'EUR'))
+
 
 class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
