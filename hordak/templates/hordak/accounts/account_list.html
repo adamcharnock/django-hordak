@@ -11,6 +11,7 @@
                 <th>Name</th>
                 <th>Type</th>
                 <th>Balance</th>
+                <th>Currencies</th>
                 <th></th>
                 <th></th>
             </tr>
@@ -26,6 +27,7 @@
                 </td>
                 <td>{{ account.get__type_display }}</td>
                 <td>{{ account.balance }}</td>
+                <td>{{ account.currencies|join:', ' }}</td>
                 <td>
                     {% if account.is_leaf_node %}
                         <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
