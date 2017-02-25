@@ -23,15 +23,20 @@ To do this, alter you current urls.py:
         url(r'^', include('hordak.urls', namespace='hordak'))
     ]
 
-And copy in the URLs from ``hordak.urls`` (GitHub) you wish to modify.
+And changes it as follows, copying in the patterns from hordak's root ``urls.py``:
 
 .. code:: python
 
     # With this
+    hordak_urls = [
+        ... patterns from Hordak's root urls.py ...
+    ]
+
     urlpatterns = [
+        url(r'^admin/', admin.site.urls),
+
+        url(r'^', include(hordak_urls, namespace='hordak', app_name='hordak')),
         ...
-        url(r'^transactions/create/$', MyCustomTransactionCreateView.as_view(), name='transactions_create'),
-        url(r'^', include('hordak.urls', namespace='hordak'))
     ]
 
 
