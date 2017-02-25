@@ -1,5 +1,35 @@
 ----
 
+Version 1.3.0, Sat 25 Feb 2017
+===============================
+
+f2bbcf121e	Removing unused docs page (Adam Charnock)
+9d410cdbbb	Removing django-bootstrap requirement (Adam Charnock)
+a1cf5bf26f	Adding app_name to urls.py (Adam Charnock)
+4f9ae70a95	Adding extra blocks to base template (Adam Charnock)
+fc2abb59b5	Colspan update (Adam Charnock)
+19fb6dad6d	Adding currencies column (Adam Charnock)
+0dc0f50e87	Updating docs on extending views (Adam Charnock)
+d8f140121e	Tweaks to account page header (Adam Charnock)
+150ca1c281	Work on docs (Adam Charnock)
+8122dbea9c	Wrapping skeleton css in block (to make removing it easier) (Adam Charnock)
+e934739e68	Now showing balance on transaction listing page (Adam Charnock)
+5663e31829	Fixing account edit view bug (Adam Charnock)
+f1e8be2b9d	Account transaction ui improvements (Adam Charnock)
+7f0b5a8e30	Only showing 'transactions' links for leaf accounts (until we sort out multiple-account transaction listing) (Adam Charnock)
+b4166df277	Work on transaction listing (Adam Charnock)
+868897f596	Adding icon to child accounts (Adam Charnock)
+cbfeb8ef3b	Adding some super-simple styling (pulling skeleton css from CDN) (Adam Charnock)
+676ceea881	Adding simple navigation (Adam Charnock)
+4764093b44	Adding basic navigation (Adam Charnock)
+e9ced4244f	Further work on urls and testing account creation view (Adam Charnock)
+50dcc4941b	Namespacing urls (Adam Charnock)
+8359d15a11	Correcting page name (Adam Charnock)
+96c9b5417a	Updating docs for new views (Adam Charnock)
+bcaadbbef7	Adding basic CRUD views (Adam Charnock)
+9d47807457	Adding template files to manifest (Adam Charnock)
+
+
 Version 1.2.0, Sun 18 Dec 2016
 ===============================
 
