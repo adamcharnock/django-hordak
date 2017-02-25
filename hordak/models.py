@@ -398,6 +398,16 @@ class Leg(models.Model):
     def is_credit(self):
         return self.type == CREDIT
 
+    def account_balance_after(self):
+        """Get the balance of the account associated with this leg following the transaction"""
+        # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
+        return self.account.balance(transaction_id__lte=self.transaction_id)
+
+    def account_balance_before(self):
+        """Get the balance of the account associated with this leg before the transaction"""
+        # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
+        return self.account.balance(transaction_id__lt=self.transaction_id)
+
 
 class StatementImportManager(models.Manager):
 

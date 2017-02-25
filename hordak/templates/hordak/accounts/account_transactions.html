@@ -18,24 +18,32 @@
         </thead>
         <tbody>
             {% for leg in legs %}
-            <tr>
-                <td>{{ leg.transaction.date }}</td>
-                <td>
-                    {% if leg.is_debit %}
-                        {% for debit_leg in leg.transaction.legs.debits %}
-                            {{ debit_leg.account.name }}{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    {% else %}
-                        {% for credit_leg in leg.transaction.legs.credits %}
-                            {{ credit_leg.account.name }}{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    {% endif %}
-                </td>
-                <td>{{ leg.transaction.description }}</td>
-                <td>{% if leg.is_debit %}{{ leg.amount|abs }}{% endif %}</td>
-                <td>{% if leg.is_credit %}{{ leg.amount|abs }}{% endif %}</td>
-                <td>?</td>
-            </tr>
+                <tr>
+                    <td>{{ leg.transaction.date }}</td>
+                    <td>
+                        {% if leg.is_debit %}
+                            {% for debit_leg in leg.transaction.legs.debits %}
+                                {{ debit_leg.account.name }}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% for credit_leg in leg.transaction.legs.credits %}
+                                {{ credit_leg.account.name }}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td>{{ leg.transaction.description }}</td>
+                    <td>{% if leg.is_debit %}{{ leg.amount|abs }}{% endif %}</td>
+                    <td>{% if leg.is_credit %}{{ leg.amount|abs }}{% endif %}</td>
+                    <td>{{ leg.account_balance_after }}</td>
+                </tr>
+
+                {# Show the entering balance at the bottom of the list #}
+                {% if forloop.last %}
+                    <tr>
+                        <td colspan="5"></td>
+                        <td>{{ leg.account_balance_before }}</td>
+                    </tr>
+                {% endif %}
             {% empty %}
                 <tr>
                 <td colspan="5" class="text-center">No transactions exist</td>

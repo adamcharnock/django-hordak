@@ -91,5 +91,5 @@ class AccountTransactionsView(SingleObjectMixin, ListView):
 
     def get_queryset(self):
         queryset = super(AccountTransactionsView, self).get_queryset()
-        queryset = queryset.filter(account=self.object).select_related('transaction')
+        queryset = Leg.objects.filter(account=self.object).order_by('-pk').select_related('transaction')
         return queryset

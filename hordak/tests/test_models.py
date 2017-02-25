@@ -324,6 +324,20 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(debit.account, src)
         self.assertEqual(credit.account, dst)
 
+    def test_account_balance_after(self):
+        src = self.account()
+        dst = self.account()
+        src.transfer_to(dst, Money(100, 'EUR'))
+        src.transfer_to(dst, Money(100, 'EUR'))
+        src.transfer_to(dst, Money(50, 'EUR'))
+        dst.transfer_to(src, Money(70, 'EUR'))
+
+        legs = Leg.objects.filter(account=dst).order_by('pk').all()
+        self.assertEqual(legs[0].account_balance_after(), Balance('100', 'EUR'))
+        self.assertEqual(legs[1].account_balance_after(), Balance('200', 'EUR'))
+        self.assertEqual(legs[2].account_balance_after(), Balance('250', 'EUR'))
+        self.assertEqual(legs[3].account_balance_after(), Balance('180', 'EUR'))
+
 
 class TransactionTestCase(DataProvider, DbTransactionTestCase):
 
