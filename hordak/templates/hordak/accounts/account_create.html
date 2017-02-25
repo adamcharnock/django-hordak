@@ -10,4 +10,8 @@
         {% bootstrap_form form %}
         <input type="submit" class="btn btn-primary btn-lg pull-right" value="Create account">
     </form>
+
+    <p>
+        <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
+    </p>
 {% endblock %}
