@@ -16,9 +16,9 @@
         </form>
     {% else %}
 
-        {% include 'transactions/_import_info_boxes.html' with result=result only %}
+        {% include 'hordak/statement_import/_import_info_boxes.html' with result=result only %}
 
-        {% include 'transactions/_import_errors.html' with result=result only %}
+        {% include 'hordak/statement_import/_import_errors.html' with result=result only %}
 
         <a href="{% url 'hordak:transactions_reconcile' %}" class="btn btn-primary btn-lg pull-right">Reconcile Transactions</a>
 
