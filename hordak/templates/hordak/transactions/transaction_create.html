@@ -5,7 +5,7 @@
 {% block page_description %}Move money between accounts{% endblock %}
 
 {% block content %}
-    <form action="{% url 'transactions:create' %}" method="post">
+    <form action="{% url 'hordak:create' %}" method="post">
         {% csrf_token %}
         {% bootstrap_form form %}
         <input type="submit">

@@ -10,7 +10,7 @@ from moneyed import Money
 class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
-        self.view_url = reverse('transactions_reconcile')
+        self.view_url = reverse('hordak:transactions_reconcile')
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)

@@ -25,9 +25,7 @@
                 <td>{{ account.get__type_display }}</td>
                 <td>{{ account.balance }}</td>
                 <td>
-                    {# This really should use {% url %}, but we don't know what your URLs will be called #}
-                    {# For a most robust implementation you should override this template #}
-                    <a href="update/{{ account.uuid }}/" class="btn btn-default btn-xs">Edit</a>
+                    <a href="{% url 'hordak:accounts_update' account.uuid %}" class="btn btn-default btn-xs">Edit</a>
                 </td>
             </tr>
             {% empty %}

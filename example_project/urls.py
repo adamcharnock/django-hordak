@@ -13,7 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.contrib import admin
 
 from hordak.views.accounts import AccountListView, AccountCreateView, AccountUpdateView
@@ -22,8 +22,5 @@ from hordak.views.transactions import TransactionsReconcileView
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
-    url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(success_url='/'), name='transactions_reconcile'),
-    url(r'^accounts/list/$', AccountListView.as_view(), name='accounts_list'),
-    url(r'^accounts/create/$', AccountCreateView.as_view(success_url='/'), name='accounts_create'),
-    url(r'^accounts/update/(?P<uuid>.+)/$', AccountUpdateView.as_view(success_url='/'), name='accounts_update'),
+    url(r'^', include('hordak.urls', namespace='hordak'))
 ]
