@@ -4,9 +4,14 @@
         {% block base_styling %}
         <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet">
         {% endblock %}
+        {% block meta %}{% endblock %}
+        {% block styles %}{% endblock %}
+        {% block extra_head %}{% endblock %}
     </head>
     <body>
         <h1>{% block page_name %}{% endblock %}</h1>
         {% block content %}{% endblock %}
+        {% block scripts %}{% endblock %}
+        {% block extra_js %}{% endblock %}
     </body>
 </html>
