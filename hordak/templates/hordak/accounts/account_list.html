@@ -19,6 +19,7 @@
             <tr>
                 <td>
                     <div style="padding-left: {% widthratio account.get_level 1 15 %}px;">
+                        {% if account.is_child_node %}↳{% endif %}
                         {{ account.name }}
                     </div>
                 </td>
