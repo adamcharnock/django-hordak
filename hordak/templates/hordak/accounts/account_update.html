@@ -1,5 +1,4 @@
 {% extends 'hordak/base.html' %}
-{% load bootstrap3 %}
 
 {% block page_name %}Edit account{% endblock %}
 {% block page_description %}Create a new account{% endblock %}
@@ -18,10 +17,12 @@
             <div class="form-control-static">{{ account.currencies|join:', ' }}</div>
         </div>
 
-        {% bootstrap_form form %}
+        {{ form }}
 
-        <input type="submit" class="btn btn-primary btn-lg pull-right" value="Save changes">
+        <p>
+            <input type="submit" class="btn btn-primary btn-lg pull-right" value="Save changes">
+            <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
+        </p>
     </form>
 
-    <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
 {% endblock %}

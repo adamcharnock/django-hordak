@@ -1,5 +1,4 @@
 {% extends 'hordak/base.html' %}
-{% load bootstrap3 %}
 
 {% block page_name %}Create account{% endblock %}
 {% block page_description %}Create a new account{% endblock %}
@@ -7,11 +6,11 @@
 {% block content %}
     <form action="" method="post">
         {% csrf_token %}
-        {% bootstrap_form form %}
-        <input type="submit" class="btn btn-primary btn-lg pull-right" value="Create account">
-    </form>
+        {{ form }}
 
-    <p>
-        <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
-    </p>
+        <p>
+            <input type="submit" class="btn btn-primary btn-lg pull-right" value="Create account">
+            <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
+        </p>
+    </form>
 {% endblock %}

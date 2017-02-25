@@ -1,5 +1,4 @@
 {% extends 'hordak/base.html' %}
-{% load bootstrap3 %}
 {% load hordak %}
 
 {% block page_name %}Reconcile Bank Statements{% endblock %}
@@ -52,14 +51,14 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="reconcile" value="{{ line.uuid }}">
                                 <input type="hidden" name="page" value="{{ page_obj.number }}">
-                                {% bootstrap_form transaction_form %}
+                                {{ transaction_form }}
                                 {{ leg_formset.management_form }}
                                 <table class="table table-striped">
                                     {% for form in leg_formset %}
                                         <tr>
-                                            <td>{% bootstrap_field form.amount show_label=False show_help=False %}</td>
-                                            <td>{% bootstrap_field form.description show_label=False %}</td>
-                                            <td>{% bootstrap_field form.account show_label=False %}</td>
+                                            <td>{{ form.amount }}</td>
+                                            <td>{{ form.description }}</td>
+                                            <td>{{ form.account }}</td>
                                         </tr>
                                     {% endfor %}
                                 </table>
@@ -92,6 +91,6 @@
         </span>
     </div>
 
-    <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
+    <p><a href="{% url 'hordak:accounts_list' %}">Cancel</a></p>
 
 {% endblock %}
