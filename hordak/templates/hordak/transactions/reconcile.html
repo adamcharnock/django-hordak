@@ -51,7 +51,9 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="reconcile" value="{{ line.uuid }}">
                                 <input type="hidden" name="page" value="{{ page_obj.number }}">
-                                {{ transaction_form }}
+                                <table>
+                                    {{ transaction_form }}
+                                </table>
                                 {{ leg_formset.management_form }}
                                 <table class="table table-striped">
                                     {% for form in leg_formset %}
