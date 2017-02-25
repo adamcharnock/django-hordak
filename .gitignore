@@ -9,3 +9,4 @@ static/
 .bash_history
 /build
 /dist
+/transaction_imports

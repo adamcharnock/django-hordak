@@ -1,0 +1,26 @@
+{% extends 'hordak/base.html' %}
+
+{% block page_name %}
+    {% if result %}
+        Import Bank Statement: Done
+    {% else %}
+        Import Bank Statement: Start Import
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if not result %}
+        <form action="{% url 'hordak:import_execute' transaction_import.uuid %}" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Begin import" class="btn btn-primary btn-lg pull-right">
+        </form>
+    {% else %}
+
+        {% include 'transactions/_import_info_boxes.html' with result=result only %}
+
+        {% include 'transactions/_import_errors.html' with result=result only %}
+
+        <a href="{% url 'hordak:transactions_reconcile' %}" class="btn btn-primary btn-lg pull-right">Reconcile Transactions</a>
+
+    {% endif %}
+{% endblock %}

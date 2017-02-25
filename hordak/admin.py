@@ -5,6 +5,7 @@ from django.db.models import Sum
 
 from mptt.admin import MPTTModelAdmin
 
+from hordak.models import TransactionImportColumn, TransactionImport
 from . import models
 
 
@@ -57,3 +58,15 @@ class StatementImportAdmin(admin.ModelAdmin):
 @admin.register(models.StatementLine)
 class StatementLineAdmin(admin.ModelAdmin):
     readonly_fields = ('timestamp',)
+
+
+class TransactionImportColumnInline(admin.TabularInline):
+    model = TransactionImportColumn
+
+
+@admin.register(TransactionImport)
+class TaskMetaAdmin(admin.ModelAdmin):
+    list_display = ['id', 'uuid', 'state', 'timestamp', 'has_headings']
+    inlines = [
+        TransactionImportColumnInline,
+    ]

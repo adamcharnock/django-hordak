@@ -1,0 +1,12 @@
+{% extends 'hordak/base.html' %}
+
+{% block page_name %}Import Bank Statement{% endblock %}
+{% block page_description %}Upload a CSV file of your bank statement.{% endblock %}
+
+{% block content %}
+    <form action="{% url 'hordak:import_create' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" class="btn btn-primary btn-lg pull-right" value="Continue...">
+    </form>
+{% endblock %}

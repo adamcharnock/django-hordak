@@ -1,0 +1,30 @@
+{% if result.base_errors %}
+    <h4>Import errors</h4>
+    <ul>
+        {% for error in result.base_errors %}
+            <li><i class="fa fa-exclamation-triangle text-danger"></i> {{ error }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% if result.row_errors %}
+    <h4>Row errors</h4>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Row</th>
+            <th>Error</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row_num, errors in result.row_errors %}
+            {% for error in errors %}
+                <tr>
+                    <td>{% if forloop.first %}Row {{ row_num }}{% endif %}</td>
+                    <td><i class="fa fa-exclamation-triangle text-danger"></i> {{ error.error }}</td>
+                </tr>
+            {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
