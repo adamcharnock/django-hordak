@@ -1,7 +1,9 @@
 <html>
     <head>
         <title></title>
+        {% block base_styling %}
         <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet">
+        {% endblock %}
     </head>
     <body>
         <h1>{% block page_name %}{% endblock %}</h1>
