@@ -33,7 +33,6 @@ ensure data integrity. MySQL could be certainly supported in future, volunteers 
     :caption: Contents:
 
     installation
-    getting-started
     customising-templates
     accounting-for-developers
     api/index
