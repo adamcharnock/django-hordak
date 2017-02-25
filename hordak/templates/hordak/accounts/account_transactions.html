@@ -1,0 +1,52 @@
+{% extends 'hordak/base.html' %}
+{% load bootstrap3 %}
+
+{% block page_name %}Account {{ account }}{% endblock %}
+{% block page_description %}See all transactions for an account{% endblock %}
+
+{% block content %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Account</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for leg in legs %}
+            <tr>
+                <td>{{ leg.transaction.date }}</td>
+                <td>
+                    {% if leg.is_debit %}
+                        {% for debit_leg in leg.transaction.legs.debits %}
+                            {{ debit_leg.account.name }}
+                        {% endfor %}
+                    {% else %}
+                        {% for credit_leg in leg.transaction.legs.credits %}
+                            {{ credit_leg.account.name }}
+                        {% endfor %}
+                    {% endif %}
+                </td>
+                <td>{{ leg.transaction.description }}</td>
+                <td>{% if leg.is_debit %}{{ leg.amount }}{% endif %}</td>
+                <td>{% if leg.is_credit %}{{ leg.amount }}{% endif %}</td>
+                <td>?</td>
+            </tr>
+            {% empty %}
+                <tr>
+                <td colspan="5" class="text-center">No transactions exist</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p>
+        <a href="{% url 'hordak:accounts_create' %}">Create account</a> |
+        <a href="{% url 'hordak:transactions_create' %}">Create transaction</a> |
+        <a href="{% url 'hordak:transactions_reconcile' %}">Reconcile statements</a>
+    </p>
+{% endblock %}

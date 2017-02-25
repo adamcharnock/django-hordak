@@ -1,8 +1,11 @@
+from django.db.models import Q
+from django.db.models.expressions import RawSQL
 from django.urls.base import reverse_lazy
+from django.views.generic.detail import SingleObjectMixin, BaseDetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from hordak.models import Account
+from hordak.models import Account, Transaction, Leg
 from hordak.forms import accounts as account_forms
 
 
@@ -68,3 +71,25 @@ class AccountUpdateView(UpdateView):
     success_url = reverse_lazy('hordak:accounts_list')
 
 
+class AccountTransactionsView(SingleObjectMixin, ListView):
+    template_name = 'hordak/accounts/account_transactions.html'
+    model = Leg
+    slug_field = 'uuid'
+    slug_url_kwarg = 'uuid'
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super(AccountTransactionsView, self).get(request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = Account.objects.all()
+        return super(AccountTransactionsView, self).get_object(queryset)
+
+    def get_context_object_name(self, obj):
+        return 'legs' if hasattr(obj, '__iter__') else 'account'
+
+    def get_queryset(self):
+        queryset = super(AccountTransactionsView, self).get_queryset()
+        queryset = queryset.filter(account=self.object).select_related('transaction')
+        return queryset

@@ -12,6 +12,7 @@
                 <th>Type</th>
                 <th>Balance</th>
                 <th></th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -26,12 +27,15 @@
                 <td>{{ account.get__type_display }}</td>
                 <td>{{ account.balance }}</td>
                 <td>
+                    <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
+                </td>
+                <td>
                     <a href="{% url 'hordak:accounts_update' account.uuid %}" class="btn btn-default btn-xs">Edit</a>
                 </td>
             </tr>
             {% empty %}
                 <tr>
-                <td colspan="3" class="text-center">No accounts exist</td>
+                <td colspan="5" class="text-center">No accounts exist</td>
                 </tr>
             {% endfor %}
         </tbody>

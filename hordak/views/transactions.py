@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
-from hordak.models import StatementLine, Leg
+from hordak.models import StatementLine, Leg, Transaction
 
 
 class TransactionCreateView(CreateView):
@@ -139,3 +139,4 @@ class TransactionsReconcileView(ListView):
 
     def get_leg_formset(self, **kwargs):
         return LegFormSet(data=self.request.POST or None, statement_line=self.object, **kwargs)
+
