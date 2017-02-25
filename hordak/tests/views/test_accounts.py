@@ -80,7 +80,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
 class AccountUpdateViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
-        self.account1 = self.account(code='01', currencies=['USD'], type=Account.TYPES.expense)
+        self.account1 = self.account(code='01', currencies=['USD'], type=Account.TYPES.expense, is_bank_account=False)
         self.view_url = reverse('hordak:accounts_update', args=[self.account1.uuid])
 
     def test_get(self):
@@ -94,7 +94,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
             name='My Account',
             code='04',
             _type='LI',
-            is_bank_account='',
+            is_bank_account='yes',
             currencies='EUR, GBP',
         ))
         if response.context:
@@ -104,5 +104,5 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.assertEqual(self.account1.name, 'My Account')
         self.assertEqual(self.account1.code, '04')
         self.assertEqual(self.account1.type, Account.TYPES.expense)  # Not editable, so unchanged
-        self.assertEqual(self.account1.is_bank_account, False)
+        self.assertEqual(self.account1.is_bank_account, False)  # Not editable, so unchanged
         self.assertEqual(self.account1.currencies, ['USD'])  # Not editable, so unchanged
