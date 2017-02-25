@@ -27,7 +27,9 @@
                 <td>{{ account.get__type_display }}</td>
                 <td>{{ account.balance }}</td>
                 <td>
-                    <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
+                    {% if account.is_leaf_node %}
+                        <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
+                    {% endif %}
                 </td>
                 <td>
                     <a href="{% url 'hordak:accounts_update' account.uuid %}" class="btn btn-default btn-xs">Edit</a>
