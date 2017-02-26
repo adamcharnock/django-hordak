@@ -13,6 +13,7 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:transactions_create')
+        self.login()
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
@@ -40,6 +41,7 @@ class CurrencyTradeView(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:currency_trade')
+        self.login()
 
         self.account_gbp = self.account(name='GBP', type=Account.TYPES.asset, currencies=['GBP'])
         self.account_eur = self.account(name='EUR', type=Account.TYPES.asset, currencies=['EUR'])
@@ -75,6 +77,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:transactions_reconcile')
+        self.login()
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)

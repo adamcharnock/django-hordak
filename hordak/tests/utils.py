@@ -1,3 +1,5 @@
+from django.contrib.auth import get_user_model
+
 from hordak.models import Account, StatementImport
 
 
@@ -27,6 +29,13 @@ class DataProvider(object):
             bank_account=bank_account or self.account(type=Account.TYPES.asset),
             **kwargs
         )
+
+    def login(self):
+        user = get_user_model().objects.create(username='user')
+        user.set_password('password')
+        user.save()
+        self.client.login(username='user', password='password')
+        return user
 
 
 class BalanceUtils(object):

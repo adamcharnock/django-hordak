@@ -1,6 +1,8 @@
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.urls.base import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views.generic.detail import SingleObjectMixin, BaseDetailView
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -9,6 +11,7 @@ from hordak.models import Account, Transaction, Leg
 from hordak.forms import accounts as account_forms
 
 
+@method_decorator(login_required, name='dispatch')
 class AccountListView(ListView):
     """View for listing accounts
 
@@ -27,6 +30,7 @@ class AccountListView(ListView):
     context_object_name = 'accounts'
 
 
+@method_decorator(login_required, name='dispatch')
 class AccountCreateView(CreateView):
     """View for creating accounts
 
@@ -45,6 +49,7 @@ class AccountCreateView(CreateView):
     success_url = reverse_lazy('hordak:accounts_list')
 
 
+@method_decorator(login_required, name='dispatch')
 class AccountUpdateView(UpdateView):
     """View for updating accounts
 
@@ -71,6 +76,7 @@ class AccountUpdateView(UpdateView):
     success_url = reverse_lazy('hordak:accounts_list')
 
 
+@method_decorator(login_required, name='dispatch')
 class AccountTransactionsView(SingleObjectMixin, ListView):
     template_name = 'hordak/accounts/account_transactions.html'
     model = Leg

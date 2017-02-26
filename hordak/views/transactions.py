@@ -1,7 +1,9 @@
+from django.contrib.auth.decorators import login_required
 from django.db import transaction as db_transaction
 from django.http import Http404
 from django.urls import reverse
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, ListView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
@@ -9,6 +11,7 @@ from hordak.forms.transactions import CurrencyTradeForm
 from hordak.models import StatementLine, Leg, Transaction
 
 
+@method_decorator(login_required, name='dispatch')
 class TransactionCreateView(CreateView):
     """ View for creation of simple transactions.
 
@@ -29,6 +32,7 @@ class TransactionCreateView(CreateView):
     template_name = 'hordak/transactions/transaction_create.html'
 
 
+@method_decorator(login_required, name='dispatch')
 class CurrencyTradeView(CreateView):
     form_class = CurrencyTradeForm
     success_url = reverse_lazy('hordak:accounts_list')
@@ -40,6 +44,7 @@ class CurrencyTradeView(CreateView):
         return kwargs
 
 
+@method_decorator(login_required, name='dispatch')
 class TransactionsReconcileView(ListView):
     """ Handle rendering and processing in the reconciliation view
 

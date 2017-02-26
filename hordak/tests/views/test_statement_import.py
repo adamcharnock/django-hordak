@@ -14,6 +14,7 @@ class DryRunViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         logging.disable(logging.CRITICAL)
+        self.login()
 
     def tearDown(self):
         logging.disable(logging.INFO)
@@ -76,6 +77,7 @@ class ExecuteViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         logging.disable(logging.CRITICAL)
+        self.login()
 
     def tearDown(self):
         logging.disable(logging.INFO)
@@ -137,10 +139,10 @@ class CreateImportViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:import_create')
+        self.login()
 
     def test_load(self):
-        c = Client()
-        response = c.post(self.view_url)
+        response = self.client.post(self.view_url)
         self.assertEqual(response.status_code, 200)
 
     def test_success_url(self):
@@ -154,14 +156,13 @@ class SetupImportViewTestCase(DataProvider, TestCase):
     def setUp(self):
         self.transaction_import = TransactionImport.objects.create(hordak_import=self.statement_import())
         self.view_url = reverse('hordak:import_setup', args=[self.transaction_import.uuid])
+        self.login()
 
     def test_load(self):
-        c = Client()
-        response = c.get(self.view_url)
+        response = self.client.get(self.view_url)
         self.assertEqual(response.status_code, 200)
 
     def test_submit(self):
-        c = Client()
         column1 = TransactionImportColumn.objects.create(
             transaction_import=self.transaction_import,
             column_number=1,
@@ -176,7 +177,7 @@ class SetupImportViewTestCase(DataProvider, TestCase):
             example='123.45'
         )
 
-        response = c.post(self.view_url, data={
+        response = self.client.post(self.view_url, data={
             'date_format': '%d-%m-%Y',
 
             'columns-INITIAL_FORMS': '2',

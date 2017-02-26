@@ -38,10 +38,14 @@ following to your ``urls.py``:
         url(r'^', include('hordak.urls', namespace='hordak'))
     ]
 
-You should then be able to run the development server (assuming you ran the migrations as detailed above):
+You should then be able to create a user and start the development server
+(assuming you ran the migrations as detailed above):
 
 .. code::
 
+    # Create a user to login as
+    ./manage.py createsuperuser
+    # Start the development server
     ./manage.py runserver
 
 And now navigate to http://127.0.0.1:8000/.

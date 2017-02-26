@@ -10,6 +10,7 @@ class AccountListViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:accounts_list')
+        self.login()
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
@@ -24,6 +25,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.view_url = reverse('hordak:accounts_create')
+        self.login()
 
     def test_get(self):
         response = self.client.get(self.view_url)
@@ -82,6 +84,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
     def setUp(self):
         self.account1 = self.account(code='01', currencies=['USD'], type=Account.TYPES.expense, is_bank_account=False)
         self.view_url = reverse('hordak:accounts_update', args=[self.account1.uuid])
+        self.login()
 
     def test_get(self):
         response = self.client.get(self.view_url)
