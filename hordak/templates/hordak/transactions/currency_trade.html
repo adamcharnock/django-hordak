@@ -5,6 +5,7 @@
 
 {% block content %}
 
+    {% block notes %}
     <p>
         Currency exchanges are performed though a <em>trading account</em>. A trading account
         is unusual in that it must support multiple currencies, whereas most accounts only
@@ -17,7 +18,9 @@
         You can <a href="{% url 'hordak:accounts_create' %}">create a trading account</a>
         if you have not done so already.
     </p>
+    {% endblock %}
 
+    {% block form %}
     <form action="{% url 'hordak:currency_trade' %}" method="post">
         {% csrf_token %}
         {% block form_content %}
@@ -28,5 +31,6 @@
             </p>
         {% endblock %}
     </form>
+    {% endblock %}
 
 {% endblock %}
