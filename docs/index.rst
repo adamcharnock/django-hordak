@@ -21,7 +21,7 @@ Requirements
 
 Hordak is `tested against`_:
 
- * Django >= 1.8, <= 1.10
+ * Django >= 1.9, <= 1.11
  * Python 2.7, 3.4, 3.5, nightly
  * Postgres 9
 
