@@ -9,8 +9,8 @@
         {% block form_content %}
             {% include 'hordak/partials/form.html' with form=form %}
             <p>
-                <input type="submit" value="Create Transaction">
-                <a href="{% url 'hordak:accounts_list' %}">Cancel</a>
+                <input type="submit" value="Create Transaction" class="btn btn-primary btn-lg pull-right">
+                <a href="{% url 'hordak:accounts_list' %}" class="btn btn-lg pull-right">Cancel</a>
             </p>
         {% endblock %}
     </form>
