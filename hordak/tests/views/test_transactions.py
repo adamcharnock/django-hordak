@@ -23,6 +23,7 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         self.assertIn('form', response.context)
 
     def test_submit(self):
+        # more checks done in form unit tests
         response = self.client.post(self.view_url, data=dict(
             from_account=self.bank_account.uuid,
             to_account=self.income_account.uuid,
@@ -33,6 +34,41 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         self.assertEqual(response['Location'], '/')
         self.assertEqual(self.bank_account.balance(), Balance('123.45', 'EUR'))
         self.assertEqual(self.income_account.balance(), Balance('123.45', 'EUR'))
+
+
+class CurrencyTradeView(DataProvider, TestCase):
+
+    def setUp(self):
+        self.view_url = reverse('hordak:currency_trade')
+
+        self.account_gbp = self.account(name='GBP', type=Account.TYPES.asset, currencies=['GBP'])
+        self.account_eur = self.account(name='EUR', type=Account.TYPES.asset, currencies=['EUR'])
+        self.account_usd = self.account(name='USD', type=Account.TYPES.asset, currencies=['USD'])
+
+        self.trading_gbp_eur = self.account(name='GBP, EUR', type=Account.TYPES.trading, currencies=['GBP', 'EUR'])
+        self.trading_eur_usd = self.account(name='EUR, USD', type=Account.TYPES.trading, currencies=['EUR', 'USD'])
+        self.trading_all = self.account(name='GBP, EUR, USD', type=Account.TYPES.trading, currencies=['GBP', 'EUR', 'USD'])
+
+    def test_get(self):
+        response = self.client.get(self.view_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+
+    def test_submit(self):
+        # more checks done in form unit tests
+        response = self.client.post(self.view_url, data=dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.account_gbp.balance(), Balance('-100', 'GBP'))
+        self.assertEqual(self.trading_gbp_eur.balance(), Balance('-100', 'GBP', '110', 'EUR'))
+        self.assertEqual(self.account_eur.balance(), Balance('110', 'EUR'))
 
 
 class ReconcileTransactionsViewTestCase(DataProvider, TestCase):

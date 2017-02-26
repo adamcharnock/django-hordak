@@ -1,6 +1,7 @@
 from .transactions import (
     TransactionCreateView,
     TransactionsReconcileView,
+    CurrencyTradeView,
 )
 
 from .accounts import (

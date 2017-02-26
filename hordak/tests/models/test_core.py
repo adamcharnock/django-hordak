@@ -1,7 +1,6 @@
 from datetime import date
 from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase
-from django.core.management import call_command
 from django.db import transaction as db_transaction
 from moneyed.classes import Money
 

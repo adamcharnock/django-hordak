@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
+from hordak.forms.transactions import CurrencyTradeForm
 from hordak.models import StatementLine, Leg, Transaction
 
 
@@ -26,6 +27,17 @@ class TransactionCreateView(CreateView):
     form_class = SimpleTransactionForm
     success_url = reverse_lazy('hordak:accounts_list')
     template_name = 'hordak/transactions/transaction_create.html'
+
+
+class CurrencyTradeView(CreateView):
+    form_class = CurrencyTradeForm
+    success_url = reverse_lazy('hordak:accounts_list')
+    template_name = 'hordak/transactions/currency_trade.html'
+
+    def get_form_kwargs(self):
+        kwargs = super(CurrencyTradeView, self).get_form_kwargs()
+        kwargs.pop('instance')
+        return kwargs
 
 
 class TransactionsReconcileView(ListView):

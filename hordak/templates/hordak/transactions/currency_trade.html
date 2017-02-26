@@ -1,0 +1,32 @@
+{% extends 'hordak/base.html' %}
+
+{% block page_name %}Create Transaction{% endblock %}
+{% block page_description %}Move money between accounts{% endblock %}
+
+{% block content %}
+
+    <p>
+        Currency exchanges are performed though a <em>trading account</em>. A trading account
+        is unusual in that it must support multiple currencies, whereas most accounts only
+        support one. The trading account has a balance in each currency it supports. If
+        you convert these balances the same currency you will find your profit/loss given the
+        exchange rates used.
+    </p>
+
+    <p>
+        You can <a href="{% url 'hordak:accounts_create' %}">create a trading account</a>
+        if you have not done so already.
+    </p>
+
+    <form action="{% url 'hordak:currency_trade' %}" method="post">
+        {% csrf_token %}
+        {% block form_content %}
+            {% include 'hordak/partials/form.html' with form=form %}
+            <p>
+                <input type="submit" value="Create Trade" class="btn btn-primary btn-lg pull-right">
+                <a href="{% url 'hordak:accounts_list' %}" class="btn btn-lg pull-right">Cancel</a>
+            </p>
+        {% endblock %}
+    </form>
+
+{% endblock %}

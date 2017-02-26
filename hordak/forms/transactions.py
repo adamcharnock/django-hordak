@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.forms import BaseInlineFormSet, inlineformset_factory
 from djmoney.forms import MoneyField
 from hordak.models import Account, Transaction, Leg
@@ -140,3 +141,60 @@ LegFormSet = inlineformset_factory(
     can_delete=False,
     formset=BaseLegFormSet,
 )
+
+
+class CurrencyTradeForm(forms.Form):
+    source_account = forms.ModelChoiceField(
+        queryset=Account.objects.filter(children__isnull=True),
+        to_field_name='uuid'
+    )
+    source_amount = MoneyField(decimal_places=2)
+    trading_account = forms.ModelChoiceField(
+        queryset=Account.objects.filter(children__isnull=True, _type=Account.TYPES.trading),
+        to_field_name='uuid',
+        help_text='The account in which to perform the trade. '
+                  'This account must support both the source and destination currency. If none exist '
+                  'perhaps create one.'
+    )
+    destination_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
+    destination_amount = MoneyField(decimal_places=2)
+    description = forms.CharField(widget=forms.Textarea, required=False)
+
+    def clean(self):
+        cleaned_data = super(CurrencyTradeForm, self).clean()
+        if self.errors:
+            return cleaned_data
+
+        source_account = cleaned_data['source_account']
+        source_amount = cleaned_data['source_amount']
+        trading_account = cleaned_data['trading_account']
+        destination_amount = cleaned_data['destination_amount']
+        destination_account = cleaned_data['destination_account']
+
+        if source_amount.currency.code not in source_account.currencies:
+            raise ValidationError('Source account does not support {}'.format(source_amount.currency))
+        if source_amount.currency.code not in trading_account.currencies:
+            raise ValidationError('Trading account does not support {}'.format(source_amount.currency))
+        if destination_amount.currency.code not in trading_account.currencies:
+            raise ValidationError('Trading account does not support {}'.format(source_amount.currency))
+        if destination_amount.currency.code not in destination_account.currencies:
+            raise ValidationError('Destination account does not support {}'.format(source_amount.currency))
+
+        return cleaned_data
+
+    @transaction.atomic()
+    def save(self):
+        source_account = self.cleaned_data.get('source_account')
+        trading_account = self.cleaned_data.get('trading_account')
+        destination_account = self.cleaned_data.get('destination_account')
+        source_amount = self.cleaned_data.get('source_amount')
+        destination_amount = self.cleaned_data.get('destination_amount')
+
+        transaction = Transaction.objects.create(
+            description=self.cleaned_data.get('description')
+        )
+        Leg.objects.create(transaction=transaction, account=source_account, amount=source_amount)
+        Leg.objects.create(transaction=transaction, account=trading_account, amount=-source_amount)
+        Leg.objects.create(transaction=transaction, account=trading_account, amount=destination_amount)
+        Leg.objects.create(transaction=transaction, account=destination_account, amount=-destination_amount)
+        return transaction

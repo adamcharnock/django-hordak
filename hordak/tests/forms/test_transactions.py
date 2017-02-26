@@ -1,5 +1,5 @@
 from django.test import TestCase
-from hordak.forms.transactions import SimpleTransactionForm
+from hordak.forms.transactions import SimpleTransactionForm, CurrencyTradeForm
 from hordak.models import Account, Transaction
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
@@ -100,3 +100,125 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
         self.assertFalse(form.is_valid())
 
 
+class CurrencyTradeFormTestCase(DataProvider, TestCase):
+
+    def setUp(self):
+        self.account_gbp = self.account(name='GBP', type=Account.TYPES.asset, currencies=['GBP'])
+        self.account_eur = self.account(name='EUR', type=Account.TYPES.asset, currencies=['EUR'])
+        self.account_usd = self.account(name='USD', type=Account.TYPES.asset, currencies=['USD'])
+
+        self.trading_gbp_eur = self.account(name='GBP, EUR', type=Account.TYPES.trading, currencies=['GBP', 'EUR'])
+        self.trading_eur_usd = self.account(name='EUR, USD', type=Account.TYPES.trading, currencies=['EUR', 'USD'])
+        self.trading_all = self.account(name='GBP, EUR, USD', type=Account.TYPES.trading, currencies=['GBP', 'EUR', 'USD'])
+
+    def test_valid(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        self.assertEqual(self.account_gbp.balance(), Balance('-100', 'GBP'))
+        self.assertEqual(self.trading_gbp_eur.balance(), Balance('-100', 'GBP', '110', 'EUR'))
+        self.assertEqual(self.account_eur.balance(), Balance('110', 'EUR'))
+
+    def test_no_source_account(self):
+        form = CurrencyTradeForm(dict(
+            source_account='',
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_no_source_amount(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='',
+            source_amount_1='',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_no_trading_account(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account='',
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_trading_account_single_currency(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.account(name='trading', type=Account.TYPES.trading, currencies=['GBP']).uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_trading_account_no_source_currency(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.account(name='trading', type=Account.TYPES.trading, currencies=['EUR', 'USD']).uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_trading_account_no_destination_currency(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.account(name='trading', type=Account.TYPES.trading, currencies=['GBP', 'USD']).uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_no_destination_account(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account='',
+            destination_amount_0='110',
+            destination_amount_1='EUR',
+        ))
+        self.assertFalse(form.is_valid())
+
+    def test_no_destination_amount(self):
+        form = CurrencyTradeForm(dict(
+            source_account=self.account_gbp.uuid,
+            source_amount_0='100',
+            source_amount_1='GBP',
+            trading_account=self.trading_gbp_eur.uuid,
+            destination_account=self.account_eur.uuid,
+            destination_amount_0='',
+            destination_amount_1='',
+        ))
+        self.assertFalse(form.is_valid())
