@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 
 from hordak.views import accounts, statement_import
 from hordak.views import transactions
@@ -18,4 +18,9 @@ urlpatterns = [
     url(r'^import/(?P<uuid>.*)/setup/$', statement_import.SetupImportView.as_view(), name='import_setup'),
     url(r'^import/(?P<uuid>.*)/dry-run/$', statement_import.DryRunImportView.as_view(), name='import_dry_run'),
     url(r'^import/(?P<uuid>.*)/run/$', statement_import.ExecuteImportView.as_view(), name='import_execute'),
+
+
 ]
+
+# Also add in the authentication views that we need to login/logout etc
+urlpatterns += [url(r'^auth/', include('django.contrib.auth.urls'))]
