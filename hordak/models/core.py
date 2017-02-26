@@ -241,6 +241,8 @@ class Account(MPTTModel):
             will always result in both balances increasing. This may change in future if it is
             found to be unhelpful.
 
+            Transfers to trading accounts will always behave as normal.
+
         Args:
 
             to_account (Account): The destination account.
@@ -251,7 +253,7 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError('amount must be of type Money')
 
-        if to_account.sign == 1:
+        if to_account.sign == 1 and to_account.type != self.TYPES.trading:
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)

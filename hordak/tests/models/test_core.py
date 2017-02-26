@@ -212,6 +212,16 @@ class AccountTestCase(DataProvider, TestCase):
         self.assertEqual(dst.balance(), Balance(100, 'EUR'))
         Account.validate_accounting_equation()
 
+    def test_currency_exchange(self):
+        src = self.account(type=Account.TYPES.asset, currencies=['GBP'])
+        trading = self.account(type=Account.TYPES.trading, currencies=['GBP', 'EUR'])
+        dst = self.account(type=Account.TYPES.asset, currencies=['EUR'])
+        src.transfer_to(trading, Money('100', 'GBP'))
+        trading.transfer_to(dst, Money('110', 'EUR'))
+        self.assertEqual(src.balance(), Balance('-100', 'GBP'))
+        self.assertEqual(trading.balance(), Balance('-100', 'GBP', '110', 'EUR'))
+        self.assertEqual(dst.balance(), Balance('110', 'EUR'))
+
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
 
