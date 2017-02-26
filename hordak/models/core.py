@@ -228,7 +228,7 @@ class Account(MPTTModel):
         This is a shortcut utility method which simplifies the process of
         transferring between accounts.
 
-        This method attempts to perform the transaction in an intuitive mannor.
+        This method attempts to perform the transaction in an intuitive manner.
         For example:
 
           * Transferring income -> income will result in the former decreasing and the latter increasing
@@ -237,7 +237,7 @@ class Account(MPTTModel):
 
         .. note::
 
-            Transferrs in any direction between ``{asset | expense} <-> {income | liability | equity}``
+            Transfers in any direction between ``{asset | expense} <-> {income | liability | equity}``
             will always result in both balances increasing. This may change in future if it is
             found to be unhelpful.
 
