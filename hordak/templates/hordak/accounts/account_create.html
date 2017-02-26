@@ -6,7 +6,7 @@
 {% block content %}
     <form action="" method="post">
         {% csrf_token %}
-        {{ form }}
+        {% include 'hordak/partials/form.html' with form=form %}
 
         <p>
             <input type="submit" class="btn btn-primary btn-lg pull-right" value="Create account">

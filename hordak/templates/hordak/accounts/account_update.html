@@ -17,7 +17,7 @@
             <div class="form-control-static">{{ account.currencies|join:', ' }}</div>
         </div>
 
-        {{ form }}
+        {% include 'hordak/partials/form.html' with form=form %}
 
         <p>
             <input type="submit" class="btn btn-primary btn-lg pull-right" value="Save changes">

@@ -6,33 +6,38 @@
 {% block content %}
     <form action="{% url 'hordak:import_setup' transaction_import.uuid %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form }}
-        {{ formset.management_form }}
-        {% for f in formset %}
-            <div class="row">
-                <div class="col-xs-6">
-                    <h4>
-                        {% if f.instance.column_heading %}
-                            Column: {{ f.instance.column_heading }}
-                        {% else %}
-                            Column {{ f.instance.column_number }}
-                        {% endif %}
-                            <h5>
-                                {% if f.instance.example %}
-                                    Example data: <strong>{{ f.instance.example }}</strong>
-                                {% else %}
-                                    <em>No data in column</em>
-                                {% endif %}
-                            </h5>
 
-                    </h4>
-                </div>
-                <div class="col-xs-6">
-                    {{ f }}
-                </div>
-            </div>
-        {% endfor %}
+        {% block form_content %}
+            {% include 'hordak/partials/form.html' with form=form %}
+            {{ formset.management_form }}
+            {% for f in formset %}
+                <div class="row">
+                    <div class="col-xs-6">
+                        <h4>
+                            {% if f.instance.column_heading %}
+                                Column: {{ f.instance.column_heading }}
+                            {% else %}
+                                Column {{ f.instance.column_number }}
+                            {% endif %}
+                                <h5>
+                                    {% if f.instance.example %}
+                                        Example data: <strong>{{ f.instance.example }}</strong>
+                                    {% else %}
+                                        <em>No data in column</em>
+                                    {% endif %}
+                                </h5>
 
-        <input type="submit" class="btn btn-primary btn-lg pull-right" value="Continue...">
+                        </h4>
+                    </div>
+                    <div class="col-xs-6">
+                        {% include 'hordak/partials/form.html' with form=f %}
+                    </div>
+                </div>
+            {% endfor %}
+
+            {% block actions %}
+                <input type="submit" class="btn btn-primary btn-lg pull-right" value="Continue...">
+            {% endblock %}
+        {% endblock %}
     </form>
 {% endblock %}

@@ -6,7 +6,9 @@
 {% block content %}
     <form action="{% url 'hordak:import_create' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form }}
-        <input type="submit" class="btn btn-primary btn-lg pull-right" value="Continue...">
+        {% block form_content %}
+            {% include 'hordak/partials/form.html' with form=form %}
+            <input type="submit" class="btn btn-primary btn-lg pull-right" value="Continue...">
+        {% endblock %}
     </form>
 {% endblock %}
