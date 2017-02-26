@@ -10,6 +10,7 @@ services:
   - postgresql
 
 env:
+  - DJANGO_VERSION=1.11b1
   - DJANGO_VERSION=1.10.5
   - DJANGO_VERSION=1.9.9
 
