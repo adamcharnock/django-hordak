@@ -1,5 +1,31 @@
 ----
 
+Version 1.4.0, Tue 28 Feb 2017
+===============================
+
+94cf1ca8f2	Adding auth views to allow login (Adam Charnock)
+f442f4440c	Adding login_required decorator to views (Adam Charnock)
+7e1802cf43	Adding blocks to currency trade template (Adam Charnock)
+92a57ce2d9	Updating currency exchange link text (Adam Charnock)
+3f788018b4	Setting currency exchange page title (Adam Charnock)
+bc3a9e4d5b	Adding currency trading view (Adam Charnock)
+13588772fc	Adding test and support for simple currency account transfers (Adam Charnock)
+28aa6a012e	Fixing typos (Adam Charnock)
+25e1125d46	Now building on django 1.11 (Adam Charnock)
+10fc111140	Bumping django-smalluuid version requirement (Adam Charnock)
+73ed75ec25	Fixing travis error (Adam Charnock)
+78c390eb58	Increasing django version requirement to 1.9 (Adam Charnock)
+7ccdf8c539	Adding classes to transation creation form buttons (Adam Charnock)
+f76755dcb5	Work on template modularity (Adam Charnock)
+081ed75abc	Fixing missing import (Adam Charnock)
+1efcb32aaa	Fixing HTML error (Adam Charnock)
+f794cf68f6	Removing stray chars (Adam Charnock)
+2cac0282ca	Tweak to docs (Adam Charnock)
+d0650bef6d	Adding statement import to interface (Adam Charnock)
+70c0bf5a7e	Pulling statement import code into Hordak from Swiftwind (Adam Charnock)
+dbc2251e50	Splitting up models.py in prep for pulling in functionality from swiftwind (Adam Charnock)
+
+
 Version 1.3.0, Sat 25 Feb 2017
 ===============================
 
