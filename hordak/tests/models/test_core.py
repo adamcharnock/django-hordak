@@ -12,20 +12,6 @@ from hordak.utilities.currency import Balance
 
 class AccountTestCase(DataProvider, TestCase):
 
-    def test_full_code(self):
-        """
-        Check that the full code for a account is correctly
-        determined by combining its own code with those of its
-        ancestors
-        """
-        account1 = self.account(code='5')
-        account2 = self.account(parent=account1, code='0')
-        account3 = self.account(parent=account2, code='9')
-
-        self.assertEqual(account1.full_code, '5')
-        self.assertEqual(account2.full_code, '50')
-        self.assertEqual(account3.full_code, '509')
-
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
@@ -36,6 +22,7 @@ class AccountTestCase(DataProvider, TestCase):
     def test_str_child(self):
         account1 = self.account(code='5')
         account2 = self.account(parent=account1, name='Account 2', code='1')
+        account2.refresh_from_db()
         self.assertEqual(str(account2), 'Account 2 [51]')
 
     def test_str_root_no_data_unsaved(self):
@@ -220,6 +207,42 @@ class AccountTestCase(DataProvider, TestCase):
         self.assertEqual(src.balance(), Balance('-100', 'GBP'))
         self.assertEqual(trading.balance(), Balance('-100', 'GBP', '110', 'EUR'))
         self.assertEqual(dst.balance(), Balance('110', 'EUR'))
+
+    def test_full_code(self):
+        """
+        Check that the full code for a account is correctly set by the db trigger
+        """
+        account1 = self.account(code='5')
+        account2 = self.account(parent=account1, code='0')
+        account3 = self.account(parent=account2, code='9')
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, '5')
+        self.assertEqual(account2.full_code, '50')
+        self.assertEqual(account3.full_code, '509')
+
+    def test_full_code_error_on_non_unique(self):
+        account1 = self.account(code='5')
+        account2 = self.account(parent=account1, code='0')
+
+        with self.assertRaises(DatabaseError):
+            self.account(parent=account1, code='0')
+
+    def test_full_code_changes_on_update(self):
+        account1 = self.account(code='5')
+        account2 = self.account(parent=account1, code='0')
+        account3 = self.account(parent=account2, code='9')
+        account1.code = 'A'
+        account1.save()
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, 'A')
+        self.assertEqual(account2.full_code, 'A0')
+        self.assertEqual(account3.full_code, 'A09')
 
 
 class LegTestCase(DataProvider, DbTransactionTestCase):

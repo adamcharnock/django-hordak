@@ -14,7 +14,7 @@ class AccountForm(forms.ModelForm):
 
     class Meta:
         model = Account
-        exclude = []
+        exclude = ['full_code']
 
     def __init__(self, *args, **kwargs):
         self.is_updating = bool(kwargs.get('instance')) and kwargs['instance'].pk

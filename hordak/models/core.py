@@ -90,8 +90,8 @@ class Account(MPTTModel):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    # TODO: Denormalise account code (in order to allow lookup by it). Or add a calculated field in postgres?
     code = models.CharField(max_length=3)
+    full_code = models.CharField(max_length=100, db_index=True, unique=True)
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     _type = models.CharField(max_length=2, choices=TYPES, blank=True)
@@ -126,19 +126,6 @@ class Account(MPTTModel):
 
     def natural_key(self):
         return (self.uuid,)
-
-    @property
-    def full_code(self):
-        """Get the full code for this account
-
-        Do this by concatenating this account's code with that
-        of all the parent accounts.
-        """
-        if not self.pk:
-            # Has not been saved to the DB so we cannot get ancestors
-            return None
-        else:
-            return ''.join(account.code for account in self.get_ancestors(include_self=True))
 
     @property
     def type(self):
