@@ -241,6 +241,19 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         self.assertEqual(account2.full_code, 'A0')
         self.assertEqual(account3.full_code, 'A09')
 
+    def test_child_asset_account_can_be_bank_account(self):
+        """Regression test for: #Postgres check bank_accounts_are_asset_accounts
+        does not work on child bank accounts
+
+        See Also:
+            https://github.com/adamcharnock/django-hordak/issues/4
+        """
+        account1 = self.account(type=Account.TYPES.asset)
+        account2 = self.account(parent=account1, is_bank_account=True)
+        account2.refresh_from_db()
+        self.assertEqual(account2.type, Account.TYPES.asset)
+        self.assertEqual(account2.is_bank_account, True)
+
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
 
