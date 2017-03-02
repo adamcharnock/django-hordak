@@ -150,7 +150,7 @@ class CurrencyTradeForm(forms.Form):
     )
     source_amount = MoneyField(decimal_places=2)
     trading_account = forms.ModelChoiceField(
-        queryset=Account.objects.filter(children__isnull=True, _type=Account.TYPES.trading),
+        queryset=Account.objects.filter(children__isnull=True, type=Account.TYPES.trading),
         to_field_name='uuid',
         help_text='The account in which to perform the trade. '
                   'This account must support both the source and destination currency. If none exist '

@@ -37,7 +37,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         response = self.client.post(self.view_url, data=dict(
             name='Test Account',
             code='01',
-            _type='IN',
+            type='IN',
             is_bank_account='',
             currencies='EUR, GBP',
         ))
@@ -55,7 +55,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         form = AccountForm(data=dict(
             name='Test Account',
             code='01',
-            _type='IN',
+            type='IN',
             is_bank_account='yes',
             currencies='GBP',
         ))
@@ -69,7 +69,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         form = AccountForm(data=dict(
             name='Test Account',
             code='01',
-            _type='AS',
+            type='AS',
             is_bank_account='yes',
             currencies='EUR, GBP',
         ))
@@ -96,7 +96,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         response = self.client.post(self.view_url, data=dict(
             name='My Account',
             code='04',
-            _type='LI',
+            type='LI',
             is_bank_account='yes',
             currencies='EUR, GBP',
         ))

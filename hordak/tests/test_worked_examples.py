@@ -200,6 +200,7 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         # Firstly, before we even collect any money from housemates, we spend some on food
         self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
         self.bank.transfer_to(self.ex_food, Money(35, 'EUR'))
+
         # Now we have negative money in the bank, and food expenses recorded
         self.assertBalanceEqual(self.bank.balance(), -70)
         self.assertBalanceEqual(self.ex_food.balance(), 70)

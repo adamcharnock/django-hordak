@@ -94,7 +94,7 @@ class Account(MPTTModel):
     full_code = models.CharField(max_length=100, db_index=True, unique=True)
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
-    _type = models.CharField(max_length=2, choices=TYPES, blank=True)
+    type = models.CharField(max_length=2, choices=TYPES, blank=True)
     is_bank_account = models.BooleanField(default=False, blank=True,
                                           help_text='Is this a bank account. This implies we can import bank '
                                                     'statements into it and that it only supports a single currency')
@@ -107,6 +107,28 @@ class Account(MPTTModel):
 
     class Meta:
         unique_together = (('parent', 'code'),)
+
+    def __init__(self, *args, **kwargs):
+        super(Account, self).__init__(*args, **kwargs)
+        self._initial_code = self.code
+
+    def save(self, *args, **kwargs):
+        is_creating = not bool(self.pk)
+        super(Account, self).save(*args, **kwargs)
+        do_refresh = False
+
+        # If we've just created a non-root node then we're going to need to load
+        # the type back from the DB (as it is set by trigger)
+        if is_creating and not self.is_root_node():
+            do_refresh = True
+
+        # If we've just create this account or if the code has changed then we're
+        # going to need to reload from the DB (full_code is set by trigger)
+        if is_creating or self._initial_code != self.code:
+            do_refresh = True
+
+        if do_refresh:
+            self.refresh_from_db()
 
     @classmethod
     def validate_accounting_equation(cls):
@@ -126,24 +148,6 @@ class Account(MPTTModel):
 
     def natural_key(self):
         return (self.uuid,)
-
-    @property
-    def type(self):
-        if self.is_root_node():
-            return self._type
-        else:
-            return self.get_root()._type
-
-    @type.setter
-    def type(self, value):
-        """
-        Only root nodes can have an account type. This seems like a
-        sane limitation until proven otherwise.
-        """
-        if self.is_root_node():
-            self._type = value
-        elif value is not None:
-            raise exceptions.AccountTypeOnChildNode()
 
     @property
     def sign(self):

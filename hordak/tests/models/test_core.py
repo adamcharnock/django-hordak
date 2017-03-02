@@ -1,6 +1,6 @@
 from datetime import date
 from django.db.utils import DatabaseError, IntegrityError
-from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase
+from django.test.testcases import TestCase, TransactionTestCase as DbTransactionTestCase, TransactionTestCase
 from django.db import transaction as db_transaction
 from moneyed.classes import Money
 
@@ -10,7 +10,7 @@ from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
 
-class AccountTestCase(DataProvider, TestCase):
+class AccountTestCase(DataProvider, TransactionTestCase):
 
     def test_str_root(self):
         # Account code should not be rendered as we should not
@@ -41,35 +41,31 @@ class AccountTestCase(DataProvider, TestCase):
         self.assertEqual(account1.type, Account.TYPES.asset)
 
     def test_type_leaf(self):
-        """Check the type gets set on the leaf account"""
+        """Check the type gets set on the leaf account (via db trigger)"""
         account1 = self.account(type=Account.TYPES.asset)
         account2 = self.account(parent=account1)
+        account2.refresh_from_db()
         self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_type_leaf_create(self):
-        """Check we CANNOT set the type upon creating a leaf account
+        """Check set the type upon creation has no effect on child accounts
 
-        Only root accounts have a type
+        Account types are determined by the root node
         """
         account1 = self.account(type=Account.TYPES.asset)
-        with self.assertRaises(exceptions.AccountTypeOnChildNode):
-            Account.objects.create(parent=account1, type=Account.TYPES.asset, currencies=['EUR'])
+        account2 = Account.objects.create(parent=account1, type=Account.TYPES.income, code='1', currencies=['EUR'])
+        self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_type_leaf_set(self):
-        """Check we CANNOT set the type after we have created a leaf account
+        """Check setting account type leaf account has not effect
 
-        Only root accounts have a type
+        Account types are determined by the root node
         """
         account1 = self.account(type=Account.TYPES.asset)
         account2 = self.account(parent=account1)
-
-        def set_it(account):
-            account.type = Account.TYPES.asset
-
-        self.assertRaises(
-            exceptions.AccountTypeOnChildNode,
-            set_it,
-            account2)
+        account2.type = Account.TYPES.income
+        account2.save()
+        self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_sign(self):
         asset = self.account(type=Account.TYPES.asset)
@@ -156,7 +152,7 @@ class AccountTestCase(DataProvider, TestCase):
         bank.transfer_to(account1, Money(100, 'EUR'))
         bank.transfer_to(account2, Money(50, 'EUR'))
 
-        self.assertEqual(Account.objects.filter(_type=Account.TYPES.income).net_balance(), Balance(150, 'EUR'))
+        self.assertEqual(Account.objects.filter(type=Account.TYPES.income).net_balance(), Balance(150, 'EUR'))
 
     def test_transfer_to(self):
         account1 = self.account(type=Account.TYPES.income)
@@ -215,9 +211,6 @@ class AccountTestCase(DataProvider, TestCase):
         account1 = self.account(code='5')
         account2 = self.account(parent=account1, code='0')
         account3 = self.account(parent=account2, code='9')
-        account1.refresh_from_db()
-        account2.refresh_from_db()
-        account3.refresh_from_db()
 
         self.assertEqual(account1.full_code, '5')
         self.assertEqual(account2.full_code, '50')
@@ -236,7 +229,11 @@ class AccountTestCase(DataProvider, TestCase):
         account3 = self.account(parent=account2, code='9')
         account1.code = 'A'
         account1.save()
-        account1.refresh_from_db()
+
+        # Account 2 & 3 will need refreshing, but
+        # account 1 was directly modified so logic
+        # in the Account.save() method should have refreshed
+        # it for us
         account2.refresh_from_db()
         account3.refresh_from_db()
 

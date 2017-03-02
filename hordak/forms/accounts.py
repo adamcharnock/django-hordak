@@ -30,7 +30,7 @@ class AccountForm(forms.ModelForm):
         super(AccountForm, self).__init__(*args, **kwargs)
 
         if self.is_updating:
-            del self.fields['_type']
+            del self.fields['type']
             del self.fields['currencies']
             del self.fields['is_bank_account']
 
@@ -38,7 +38,7 @@ class AccountForm(forms.ModelForm):
         cleaned_data = super(AccountForm, self).clean()
         is_bank_account = self.instance.is_bank_account if self.is_updating else cleaned_data['is_bank_account']
 
-        if not self.is_updating and is_bank_account and cleaned_data['_type'] != Account.TYPES.asset:
+        if not self.is_updating and is_bank_account and cleaned_data['type'] != Account.TYPES.asset:
             raise forms.ValidationError('Bank accounts must also be asset accounts.')
 
         if not self.is_updating and is_bank_account and len(cleaned_data['currencies']) > 1:
