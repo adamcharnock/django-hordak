@@ -154,6 +154,18 @@ class AccountTestCase(DataProvider, TransactionTestCase):
 
         self.assertEqual(Account.objects.filter(type=Account.TYPES.income).net_balance(), Balance(150, 'EUR'))
 
+    def test_zero_balance_single(self):
+        account = self.account(currencies=['GBP'])._zero_balance()
+        self.assertEqual(account, Balance('0', 'GBP'))
+
+    def test_zero_balance_two(self):
+        account = self.account(currencies=['GBP', 'EUR'])._zero_balance()
+        self.assertEqual(account, Balance('0', 'GBP', '0', 'EUR'))
+
+    def test_zero_balance_zero(self):
+        account = self.account(currencies=[])._zero_balance()
+        self.assertEqual(account, Balance())
+
     def test_transfer_to(self):
         account1 = self.account(type=Account.TYPES.income)
         account2 = self.account(type=Account.TYPES.income)
