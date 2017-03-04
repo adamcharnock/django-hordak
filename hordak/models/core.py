@@ -191,7 +191,7 @@ class Account(MPTTModel):
             for account
             in self.get_descendants(include_self=True)
         ]
-        return sum(balances, self._zero_balance())
+        return sum(balances, Balance())
 
     def simple_balance(self, as_of=None, raw=False, **kwargs):
         """Get the balance for this account, ignoring all child accounts
@@ -210,7 +210,7 @@ class Account(MPTTModel):
             legs = legs.filter(transaction__date__lte=as_of)
         if kwargs:
             legs = legs.filter(**kwargs)
-        return legs.sum_to_balance() * (1 if raw else self.sign)
+        return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""

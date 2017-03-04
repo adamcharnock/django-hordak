@@ -53,7 +53,10 @@ import six
 import copy
 from django.core.cache import cache
 from django.db import transaction as db_transaction
+from django.utils.translation import get_language
+from django.utils.translation import to_locale
 from moneyed import Money
+from moneyed.localization import format_money
 
 from hordak import defaults
 from hordak.exceptions import LossyCalculationError, BalanceComparisonError, TradingAccountRequiredError, \
@@ -346,7 +349,9 @@ class Balance(object):
             raise ValueError('Duplicate currency provided. All Money instances must have a unique currency.')
 
     def __str__(self):
-        return ', '.join(map(str, self._money_obs)) or 'No values'
+        def fmt(money):
+            return format_money(money, locale=to_locale(get_language() or 'en-us'))
+        return ', '.join(map(fmt, self._money_obs)) or 'No values'
 
     def __repr__(self):
         return 'Balance: {}'.format(self.__str__())

@@ -116,6 +116,13 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         self.assertEqual(account1.simple_balance(as_of='2016-06-15'), Balance(150, 'EUR'))  # same date as second transaction
         self.assertEqual(account1.simple_balance(as_of='2020-01-01'), Balance(150, 'EUR'))  # after transactions
 
+    def test_balance_simple_zero(self):
+        account1 = self.account()
+        account2 = self.account()
+
+        self.assertEqual(account1.simple_balance(), Balance(0, 'EUR'))
+        self.assertEqual(account2.simple_balance(), Balance(0, 'EUR'))
+
     def test_balance_kwargs(self):
         account1 = self.account()
         account2 = self.account()
