@@ -71,7 +71,7 @@ class Command(BaseCommand):
         Account.objects.create(parent=assets_fixed, name='Equipment', code='1', **kw)
 
         # Asset accounts (level 3)
-        Account.objects.create(parent=assets_current_cash, name='Bank Account', code='0', **kw)
+        Account.objects.create(parent=assets_current_cash, name='Bank', code='0', **kw)
         Account.objects.create(parent=assets_current_cash, name='Petty Cash', code='9', **kw)
 
         # Liabilities (level 1)
