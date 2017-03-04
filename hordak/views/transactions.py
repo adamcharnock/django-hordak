@@ -115,7 +115,13 @@ class TransactionsReconcileView(ListView):
             # Create the inbound transaction leg
             bank_account = self.object.statement_import.bank_account
             amount = self.object.amount * -1
-            Leg.objects.create(transaction=transaction, account=bank_account, amount=amount)
+            Leg.objects.create(
+                transaction=transaction,
+                account=bank_account,
+                amount=amount,
+                # Note that bank accounts can only have one currency
+                amount_currency=bank_account.currencies[0]
+            )
 
             # We need to create a new leg formset in order to pass in the
             # transaction we just created (required as the new legs must
