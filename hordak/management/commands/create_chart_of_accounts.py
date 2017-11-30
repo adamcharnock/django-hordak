@@ -50,14 +50,14 @@ class Command(BaseCommand):
                     'Accounts already exist. Use --force if you are sure you want to do this'
                 )
 
-        kw = dict(currencies=options['currency'])
+        kw = dict(currencies=[options['currency']])
         # Root accounts (level 0)
         T = Account.TYPES
         assets = Account.objects.create(name='Assets', code='1', type=T.asset, **kw)
         liabilities = Account.objects.create(name='Liabilities', code='2', type=T.liability, **kw)
-        equity = Account.objects.create(name='Equity', code='3', type=T.income, **kw)
-        income = Account.objects.create(name='Income', code='4', type=T.expense, **kw)
-        expenses = Account.objects.create(name='Expenses', code='5', type=T.equity, **kw)
+        equity = Account.objects.create(name='Equity', code='3', type=T.equity, **kw)
+        income = Account.objects.create(name='Income', code='4', type=T.income, **kw)
+        expenses = Account.objects.create(name='Expenses', code='5', type=T.expense, **kw)
 
         # Asset accounts (level 1)
         assets_current = Account.objects.create(parent=assets, name='Current', code='0', **kw)
