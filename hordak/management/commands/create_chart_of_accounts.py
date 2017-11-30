@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from hordak import defaults
 from hordak.models import Account
+
 
 class Command(BaseCommand):
     help = 'Create an initial chart of accounts'
@@ -50,7 +50,12 @@ class Command(BaseCommand):
                     'Accounts already exist. Use --force if you are sure you want to do this'
                 )
 
-        kw = dict(currencies=[options['currency']])
+        if isinstance(options['currency'], (list, tuple)):
+            currencies = options['currency']
+        else:
+            currencies = [options['currency']]
+
+        kw = dict(currencies=currencies)
         # Root accounts (level 0)
         T = Account.TYPES
         assets = Account.objects.create(name='Assets', code='1', type=T.asset, **kw)
