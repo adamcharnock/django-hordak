@@ -82,10 +82,10 @@ DATABASES = {
     # The default settings may work well for local development.
     'default': dj_database_url.config() or {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'hordak',
+        'NAME': 'postgres',
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'USER': getpass.getuser(),
+        'USER': 'postgres',
         'PASSWORD': '',
     }
 }
