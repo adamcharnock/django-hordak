@@ -253,6 +253,11 @@ class Account(MPTTModel):
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
             direction = -1
+        elif self.type == self.TYPES.liability and to_account.type == self.TYPES.expense:
+            # Transfers from liability -> asset accounts should reduce both.
+            # For example, moving money from Rent Payable (liability) to your Rent (expense) account
+            # should use the funds you've built up in the liability account to pay off the expense account.
+            direction = -1
         else:
             direction = 1
 

@@ -213,6 +213,25 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         self.assertEqual(dst.balance(), Balance(100, 'EUR'))
         Account.validate_accounting_equation()
 
+    def test_transfer_liability_to_expense(self):
+        # When doing this it is probably safe to assume we want to the
+        # liability account to contribute to an expense, therefore both should decrease
+        src = self.account(type=Account.TYPES.liability)
+        dst = self.account(type=Account.TYPES.expense)
+        src.transfer_to(dst, Money(100, 'EUR'))
+        self.assertEqual(src.balance(), Balance(-100, 'EUR'))
+        self.assertEqual(dst.balance(), Balance(-100, 'EUR'))
+        Account.validate_accounting_equation()
+
+    def test_transfer_expense_to_liability(self):
+        # This should perform the reverse action to that in the above test_transfer_liability_to_expense()
+        src = self.account(type=Account.TYPES.expense)
+        dst = self.account(type=Account.TYPES.liability)
+        src.transfer_to(dst, Money(100, 'EUR'))
+        self.assertEqual(src.balance(), Balance(100, 'EUR'))
+        self.assertEqual(dst.balance(), Balance(100, 'EUR'))
+        Account.validate_accounting_equation()
+
     def test_currency_exchange(self):
         src = self.account(type=Account.TYPES.asset, currencies=['GBP'])
         trading = self.account(type=Account.TYPES.trading, currencies=['GBP', 'EUR'])
