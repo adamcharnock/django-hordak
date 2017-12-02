@@ -4,6 +4,7 @@ import locale
 from django import template
 from django.utils.safestring import mark_safe
 from hordak.utilities.currency import Balance
+from moneyed import Money
 
 register = template.Library()
 
@@ -11,6 +12,13 @@ register = template.Library()
 @register.filter(name='abs')
 def abs_val(value):
     return abs(value)
+
+
+@register.filter()
+def inv(value):
+    if not value:
+        return value
+    return value * -1
 
 
 @register.filter()
@@ -36,6 +44,8 @@ def currency(value):
 @register.filter(is_safe=True)
 def color_currency(value, flip=False):
     value = value or 0
+    if isinstance(value, Money):
+        value = value.amount
     if value > 0:
         css_class = 'neg' if flip else 'pos'
     elif value < 0:
@@ -49,6 +59,7 @@ def color_currency(value, flip=False):
 @register.filter(is_safe=True)
 def color_currency_inv(value):
     return color_currency(value, flip=True)
+
 
 @register.filter(is_safe=True)
 def negative(value):
