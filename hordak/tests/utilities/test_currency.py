@@ -242,6 +242,7 @@ class BalanceTestCase(CacheTestCase):
 
     def test_eq(self):
         self.assertEqual(Balance() == Balance(), True)
+        self.assertEqual(Balance() == 0, True)
         self.assertEqual(Balance([Money(0, 'USD')]) == Balance(), True)
 
         self.assertEqual(self.balance_1 == +self.balance_1, True)
@@ -285,7 +286,11 @@ class BalanceTestCase(CacheTestCase):
             False
         )
         self.assertEqual(
-            Balance([Money(1, 'USD')]) < Balance([Money(1, 'EUR')]),
+            Balance([Money(1, 'USD')]) < Balance([Money(10, 'EUR')]),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(-1, 'USD')]) < 0,
             True
         )
 
@@ -313,6 +318,10 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(
             Balance([Money(1, 'USD')]) > Balance([Money(1, 'EUR')]),
             False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) > 0,
+            True
         )
 
     def test_lte(self):

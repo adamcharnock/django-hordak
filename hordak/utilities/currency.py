@@ -422,6 +422,11 @@ class Balance(object):
     def __lt__(self, other):
         if isinstance(other, Money):
             other = self.__class__([other])
+        # We can compare against non-balance 0-values, but otherwise we have to
+        # compare against a Balance (otherwise we won't know what currency we are
+        # dealing with)
+        if isinstance(other, (float, int, Decimal)) and other == 0:
+            other = self.__class__()
         if not isinstance(other, Balance):
             raise BalanceComparisonError(other)
 
