@@ -317,6 +317,9 @@ class Transaction(models.Model):
 
     objects = TransactionManager()
 
+    class Meta:
+        get_latest_by = 'date'
+
     def balance(self):
         return self.legs.sum_to_balance()
 
