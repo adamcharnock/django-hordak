@@ -60,6 +60,64 @@ class TellerIoDataSourceTestCase(DataProvider, TestCase):
         self.assertEqual(line2.date, date(2017, 3, 26))
         self.assertEqual(line2.source_data, EXAMPLE_JSON[1])
 
+    @requests_mock.mock()
+    def test_does_not_duplicate(self, m):
+        m.get(
+            'https://api.teller.io/accounts/11111111-1111-4111-1111-111111111111/transactions', json=EXAMPLE_JSON,
+        )
+        m.get(
+            'https://api.teller.io/accounts/11111111-1111-4111-1111-111111111111/transactions', json=EXAMPLE_JSON,
+        )
+        tellerio.do_import(
+            token='testtoken',
+            account_uuid='11111111-1111-4111-1111-111111111111',
+            bank_account=self.bank
+        )
+        tellerio.do_import(
+            token='testtoken',
+            account_uuid='11111111-1111-4111-1111-111111111111',
+            bank_account=self.bank
+        )
+        self.assertEqual(StatementLine.objects.count(), 3)
+
+    @requests_mock.mock()
+    def test_since_none(self, m):
+        m.get(
+            'https://api.teller.io/accounts/11111111-1111-4111-1111-111111111111/transactions', json=EXAMPLE_JSON,
+        )
+        tellerio.do_import(
+            token='testtoken',
+            account_uuid='11111111-1111-4111-1111-111111111111',
+            bank_account=self.bank,
+            since=date(2017, 3, 28)
+        )
+        self.assertEqual(StatementLine.objects.count(), 0)
+
+    @requests_mock.mock()
+    def test_since_on_cutoff(self, m):
+        m.get(
+            'https://api.teller.io/accounts/11111111-1111-4111-1111-111111111111/transactions', json=EXAMPLE_JSON,
+        )
+        tellerio.do_import(
+            token='testtoken',
+            account_uuid='11111111-1111-4111-1111-111111111111',
+            bank_account=self.bank,
+            since=date(2017, 3, 27)
+        )
+        self.assertEqual(StatementLine.objects.count(), 1)
+
+    @requests_mock.mock()
+    def test_since_all(self, m):
+        m.get(
+            'https://api.teller.io/accounts/11111111-1111-4111-1111-111111111111/transactions', json=EXAMPLE_JSON,
+        )
+        tellerio.do_import(
+            token='testtoken',
+            account_uuid='11111111-1111-4111-1111-111111111111',
+            bank_account=self.bank,
+            since=date(2017, 3, 20)
+        )
+        self.assertEqual(StatementLine.objects.count(), 3)
 
 
 EXAMPLE_JSON = [
