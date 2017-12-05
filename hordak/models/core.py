@@ -481,6 +481,7 @@ class StatementLine(models.Model):
     statement_import = models.ForeignKey(StatementImport, related_name='lines')
     amount = models.DecimalField(max_digits=13, decimal_places=2)
     description = models.TextField(default='', blank=True)
+    type = models.CharField(max_length=50, default='')
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
     transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,

@@ -35,6 +35,7 @@ def do_import(token, account_uuid, bank_account):
             date=line_data['date'],
             statement_import=statement_import,
             amount=line_data['amount'],
+            type=line_data['type'],
             description=description,
             source_data=line_data,
         )
