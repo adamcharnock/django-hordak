@@ -4,7 +4,7 @@ from django.utils.datetime_safe import datetime
 from import_export import resources
 from import_export.results import Result as _Result
 
-from hordak.models import StatementLine, TransactionImportColumn
+from hordak.models import StatementLine, TransactionCsvImportColumn
 from hordak.utilities.statement_import import DATE_FORMATS
 
 
@@ -79,7 +79,7 @@ class StatementLineResource(resources.ModelResource):
         return len(list(filter(lambda r: row == r, self.dataset[:until])))
 
     def import_obj(self, obj, data, dry_run):
-        F = TransactionImportColumn.TO_FIELDS
+        F = TransactionCsvImportColumn.TO_FIELDS
         use_dual_amounts = F.amount_out in data and F.amount_in in data
 
         if F.date not in data:

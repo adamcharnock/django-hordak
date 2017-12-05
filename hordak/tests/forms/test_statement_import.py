@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from hordak.forms.statement_import import TransactionImportForm
-from hordak.models import Account, TransactionImport
+from hordak.models import Account, TransactionCsvImport
 from hordak.tests.utils import DataProvider
 
 
@@ -18,12 +18,12 @@ class TransactionImportFormTestCase(DataProvider, TestCase):
         form = TransactionImportForm(data=dict(bank_account=self.account.pk), files=dict(file=self.f))
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        obj = TransactionImport.objects.get()
+        obj = TransactionCsvImport.objects.get()
         self.assertEqual(obj.columns.count(), 6)
         self.assertEqual(obj.hordak_import.bank_account, self.account)
 
     def test_edit(self):
-        obj = TransactionImport.objects.create(
+        obj = TransactionCsvImport.objects.create(
             hordak_import=self.statement_import(bank_account=self.account),
             has_headings=True,
             file=self.f

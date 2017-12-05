@@ -1,14 +1,14 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from hordak.models import Account, TransactionImport, StatementImport, TransactionImportColumn
+from hordak.models import Account, TransactionCsvImport, StatementImport, TransactionCsvImportColumn
 
 
 class TransactionImportForm(forms.ModelForm):
     bank_account = forms.ModelChoiceField(Account.objects.filter(is_bank_account=True), label='Import data for account')
 
     class Meta:
-        model = TransactionImport
+        model = TransactionCsvImport
         fields = ('has_headings', 'file')
 
     def save(self, commit=True):
@@ -25,13 +25,13 @@ class TransactionImportForm(forms.ModelForm):
 class TransactionImportColumnForm(forms.ModelForm):
 
     class Meta:
-        model = TransactionImportColumn
+        model = TransactionCsvImportColumn
         fields = ('to_field',)
 
 
 TransactionImportColumnFormSet = inlineformset_factory(
-    parent_model=TransactionImport,
-    model=TransactionImportColumn,
+    parent_model=TransactionCsvImport,
+    model=TransactionCsvImportColumn,
     form=TransactionImportColumnForm,
     extra=0,
     can_delete=False,

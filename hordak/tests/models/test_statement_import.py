@@ -2,11 +2,11 @@ import six
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from hordak.models import TransactionImport
+from hordak.models import TransactionCsvImport
 from hordak.tests.utils import DataProvider
 
 
-class TransactionImportTestCase(DataProvider, TestCase):
+class TransactionCsvImportTestCase(DataProvider, TestCase):
 
     def test_create_columns_ok(self):
         f = SimpleUploadedFile('data.csv',
@@ -15,7 +15,7 @@ class TransactionImportTestCase(DataProvider, TestCase):
                                    b'1,1/1/1,123456789,123,OTH,Some random notes')
                                )
 
-        inst = TransactionImport.objects.create(has_headings=True, file=f, hordak_import=self.statement_import())
+        inst = TransactionCsvImport.objects.create(has_headings=True, file=f, hordak_import=self.statement_import())
         inst.create_columns()
 
         columns = inst.columns.all()

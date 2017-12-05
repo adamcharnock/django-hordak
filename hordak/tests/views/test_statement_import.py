@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from hordak.models import TransactionImport, StatementLine, TransactionImportColumn
+from hordak.models import TransactionCsvImport, StatementLine, TransactionCsvImportColumn
 from hordak.tests.utils import DataProvider
 from hordak.views import CreateImportView
 
@@ -25,7 +25,7 @@ class DryRunViewTestCase(DataProvider, TestCase):
                                    b'Number,Date,Account,Amount,Subcategory,Memo\n'
                                    b'1,1/1/' + year + b',123456789,123,OTH,Some random notes')
                                )
-        self.transaction_import = TransactionImport.objects.create(
+        self.transaction_import = TransactionCsvImport.objects.create(
             has_headings=True,
             file=f,
             date_format='%d/%m/%Y',
@@ -88,7 +88,7 @@ class ExecuteViewTestCase(DataProvider, TestCase):
                                    b'Number,Date,Account,Amount,Subcategory,Memo\n'
                                    b'1,1/1/' + year + b',123456789,123,OTH,Some random notes')
                                )
-        self.transaction_import = TransactionImport.objects.create(
+        self.transaction_import = TransactionCsvImport.objects.create(
             has_headings=True,
             file=f,
             date_format='%d/%m/%Y',
@@ -147,14 +147,14 @@ class CreateImportViewTestCase(DataProvider, TestCase):
 
     def test_success_url(self):
         view = CreateImportView()
-        view.object = TransactionImport.objects.create(hordak_import=self.statement_import())
+        view.object = TransactionCsvImport.objects.create(hordak_import=self.statement_import())
         self.assertIn(str(view.object.uuid), view.get_success_url())
 
 
 class SetupImportViewTestCase(DataProvider, TestCase):
 
     def setUp(self):
-        self.transaction_import = TransactionImport.objects.create(hordak_import=self.statement_import())
+        self.transaction_import = TransactionCsvImport.objects.create(hordak_import=self.statement_import())
         self.view_url = reverse('hordak:import_setup', args=[self.transaction_import.uuid])
         self.login()
 
@@ -163,14 +163,14 @@ class SetupImportViewTestCase(DataProvider, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_submit(self):
-        column1 = TransactionImportColumn.objects.create(
+        column1 = TransactionCsvImportColumn.objects.create(
             transaction_import=self.transaction_import,
             column_number=1,
             column_heading='Transaction Date',
             example='1/1/1'
         )
 
-        column2 = TransactionImportColumn.objects.create(
+        column2 = TransactionCsvImportColumn.objects.create(
             transaction_import=self.transaction_import,
             column_number=2,
             column_heading='Transaction Amount',

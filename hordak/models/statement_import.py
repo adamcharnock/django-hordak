@@ -11,7 +11,7 @@ from tablib import Dataset
 from hordak.utilities.statement_import import DATE_FORMATS
 
 
-class TransactionImport(models.Model):
+class TransactionCsvImport(models.Model):
     STATES = Choices(
         ('pending', 'Pending'),
         ('uploaded', 'Uploaded, ready to import'),
@@ -32,7 +32,7 @@ class TransactionImport(models.Model):
         return csv.reader(csv_buffer)
 
     def create_columns(self):
-        """For each column in file create a TransactionImportColumn"""
+        """For each column in file create a TransactionCsvImportColumn"""
         reader = self._get_csv_reader()
         headings = six.next(reader)
         try:
@@ -58,7 +58,7 @@ class TransactionImport(models.Model):
             if to_field:
                 found_fields.add(to_field)
 
-            TransactionImportColumn.objects.update_or_create(
+            TransactionCsvImportColumn.objects.update_or_create(
                 transaction_import=self,
                 column_number=i + 1,
                 column_heading=value if self.has_headings else '',
@@ -80,8 +80,8 @@ class TransactionImport(models.Model):
         return Dataset(*data, headers=headers)
 
 
-class TransactionImportColumn(models.Model):
-    """ Represents a column in an imported file
+class TransactionCsvImportColumn(models.Model):
+    """ Represents a column in an imported CSV file
 
     Stores information regarding how we map to the data in the column
     to our hordak.StatementLine models.
@@ -95,7 +95,7 @@ class TransactionImportColumn(models.Model):
         ('description', 'Description / Notes'),
     )
 
-    transaction_import = models.ForeignKey(TransactionImport, related_name='columns')
+    transaction_import = models.ForeignKey(TransactionCsvImport, related_name='columns')
     column_number = models.PositiveSmallIntegerField()
     column_heading = models.CharField(max_length=100, default='', blank=True, verbose_name='Column')
     # TODO: Create a constraint to limit to_field to only valid values
@@ -112,4 +112,4 @@ class TransactionImportColumn(models.Model):
     def save(self, *args, **kwargs):
         if not self.to_field:
             self.to_field = None
-        return super(TransactionImportColumn, self).save(*args, **kwargs)
+        return super(TransactionCsvImportColumn, self).save(*args, **kwargs)

@@ -5,7 +5,7 @@ from django.db.models import Sum
 
 from mptt.admin import MPTTModelAdmin
 
-from hordak.models import TransactionImportColumn, TransactionImport
+from hordak.models import TransactionCsvImportColumn, TransactionCsvImport
 from . import models
 
 
@@ -61,10 +61,10 @@ class StatementLineAdmin(admin.ModelAdmin):
 
 
 class TransactionImportColumnInline(admin.TabularInline):
-    model = TransactionImportColumn
+    model = TransactionCsvImportColumn
 
 
-@admin.register(TransactionImport)
+@admin.register(TransactionCsvImport)
 class TaskMetaAdmin(admin.ModelAdmin):
     list_display = ['id', 'uuid', 'state', 'timestamp', 'has_headings']
     inlines = [

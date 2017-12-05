@@ -5,13 +5,13 @@ from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, UpdateView, DetailView
 
 from hordak.forms.statement_import import TransactionImportForm, TransactionImportColumnFormSet
-from hordak.models import TransactionImport
+from hordak.models import TransactionCsvImport
 from hordak.resources import StatementLineResource
 
 
 @method_decorator(login_required, name='dispatch')
 class CreateImportView(CreateView):
-    model = TransactionImport
+    model = TransactionCsvImport
     form_class = TransactionImportForm
     template_name = 'hordak/statement_import/import_create.html'
 
@@ -29,7 +29,7 @@ class SetupImportView(UpdateView):
     context_object_name = 'transaction_import'
     slug_url_kwarg = 'uuid'
     slug_field = 'uuid'
-    model = TransactionImport
+    model = TransactionCsvImport
     fields = ('date_format', )
     template_name = 'hordak/statement_import/import_setup.html'
 
@@ -66,7 +66,7 @@ class AbstractImportView(DetailView):
     context_object_name = 'transaction_import'
     slug_url_kwarg = 'uuid'
     slug_field = 'uuid'
-    model = TransactionImport
+    model = TransactionCsvImport
     dry_run = True
 
     def get(self, request, **kwargs):
