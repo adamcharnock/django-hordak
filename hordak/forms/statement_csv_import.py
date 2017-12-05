@@ -4,7 +4,7 @@ from django.forms import inlineformset_factory
 from hordak.models import Account, TransactionCsvImport, StatementImport, TransactionCsvImportColumn
 
 
-class TransactionImportForm(forms.ModelForm):
+class TransactionCsvImportForm(forms.ModelForm):
     bank_account = forms.ModelChoiceField(Account.objects.filter(is_bank_account=True), label='Import data for account')
 
     class Meta:
@@ -16,23 +16,23 @@ class TransactionImportForm(forms.ModelForm):
         self.instance.hordak_import = StatementImport.objects.create(
             bank_account=self.cleaned_data['bank_account'],
         )
-        obj = super(TransactionImportForm, self).save()
+        obj = super(TransactionCsvImportForm, self).save()
         if not exists:
             obj.create_columns()
         return obj
 
 
-class TransactionImportColumnForm(forms.ModelForm):
+class TransactionCsvImportColumnForm(forms.ModelForm):
 
     class Meta:
         model = TransactionCsvImportColumn
         fields = ('to_field',)
 
 
-TransactionImportColumnFormSet = inlineformset_factory(
+TransactionCsvImportColumnFormSet = inlineformset_factory(
     parent_model=TransactionCsvImport,
     model=TransactionCsvImportColumn,
-    form=TransactionImportColumnForm,
+    form=TransactionCsvImportColumnForm,
     extra=0,
     can_delete=False,
 )

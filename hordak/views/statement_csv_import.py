@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, UpdateView, DetailView
 
-from hordak.forms.statement_import import TransactionImportForm, TransactionImportColumnFormSet
+from hordak.forms.statement_csv_import import TransactionCsvImportForm, TransactionCsvImportColumnFormSet
 from hordak.models import TransactionCsvImport
 from hordak.resources import StatementLineResource
 
@@ -12,7 +12,7 @@ from hordak.resources import StatementLineResource
 @method_decorator(login_required, name='dispatch')
 class CreateImportView(CreateView):
     model = TransactionCsvImport
-    form_class = TransactionImportForm
+    form_class = TransactionCsvImportForm
     template_name = 'hordak/statement_import/import_create.html'
 
     def get_success_url(self):
@@ -35,13 +35,13 @@ class SetupImportView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(SetupImportView, self).get_context_data(**kwargs)
-        context['formset'] = TransactionImportColumnFormSet(instance=self.object)
+        context['formset'] = TransactionCsvImportColumnFormSet(instance=self.object)
         return context
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form_class()(request.POST, request.FILES, instance=self.object)
-        formset = TransactionImportColumnFormSet(request.POST, instance=self.object)
+        formset = TransactionCsvImportColumnFormSet(request.POST, instance=self.object)
 
         if form.is_valid() and formset.is_valid():
             return self.form_valid(form, formset)

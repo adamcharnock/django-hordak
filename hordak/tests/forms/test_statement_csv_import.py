@@ -2,12 +2,12 @@ import six
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from hordak.forms.statement_import import TransactionImportForm
+from hordak.forms.statement_csv_import import TransactionCsvImportForm
 from hordak.models import Account, TransactionCsvImport
 from hordak.tests.utils import DataProvider
 
 
-class TransactionImportFormTestCase(DataProvider, TestCase):
+class TransactionCsvImportFormTestCase(DataProvider, TestCase):
 
     def setUp(self):
         self.account = self.account(is_bank_account=True, type=Account.TYPES.asset)
@@ -15,7 +15,7 @@ class TransactionImportFormTestCase(DataProvider, TestCase):
                                     six.binary_type(b'Number,Date,Account,Amount,Subcategory,Memo'))
 
     def test_create(self):
-        form = TransactionImportForm(data=dict(bank_account=self.account.pk), files=dict(file=self.f))
+        form = TransactionCsvImportForm(data=dict(bank_account=self.account.pk), files=dict(file=self.f))
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
         obj = TransactionCsvImport.objects.get()
@@ -28,7 +28,7 @@ class TransactionImportFormTestCase(DataProvider, TestCase):
             has_headings=True,
             file=self.f
         )
-        form = TransactionImportForm(data=dict(bank_account=self.account.pk), files=dict(file=self.f), instance=obj)
+        form = TransactionCsvImportForm(data=dict(bank_account=self.account.pk), files=dict(file=self.f), instance=obj)
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
         self.assertEqual(obj.columns.count(), 0)

@@ -10,7 +10,7 @@ from .accounts import (
     AccountUpdateView,
     AccountTransactionsView,
 )
-from .statement_import import (
+from .statement_csv_import import (
     CreateImportView,
     SetupImportView,
     AbstractImportView,
