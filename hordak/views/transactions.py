@@ -110,6 +110,7 @@ class TransactionsReconcileView(ListView):
 
         with db_transaction.atomic():
             # Save the transaction
+            transaction_form.instance.date = self.object.date
             transaction = transaction_form.save()
 
             # Create the inbound transaction leg

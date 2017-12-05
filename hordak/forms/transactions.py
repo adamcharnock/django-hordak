@@ -34,7 +34,8 @@ class SimpleTransactionForm(forms.ModelForm):
         return from_account.transfer_to(
             to_account=to_account,
             amount=amount,
-            description=self.cleaned_data.get('description')
+            description=self.cleaned_data.get('description'),
+            date=self.cleaned_data.get('date'),
         )
 
 

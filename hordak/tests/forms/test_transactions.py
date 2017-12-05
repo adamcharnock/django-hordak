@@ -23,6 +23,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             description='A test simple transaction',
             amount_0='50.00',
             amount_1='EUR',
+            date='2000-06-15',
         ))
         self.assertTrue(form.is_valid())
         form.save()
@@ -52,6 +53,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             description='A test simple transaction',
             amount_0='50.00',
             amount_1='EUR',
+            date='2000-06-15',
         ))
         self.assertTrue(form.is_valid())
         form.save()
@@ -65,6 +67,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             description='A test simple transaction',
             amount_0='50.00',
             amount_1='EUR',
+            date='2000-06-15',
         ))
         self.assertFalse(form.is_valid())
 
@@ -75,6 +78,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             description='A test simple transaction',
             amount_0='50.00',
             amount_1='EUR',
+            date='2000-06-15',
         ))
         self.assertFalse(form.is_valid())
 
@@ -86,6 +90,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             amount_0='50.00',
             amount_1='EUR',
             amount='50.00',
+            date='2000-06-15',
         ))
         self.assertTrue(form.is_valid())  # valid
 
@@ -96,6 +101,7 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
             description='A test simple transaction',
             amount_0='',
             amount_1='',
+            date='2000-06-15',
         ))
         self.assertFalse(form.is_valid())
 
