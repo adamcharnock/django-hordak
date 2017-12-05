@@ -173,7 +173,7 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         self.ex_food = self.account(name='Food', parent=self.ex, code='4')
 
     def create_incoming_rent_payments(self, amount1, amount2):
-        statement_import = StatementImport.objects.create(bank_account=self.bank)
+        statement_import = StatementImport.objects.create(bank_account=self.bank, source='csv')
         line1 = StatementLine.objects.create(date='2016-01-01', statement_import=statement_import, amount=amount1)
         line2 = StatementLine.objects.create(date='2016-01-01', statement_import=statement_import, amount=amount2)
         line1.refresh_from_db()

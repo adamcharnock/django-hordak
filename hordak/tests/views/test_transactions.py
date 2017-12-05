@@ -83,7 +83,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset, **kwargs)
         self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income, **kwargs)
 
-        statement_import = StatementImport.objects.create(bank_account=self.bank_account)
+        statement_import = StatementImport.objects.create(bank_account=self.bank_account, source='csv')
 
         self.line1 = StatementLine.objects.create(
             date='2000-01-01',

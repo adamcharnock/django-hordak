@@ -21,7 +21,7 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         logging.disable(logging.INFO)
 
     def makeResource(self):
-        statement_import = StatementImport.objects.create(bank_account=self.account)
+        statement_import = StatementImport.objects.create(bank_account=self.account, source='csv')
         return StatementLineResource('%d/%m/%Y', statement_import)
 
     def test_import_one(self):

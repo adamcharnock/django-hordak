@@ -435,6 +435,9 @@ class StatementImport(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
     bank_account = models.ForeignKey(Account, related_name='imports')
+    source = models.CharField(max_length=20,
+                              help_text='A value uniquely identifying where this data came from. '
+                                        'Examples: "csv", "teller.io".')
 
     objects = StatementImportManager()
 

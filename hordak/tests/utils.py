@@ -46,6 +46,7 @@ class DataProvider(object):
     def statement_import(self, bank_account=None, **kwargs):
         return StatementImport.objects.create(
             bank_account=bank_account or self.account(type=Account.TYPES.asset),
+            source='csv',
             **kwargs
         )
 

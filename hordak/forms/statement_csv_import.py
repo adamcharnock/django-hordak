@@ -15,6 +15,7 @@ class TransactionCsvImportForm(forms.ModelForm):
         exists = bool(self.instance.pk)
         self.instance.hordak_import = StatementImport.objects.create(
             bank_account=self.cleaned_data['bank_account'],
+            source='csv',
         )
         obj = super(TransactionCsvImportForm, self).save()
         if not exists:

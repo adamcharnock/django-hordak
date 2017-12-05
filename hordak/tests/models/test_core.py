@@ -445,7 +445,7 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         self.sales = self.account(name='Sales', type=Account.TYPES.income, currencies=['EUR'])
         self.expenses = self.account(name='Expenses', type=Account.TYPES.expense, currencies=['EUR'])
 
-        self.statement_import = StatementImport.objects.create(bank_account=self.bank)
+        self.statement_import = StatementImport.objects.create(bank_account=self.bank, source='csv')
 
     def test_is_reconciled(self):
         line = StatementLine.objects.create(
