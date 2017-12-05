@@ -19,6 +19,7 @@ Additionally, there are models which related to the import of external bank stat
 """
 
 from django.contrib.postgres.fields.array import ArrayField
+from django.contrib.postgres.fields.jsonb import JSONField
 from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
@@ -438,6 +439,8 @@ class StatementImport(models.Model):
     source = models.CharField(max_length=20,
                               help_text='A value uniquely identifying where this data came from. '
                                         'Examples: "csv", "teller.io".')
+    extra = JSONField(default={}, help_text='Any extra data relating to the import, probably specific '
+                                            'to the data source.')
 
     objects = StatementImportManager()
 
@@ -482,6 +485,7 @@ class StatementLine(models.Model):
     # TODO: Add constraint to ensure one statement line per transaction
     transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
                                     help_text='Reconcile this statement line to this transaction')
+    source_data = JSONField(default={}, help_text='Original data received from the data source.')
 
     objects = StatementLineManager()
 
