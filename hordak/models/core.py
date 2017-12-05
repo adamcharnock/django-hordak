@@ -172,7 +172,7 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
-    def balance(self, as_of=None, raw=False, **kwargs):
+    def balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
 
         Args:
@@ -188,19 +188,21 @@ class Account(MPTTModel):
             :meth:`simple_balance()`
         """
         balances = [
-            account.simple_balance(as_of=as_of, raw=raw, **kwargs)
+            account.simple_balance(as_of=as_of, raw=raw, leg_query=leg_query, **kwargs)
             for account
             in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
 
-    def simple_balance(self, as_of=None, raw=False, **kwargs):
+    def simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
             as_of (Date): Only include transactions on or before this date
             raw (bool): If true the returned balance should not have its sign
                         adjusted for display purposes.
+            leg_query (models.Q): Django Q-expression, will be used to filter the transaction legs.
+                                  allows for more complex filtering than that provided by **kwargs.
             **kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
@@ -209,8 +211,11 @@ class Account(MPTTModel):
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
-        if kwargs:
-            legs = legs.filter(**kwargs)
+
+        if leg_query or kwargs:
+            leg_query = leg_query or models.Q()
+            legs = legs.filter(leg_query, **kwargs)
+
         return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
 
     def _zero_balance(self):
@@ -407,12 +412,20 @@ class Leg(models.Model):
     def account_balance_after(self):
         """Get the balance of the account associated with this leg following the transaction"""
         # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
-        return self.account.balance(transaction_id__lte=self.transaction_id)
+        transaction_date = self.transaction.date
+        return self.account.balance(leg_query=(
+            models.Q(transaction__date__lt=transaction_date)
+            | (models.Q(transaction__date=transaction_date) & models.Q(transaction_id__lte=self.transaction_id))
+        ))
 
     def account_balance_before(self):
         """Get the balance of the account associated with this leg before the transaction"""
         # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
-        return self.account.balance(transaction_id__lt=self.transaction_id)
+        transaction_date = self.transaction.date
+        return self.account.balance(leg_query=(
+            models.Q(transaction__date__lt=transaction_date)
+            | (models.Q(transaction__date=transaction_date) & models.Q(transaction_id__lt=self.transaction_id))
+        ))
 
 
 class StatementImportManager(models.Manager):

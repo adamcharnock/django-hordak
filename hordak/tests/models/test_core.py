@@ -418,6 +418,61 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(legs[2].account_balance_after(), Balance('250', 'EUR'))
         self.assertEqual(legs[3].account_balance_after(), Balance('180', 'EUR'))
 
+    def test_account_balance_after_out_of_order_ids(self):
+        src = self.account()
+        dst = self.account()
+        # Take test_account_balance_after() as a reference test,
+        # here we reverse the order of creation (to make the IDs go
+        # backwards), and set the dates to force the order we want
+        dst.transfer_to(src, Money(70, 'EUR'), date='2000-01-15')
+        src.transfer_to(dst, Money(50, 'EUR'), date='2000-01-10')
+        src.transfer_to(dst, Money(100, 'EUR'), date='2000-01-05')
+        src.transfer_to(dst, Money(100, 'EUR'), date='2000-01-01')
+
+        legs = Leg.objects.filter(account=dst).order_by('transaction__date').all()
+        self.assertEqual(legs[0].account_balance_after(), Balance('100', 'EUR'))
+        self.assertEqual(legs[1].account_balance_after(), Balance('200', 'EUR'))
+        self.assertEqual(legs[2].account_balance_after(), Balance('250', 'EUR'))
+        self.assertEqual(legs[3].account_balance_after(), Balance('180', 'EUR'))
+
+    def test_account_balance_after_out_of_order_ids_on_same_day(self):
+        src = self.account()
+        dst = self.account()
+        # A more complex version of the above test_account_balance_after_out_of_order_ids()
+        # Here we require a mix of ordering by pk and by date because some
+        # transactions are dated on the same day, yet we still have to infer a deterministic order
+        # from somewhere, so we use the pk
+        src.transfer_to(dst, Money(50, 'EUR'), date='2000-01-15')
+        dst.transfer_to(src, Money(70, 'EUR'), date='2000-01-15')
+
+        src.transfer_to(dst, Money(110, 'EUR'), date='2000-01-05')
+        src.transfer_to(dst, Money(100, 'EUR'), date='2000-01-05')
+
+        legs = Leg.objects.filter(account=dst).order_by('transaction__date').all()
+        self.assertEqual(legs[0].account_balance_after(), Balance('110', 'EUR'))
+        self.assertEqual(legs[1].account_balance_after(), Balance('210', 'EUR'))
+        self.assertEqual(legs[2].account_balance_after(), Balance('260', 'EUR'))
+        self.assertEqual(legs[3].account_balance_after(), Balance('190', 'EUR'))
+
+    def test_account_balance_before_out_of_order_ids_on_same_day(self):
+        src = self.account()
+        dst = self.account()
+        # A more complex version of the above test_account_balance_after_out_of_order_ids()
+        # Here we require a mix of ordering by pk and by date because some
+        # transactions are dated on the same day, yet we still have to infer a deterministic order
+        # from somewhere, so we use the pk
+        src.transfer_to(dst, Money(50, 'EUR'), date='2000-01-15')
+        dst.transfer_to(src, Money(70, 'EUR'), date='2000-01-15')
+
+        src.transfer_to(dst, Money(110, 'EUR'), date='2000-01-05')
+        src.transfer_to(dst, Money(100, 'EUR'), date='2000-01-05')
+
+        legs = Leg.objects.filter(account=dst).order_by('transaction__date').all()
+        self.assertEqual(legs[0].account_balance_before(), Balance('0', 'EUR'))
+        self.assertEqual(legs[1].account_balance_before(), Balance('110', 'EUR'))
+        self.assertEqual(legs[2].account_balance_before(), Balance('210', 'EUR'))
+        self.assertEqual(legs[3].account_balance_before(), Balance('260', 'EUR'))
+
 
 class TransactionTestCase(DataProvider, DbTransactionTestCase):
 
