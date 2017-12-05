@@ -24,7 +24,7 @@ class SimpleTransactionForm(forms.ModelForm):
 
     class Meta:
         model = Transaction
-        fields = ['amount', 'from_account', 'to_account', 'description', ]
+        fields = ['amount', 'from_account', 'to_account', 'date', 'description']
 
     def save(self, commit=True):
         from_account = self.cleaned_data.get('from_account')
