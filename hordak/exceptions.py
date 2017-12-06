@@ -61,3 +61,8 @@ class TradingAccountRequiredError(HordakError):
 class InvalidFeeCurrency(HordakError):
     """Raised when fee currency does not match source currency"""
     pass
+
+
+class CannotSimplifyError(HordakError):
+    """Used internally by Currency class"""
+    pass

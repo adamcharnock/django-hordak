@@ -60,7 +60,7 @@ from moneyed.localization import format_money
 
 from hordak import defaults
 from hordak.exceptions import LossyCalculationError, BalanceComparisonError, TradingAccountRequiredError, \
-    InvalidFeeCurrency
+    InvalidFeeCurrency, CannotSimplifyError
 
 logger = logging.getLogger(__name__)
 
@@ -430,6 +430,17 @@ class Balance(object):
         if not isinstance(other, Balance):
             raise BalanceComparisonError(other)
 
+        # If we can confidently simplify the values to
+        # -1, 0, and 1, and the values are different, then
+        # just compare those.
+        try:
+            self_simplified = self._simplify()
+            other_simplified = other._simplify()
+            if self_simplified != other_simplified:
+                return self_simplified < other_simplified
+        except CannotSimplifyError:
+            pass
+
         if len(self._money_obs) == 1 and self.currencies() == other.currencies():
             # Shortcut if we have a single value with the same currency
             return self._money_obs[0] < other._money_obs[0]
@@ -472,3 +483,22 @@ class Balance(object):
         for money in self._money_obs:
             out += converter.convert(money, to_currency)
         return Balance([out])
+
+    def _is_positive(self):
+        return all([m.amount > 0 for m in self.monies()]) and self.monies()
+
+    def _is_negative(self):
+        return all([m.amount < 0 for m in self.monies()]) and self.monies()
+
+    def _is_zero(self):
+        return not self.monies() or all([m.amount == 0 for m in self.monies()])
+
+    def _simplify(self):
+        if self._is_positive():
+            return 1
+        elif self._is_negative():
+            return -1
+        elif self._is_zero():
+            return 0
+        else:
+            raise CannotSimplifyError()

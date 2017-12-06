@@ -286,6 +286,14 @@ class BalanceTestCase(CacheTestCase):
             False
         )
         self.assertEqual(
+            Balance([Money(-1, 'USD')]) < Balance([Money(1, 'USD')]),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) < Balance([Money(-1, 'USD')]),
+            False
+        )
+        self.assertEqual(
             Balance([Money(1, 'USD')]) < Balance([Money(10, 'EUR')]),
             True
         )
@@ -316,7 +324,15 @@ class BalanceTestCase(CacheTestCase):
             True
         )
         self.assertEqual(
-            Balance([Money(1, 'USD')]) > Balance([Money(1, 'EUR')]),
+            Balance([Money(-1, 'USD')]) > Balance([Money(1, 'USD')]),
+            False
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) > Balance([Money(-1, 'USD')]),
+            True
+        )
+        self.assertEqual(
+            Balance([Money(1, 'USD')]) > Balance([Money(10, 'EUR')]),
             False
         )
         self.assertEqual(
