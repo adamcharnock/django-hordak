@@ -1,7 +1,7 @@
 from __future__ import absolute_import
-import locale
 import logging
 
+import babel.numbers
 from django import template
 from django.utils.safestring import mark_safe
 from hordak.utilities.currency import Balance
@@ -26,18 +26,17 @@ def inv(value):
 
 @register.filter()
 def currency(value):
-    locale.setlocale(locale.LC_ALL, 'en_GB.UTF-8')
     if value is None:
         return None
 
     if isinstance(value, Balance):
         locale_values = []
         for money in value.monies():
-            locale_value = locale.currency(abs(money.amount), grouping=True, symbol=money.currency.code)
+            locale_value = babel.numbers.format_currency(abs(money.amount), currency=money.currency.code)
             locale_value = locale_value if money.amount >= 0 else "({})".format(locale_value)
             locale_values.append(locale_value)
     else:
-        locale_value = locale.currency(abs(value), grouping=True)
+        locale_value = babel.numbers.format_decimal(abs(value))
         locale_value = locale_value if value >= 0 else "({})".format(locale_value)
         locale_values = [locale_value]
 

@@ -27,5 +27,6 @@ setup(
         'py-moneyed>=0.6.0',
         'django-money>=0.9.1',
         'django-import-export>=0.5.0',
+        'babel==2.5.1',
     ],
 )

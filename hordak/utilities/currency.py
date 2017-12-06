@@ -46,6 +46,7 @@ from __future__ import division
 import logging
 from decimal import Decimal
 
+import babel.numbers
 import requests
 import datetime
 
@@ -350,7 +351,7 @@ class Balance(object):
 
     def __str__(self):
         def fmt(money):
-            return format_money(money, locale=to_locale(get_language() or 'en-us'))
+            return babel.numbers.format_currency(money.amount, currency=money.currency.code)
         return ', '.join(map(fmt, self._money_obs)) or 'No values'
 
     def __repr__(self):
