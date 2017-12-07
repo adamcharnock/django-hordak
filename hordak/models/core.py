@@ -143,7 +143,15 @@ class Account(MPTTModel):
     def __str__(self):
         name = self.name or 'Unnamed Account'
         if self.is_leaf_node():
-            return '{} [{}]'.format(name, self.full_code or '-')
+            try:
+                balance = self.balance()
+            except ValueError:
+                if self.full_code:
+                    return '{} {}'.format(self.full_code, name)
+                else:
+                    return name
+            else:
+                return '{} {} [{}]'.format(self.full_code, name, balance)
         else:
             return name
 

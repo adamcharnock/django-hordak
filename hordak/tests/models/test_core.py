@@ -23,17 +23,17 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         account1 = self.account(code='5')
         account2 = self.account(parent=account1, name='Account 2', code='1')
         account2.refresh_from_db()
-        self.assertEqual(str(account2), 'Account 2 [51]')
+        self.assertEqual(str(account2), '51 Account 2 [€0.00]')
 
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
         account2 = Account(parent=account1)
-        self.assertEqual(str(account1), 'Unnamed Account [-]')
+        self.assertEqual(str(account1), 'Unnamed Account')
 
     def test_str_child_no_data_unsaved(self):
         account1 = Account()
         account2 = Account(parent=account1)
-        self.assertEqual(str(account2), 'Unnamed Account [-]')
+        self.assertEqual(str(account2), 'Unnamed Account')
 
     def test_type_root(self):
         """Check we can set the type on a root account"""
