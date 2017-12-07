@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^transactions/(?P<uuid>.+)/delete/$', transactions.TransactionDeleteView.as_view(), name='transactions_delete'),
     url(r'^transactions/currency/$', transactions.CurrencyTradeView.as_view(), name='currency_trade'),
     url(r'^transactions/reconcile/$', transactions.TransactionsReconcileView.as_view(), name='transactions_reconcile'),
+    url(r'^statement-line/(?P<uuid>.+)/unreconcile/$', transactions.UnreconcileView.as_view(), name='transactions_unreconcile'),
     url(r'^$', accounts.AccountListView.as_view(), name='accounts_list'),
     url(r'^accounts/create/$', accounts.AccountCreateView.as_view(), name='accounts_create'),
     url(r'^accounts/update/(?P<uuid>.+)/$', accounts.AccountUpdateView.as_view(), name='accounts_update'),

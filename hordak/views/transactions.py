@@ -1,8 +1,10 @@
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction as db_transaction
 from django.http import Http404
-from django.urls import reverse_lazy
+from django.http.response import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy, reverse
+from django.views import View
 from django.views.generic import CreateView, ListView, DeleteView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
@@ -169,3 +171,10 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
     def get_leg_formset(self, **kwargs):
         return LegFormSet(data=self.request.POST or None, statement_line=self.object, **kwargs)
 
+
+class UnreconcileView(LoginRequiredMixin, View):
+
+    def post(self, request, uuid):
+        statement_line = get_object_or_404(StatementLine, uuid=uuid)
+        statement_line.transaction.delete()
+        return HttpResponseRedirect(reverse('hordak:transactions_reconcile'))

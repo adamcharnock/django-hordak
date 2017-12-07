@@ -25,17 +25,28 @@
                         <td>{{ line.description }}</td>
                         <td>
                             {% if line.transaction %}
-                                {% for leg in line.transaction.legs.all %}
-                                    {% if leg.account != line.statement_import.bank_account %}
-                                        {{ leg.account }}
-                                    {% endif %}
-                                {% endfor %}
+                                <td>
+                                    {% for leg in line.transaction.legs.all %}
+                                        {% if leg.account != line.statement_import.bank_account %}
+                                            {{ leg.account }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                <form action="{% url 'hordak:transactions_unreconcile' line.uuid %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="submit" value="Unreconcile" class="btn btn-default btn-xs">
+                                </form>
+                                </td>
                             {% elif line != reconcile_line %}
+                                <td></td>
+                                <td>
                                 <form action="#L{{ line.uuid }}" method="get">
                                     <input type="hidden" name="reconcile" value="{{ line.uuid }}">
                                     <input type="hidden" name="page" value="{{ page_obj.number }}">
                                     <input type="submit" value="Reconcile" class="btn btn-primary btn-xs">
                                 </form>
+                                </td>
                             {% endif %}
                         </td>
                     </tr>

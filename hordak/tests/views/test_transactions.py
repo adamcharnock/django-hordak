@@ -362,3 +362,31 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
         transaction = Transaction.objects.get()
         self.assertEqual(transaction.legs.count(), 2)
+
+
+class UnreconcileTransactionsViewTestCase(DataProvider, TestCase):
+
+    def setUp(self):
+        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
+
+        statement_import = StatementImport.objects.create(bank_account=self.bank_account, source='csv')
+
+        self.line1 = StatementLine.objects.create(
+            date='2000-01-01',
+            statement_import=statement_import,
+            amount=Decimal('100.16'),
+            description='Item description 1',
+        )
+
+        self.transaction = self.line1.create_transaction(self.income_account)
+
+        self.login()
+        self.view_url = reverse('hordak:transactions_unreconcile', args=[self.line1.uuid])
+
+    def test_post(self):
+        self.assertEqual(StatementLine.objects.get().transaction, self.transaction)
+        response = self.client.post(self.view_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(StatementLine.objects.get().transaction_id, None)
+        self.assertEqual(Transaction.objects.count(), 0)

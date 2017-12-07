@@ -3,6 +3,7 @@ from .transactions import (
     TransactionsReconcileView,
     CurrencyTradeView,
     TransactionDeleteView,
+    UnreconcileView,
 )
 
 from .accounts import (

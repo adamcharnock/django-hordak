@@ -506,7 +506,8 @@ class StatementLine(models.Model):
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
     transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
-                                    help_text='Reconcile this statement line to this transaction')
+                                    help_text='Reconcile this statement line to this transaction',
+                                    on_delete=models.SET_NULL)
     source_data = JSONField(default={}, help_text='Original data received from the data source.')
 
     objects = StatementLineManager()
