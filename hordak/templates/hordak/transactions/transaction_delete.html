@@ -1,0 +1,31 @@
+{% extends 'hordak/base.html' %}
+
+{% block page_name %}Delete Transaction{% endblock %}
+
+{% block content %}
+    <form action="{% url 'hordak:transactions_delete' transaction.uuid %}" method="post">
+        {% csrf_token %}
+        {% block form_content %}
+            {% include 'hordak/partials/form.html' with form=form %}
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3">
+
+                    <div class="alert alert-danger alert-dismissible">
+                        <h4><i class="icon fa fa-exclamation-triangle"></i> Are you sure you wish to delete this transaction?</h4>
+
+                        <p>
+                            You could alternatively create another transaction to reverse it.
+                            Deleting a transaction cannot be undone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="{% url 'hordak:accounts_list' %}" class="btn btn-lg">Cancel</a>
+                <input type="submit" value="Confirm Deletion" class="btn btn-danger btn-lg">
+            </div>
+        {% endblock %}
+    </form>
+
+{% endblock %}
+]

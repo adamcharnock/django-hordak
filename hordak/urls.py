@@ -7,6 +7,7 @@ app_name = 'hordak'
 
 urlpatterns = [
     url(r'^transactions/create/$', transactions.TransactionCreateView.as_view(), name='transactions_create'),
+    url(r'^transactions/(?P<uuid>.+)/delete/$', transactions.TransactionDeleteView.as_view(), name='transactions_delete'),
     url(r'^transactions/currency/$', transactions.CurrencyTradeView.as_view(), name='currency_trade'),
     url(r'^transactions/reconcile/$', transactions.TransactionsReconcileView.as_view(), name='transactions_reconcile'),
     url(r'^$', accounts.AccountListView.as_view(), name='accounts_list'),

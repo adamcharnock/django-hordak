@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -9,8 +10,7 @@ from hordak.models import TransactionCsvImport
 from hordak.resources import StatementLineResource
 
 
-@method_decorator(login_required, name='dispatch')
-class CreateImportView(CreateView):
+class CreateImportView(LoginRequiredMixin, CreateView):
     model = TransactionCsvImport
     form_class = TransactionCsvImportForm
     template_name = 'hordak/statement_import/import_create.html'
@@ -19,8 +19,7 @@ class CreateImportView(CreateView):
         return reverse('hordak:import_setup', args=[self.object.uuid])
 
 
-@method_decorator(login_required, name='dispatch')
-class SetupImportView(UpdateView):
+class SetupImportView(LoginRequiredMixin, UpdateView):
     """View for setting up of the import process
 
     This involves mapping columns to import fields, and collecting
@@ -61,8 +60,7 @@ class SetupImportView(UpdateView):
         return reverse('hordak:import_dry_run', args=[self.object.uuid])
 
 
-@method_decorator(login_required, name='dispatch')
-class AbstractImportView(DetailView):
+class AbstractImportView(LoginRequiredMixin, DetailView):
     context_object_name = 'transaction_import'
     slug_url_kwarg = 'uuid'
     slug_field = 'uuid'
@@ -94,13 +92,11 @@ class AbstractImportView(DetailView):
         )
 
 
-@method_decorator(login_required, name='dispatch')
 class DryRunImportView(AbstractImportView):
     template_name = 'hordak/statement_import/import_dry_run.html'
     dry_run = True
 
 
-@method_decorator(login_required, name='dispatch')
 class ExecuteImportView(AbstractImportView):
     template_name = 'hordak/statement_import/import_execute.html'
     dry_run = False

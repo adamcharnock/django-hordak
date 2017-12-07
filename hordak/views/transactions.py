@@ -1,18 +1,16 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction as db_transaction
 from django.http import Http404
-from django.urls import reverse
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView, ListView, DeleteView
 
 from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
 from hordak.forms.transactions import CurrencyTradeForm
 from hordak.models import StatementLine, Leg, Transaction
 
 
-@method_decorator(login_required, name='dispatch')
-class TransactionCreateView(CreateView):
+class TransactionCreateView(LoginRequiredMixin, CreateView):
     """ View for creation of simple transactions.
 
     This functionality is provided by :class:`hordak.models.Account.transfer_to()`,
@@ -32,8 +30,7 @@ class TransactionCreateView(CreateView):
     template_name = 'hordak/transactions/transaction_create.html'
 
 
-@method_decorator(login_required, name='dispatch')
-class CurrencyTradeView(CreateView):
+class CurrencyTradeView(LoginRequiredMixin, CreateView):
     form_class = CurrencyTradeForm
     success_url = reverse_lazy('hordak:accounts_list')
     template_name = 'hordak/transactions/currency_trade.html'
@@ -44,8 +41,16 @@ class CurrencyTradeView(CreateView):
         return kwargs
 
 
-@method_decorator(login_required, name='dispatch')
-class TransactionsReconcileView(ListView):
+class TransactionDeleteView(LoginRequiredMixin, DeleteView):
+    model = Transaction
+    slug_url_kwarg = 'uuid'
+    slug_field = 'uuid'
+    template_name = 'hordak/transactions/transaction_delete.html'
+    context_object_name = 'transaction'
+    success_url = reverse_lazy('hordak:accounts_list')
+
+
+class TransactionsReconcileView(LoginRequiredMixin, ListView):
     """ Handle rendering and processing in the reconciliation view
 
     Note that this only extends ListView, and we implement the form

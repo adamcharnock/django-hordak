@@ -43,6 +43,27 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         self.assertEqual(transaction.description, 'Test description')
 
 
+class TransactionDeleteViewTestCase(DataProvider, TestCase):
+
+    def setUp(self):
+        self.login()
+
+        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset, currencies=['GBP'])
+        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income, currencies=['GBP'])
+        self.transaction = self.bank_account.transfer_to(self.income_account, Money(100, 'GBP'))
+
+        self.view_url = reverse('hordak:transactions_delete', args=[self.transaction.uuid])
+
+    def test_get(self):
+        response = self.client.get(self.view_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_post(self):
+        response = self.client.post(self.view_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Transaction.objects.count(), 0)
+
+
 class CurrencyTradeView(DataProvider, TestCase):
 
     def setUp(self):
