@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms import BaseInlineFormSet, inlineformset_factory
@@ -18,13 +19,28 @@ class SimpleTransactionForm(forms.ModelForm):
 
         * :meth:`hordak.models.Account.transfer_to()`.
     """
-    from_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
-    to_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
+    from_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
+    to_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
     amount = MoneyField(decimal_places=2)
 
     class Meta:
         model = Transaction
         fields = ['amount', 'from_account', 'to_account', 'date', 'description']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Limit currency choices if setup
+        default_currency = getattr(settings, 'DEFAULT_CURRENCY', 'EUR')
+        amount_field, currency_field = self.fields['amount'].fields
+
+        self.fields['amount'].widget.widgets[1].choices = currency_field.choices = [
+            (code, name)
+            for code, name
+            in currency_field.choices
+            if code == default_currency or code in getattr(settings, 'CURRENCIES', [])
+        ]
+        self.fields['amount'].initial[1] = default_currency
 
     def save(self, commit=True):
         from_account = self.cleaned_data.get('from_account')

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from hordak.models import Account, StatementImport, StatementLine, Transaction
 from hordak.tests.utils import DataProvider
@@ -22,6 +23,16 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         response = self.client.get(self.view_url)
         self.assertEqual(response.status_code, 200)
         self.assertIn('form', response.context)
+
+    @override_settings(DEFAULT_CURRENCY='GBP', CURRENCIES=['EUR', 'USD'])
+    def test_get_currency_choices(self):
+        response = self.client.get(self.view_url)
+        self.assertEqual(response.status_code, 200)
+        amount_field = response.context['form']['amount']
+        self.assertEqual(
+            len(amount_field.field.widget.widgets[1].choices),
+            3
+        )
 
     def test_submit(self):
         # more checks done in form unit tests
