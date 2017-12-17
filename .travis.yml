@@ -27,4 +27,4 @@ after_success:
   coveralls
 
 addons:
-  postgresql: "9.2"
+  postgresql: "9.5"
