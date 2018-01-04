@@ -30,6 +30,8 @@
                 <td>
                     {% if account.is_leaf_node %}
                         <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
+                    {% else %}
+                    <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Parent</a>
                     {% endif %}
                 </td>
                 <td>
