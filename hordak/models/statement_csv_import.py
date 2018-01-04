@@ -24,7 +24,7 @@ class TransactionCsvImport(models.Model):
     file = models.FileField(upload_to='transaction_imports', verbose_name='CSV file to import')
     state = models.CharField(max_length=20, choices=STATES, default='pending')
     date_format = models.CharField(choices=DATE_FORMATS, max_length=50, default='%d-%m-%Y', null=False)
-    hordak_import = models.ForeignKey('hordak.StatementImport')
+    hordak_import = models.ForeignKey('hordak.StatementImport', on_delete=models.CASCADE)
 
     def _get_csv_reader(self):
         # TODO: Refactor to support multiple readers (xls, quickbooks, etc)
@@ -95,7 +95,7 @@ class TransactionCsvImportColumn(models.Model):
         ('description', 'Description / Notes'),
     )
 
-    transaction_import = models.ForeignKey(TransactionCsvImport, related_name='columns')
+    transaction_import = models.ForeignKey(TransactionCsvImport, related_name='columns', on_delete=models.CASCADE)
     column_number = models.PositiveSmallIntegerField()
     column_heading = models.CharField(max_length=100, default='', blank=True, verbose_name='Column')
     # TODO: Create a constraint to limit to_field to only valid values
