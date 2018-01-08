@@ -304,7 +304,6 @@ class Transaction(models.Model):
         :meth:`Account.transfer_to()` is a useful shortcut to avoid having to create transactions manually.
 
     Examples:
-
         You can manually create a transaction as follows::
 
             from django.db import transaction as db_transaction
@@ -328,7 +327,6 @@ class Transaction(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
     date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
     description = models.TextField(default='', blank=True)
-
     objects = TransactionManager()
 
     class Meta:
