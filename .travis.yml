@@ -9,14 +9,15 @@ services:
   - postgresql
 
 env:
-  - DJANGO_VERSION=1.11b1
-  - DJANGO_VERSION=1.10.5
-  - DJANGO_VERSION=1.9.9
+  - DJANGO="django>=2.0,<2.1"
+  - DJANGO="django>=1.11,<1.12"
+  - DJANGO="django>=1.10,<1.11"
 
 install:
-  - "python setup.py develop"
-  - "pip install ."
-  - "pip install requests-mock mock pytest coveralls"
+  - python setup.py develop
+  - pip install .
+  - pip install requests-mock mock pytest coveralls
+  - pip install "$DJANGO"
 
 script:
   - env

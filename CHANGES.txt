@@ -1,5 +1,49 @@
 ----
 
+Version 1.6.0, Thu 04 Jan 2018
+===============================
+
+e39b8d2d1e	Adding Django 2.0 support to readme (Adam Charnock)
+9a85b030dd	Dropping support for django 1.9 (Adam Charnock)
+daccc6559d	Fixes to travis setup (Adam Charnock)
+ff7bd716ca	adding link to parent transaction (al1p-R)
+e2948047bb	fixing missing on_delete=models.CASCADE (al1p-R)
+5dc7acda83	Dropping python 2.7 support (Adam Charnock)
+eec3eefa8a	Now testing on postgres 9.5 (Adam Charnock)
+21162302b1	Adding 'unreconcile' feature (Adam Charnock)
+3eb26939e2	Minor templating/html fix (Adam Charnock)
+40a5b80395	Changing how accounts are rendered to strings to make it a bit more useful and friendly (Adam Charnock)
+bcc70141b6	Showing sensible currency selection options on transaction creation form (Adam Charnock)
+8350443003	Can now delete transactions (Adam Charnock)
+20cadc8e00	Using babel for currency formatting instead of built-in locales (Adam Charnock)
+c7cd03dc6d	Adding math template tags (Adam Charnock)
+b440a930e4	Currency comparison optimisation (Adam Charnock)
+0769b5b267	Fixing Leg.account_balance_after() / Leg.account_balance_before() assuming sequential IDs (Adam Charnock)
+b355fc0d4f	Reconcilliation now respects statement line date. Fixing tests (Adam Charnock)
+a32e009bed	Transaction form now allows date entry (Adam Charnock)
+b32c9089cc	Adding since() parameter to teller.io import (Adam Charnock)
+5a56dc6d14	Adding StatementLine.type (Adam Charnock)
+9bfe4b800f	Work on tellio data import (Adam Charnock)
+00905a45d8	Adding source field to StatementImport (Adam Charnock)
+62d9a2a8ac	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
+50c7f84c00	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
+0084a31191	Adding missing transaction (Adam Charnock)
+f2dca804c2	Adding get_latest_by to Transaction model meta data (Adam Charnock)
+3c1b2ce5a9	Adding inv() template tag, fixes to color_currency() template tag (Adam Charnock)
+075862bcf2	Balance objects can now handle comparisons against zero-valued non-balance objects (Adam Charnock)
+86b02d336f	Adding rule to Account.transfer_to() (Adam Charnock)
+f1de7a1fef	Fixing create chart of accounts tests (Adam Charnock)
+3040518038	Fixing django requirement version to exclude 2.0rc1 (Adam Charnock)
+0c474c2447	Changing default database username to 'postgres' (as this is common when using docker) (Adam Charnock)
+0c69054bd8	Fixing 'create_chart_of_accounts' bug where the incorrect account types were being created (Adam Charnock)
+48564e6fbb	Testing utils: Adding DataProvider.user() and sanity check to assertBalanceEqual() (Adam Charnock)
+a501c68e5e	Fixing error when reconcilling in in-default currency (Adam Charnock)
+5de8c3e6f8	Improving currency rendering formatting (Adam Charnock)
+8eb21f8cb5	Change bank account name to matched that expected (Adam Charnock)
+42f0576a08	Zero balances now show zero in the relevent currency(s) (Adam Charnock)
+1d0aa08525	Setting postgres version to test against (Adam Charnock)
+
+
 Version 1.5.0, Thu 02 Mar 2017
 ===============================
 
