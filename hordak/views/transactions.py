@@ -52,7 +52,7 @@ class TransactionsListView(LoginRequiredMixin, ListView):
     ordering = ['-date', '-pk']
 
 class LegsListView(LoginRequiredMixin, ListView):
-    """View for listing transactions
+    """View for listing legs
 
     """
     model = Leg
