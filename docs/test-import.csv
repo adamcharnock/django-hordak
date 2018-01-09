@@ -1,0 +1,3 @@
+Number,Date,Account,Amount,Subcategory,Memo
+1,30/12/2017,123456789,-30,OTH,minus 30
+1,29/12/2017,123456789,29,OTH,plus 29
