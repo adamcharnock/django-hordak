@@ -11,7 +11,7 @@ from hordak.tests.utils import DataProvider
 
 
 class StatementLineResourceTestCase(DataProvider, TestCase):
-    """Test the resource definition in resources.py"""
+    """Test the resource definition in test_resources.py"""
 
     def setUp(self):
         self.account = self.account(is_bank_account=True, type=Account.TYPES.asset)
@@ -122,11 +122,12 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         dataset = tablib.Dataset(
             ['15/6/2016', '', '100.56', 'Example payment'],
             ['16/6/2016', '60.31', '', 'Example income'],
+            ['17/6/2016', '', '-102.56', 'Example payment 2'],
             headers=['date', 'amount_in', 'amount_out', 'description']
         )
         self.makeResource().import_data(dataset)
 
-        self.assertEqual(StatementLine.objects.count(), 2)
+        self.assertEqual(StatementLine.objects.count(), 3)
 
         obj = StatementLine.objects.all().order_by('date')
         self.assertEqual(obj[0].date, date(2016, 6, 15))
@@ -136,6 +137,10 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         self.assertEqual(obj[1].date, date(2016, 6, 16))
         self.assertEqual(obj[1].amount, Decimal('60.31'))
         self.assertEqual(obj[1].description, 'Example income')
+
+        self.assertEqual(obj[2].date, date(2016, 6, 17))
+        self.assertEqual(obj[2].amount, Decimal('-102.56'))
+        self.assertEqual(obj[2].description, 'Example payment 2')
 
     def test_error_no_date(self):
         dataset = tablib.Dataset(
