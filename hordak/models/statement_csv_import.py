@@ -90,8 +90,8 @@ class TransactionCsvImportColumn(models.Model):
         (None, '-- Do not import --'),
         ('date', 'Date'),
         ('amount', 'Amount'),
-        ('amount_out', 'Amount (money in only)'),
-        ('amount_in', 'Amount (money out only)'),
+        ('amount_out', 'Amount (money out only)'),
+        ('amount_in', 'Amount (money in only)'),
         ('description', 'Description / Notes'),
     )
 
