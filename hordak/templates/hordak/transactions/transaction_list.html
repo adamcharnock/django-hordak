@@ -4,34 +4,30 @@
 {% block page_description %}See all transactions{% endblock %}
 
 {% block content %}
-    <table class="table table-striped">
+    <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
+                <th>ID</th>
                 <th>Date</th>
+                <th>Legs</th>
                 <th>Description</th>
-                <th>suite</th>
-                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for transaction in transactions %}
             <tr>
-                <td>{{ transaction.id }}</td>
-                <td>{{ transaction.date }}</td>
+                <td valign="top"><code>{{ transaction.uuid }}</code></td>
+                <td valign="top">{{ transaction.date }}</td>
                 <td>
-                        <table>
+                        <dl>
                         {% for leg in transaction.legs.all %}
-                            <tr>
-                                <td>{{ leg.type }}</td>
-                                <td>{{ leg.account }}</td>
-                                <td>{{ leg.amount }}</td>
-                            </tr>
+                          <dt>{{ leg.type|title }} <strong>{{ leg.account.name }}</strong></dt>
+                          <dd style="margin: 5px 0 10px 20px; text-align: right">{{ leg.amount }}</dd>
                         {% endfor %}
-                        </table>
+                        </dl>
 
                 </td>
-                <td>{{ transaction.description }}</td>
+                <td valign="top">{{ transaction.description }}</td>
             </tr>
             {% empty %}
                 <tr>
