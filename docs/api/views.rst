@@ -69,7 +69,7 @@ AccountUpdateView
 AccountTransactionView
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: hordak.views.AccountTransactionView
+.. autoclass:: hordak.views.AccountTransactionsView
     :members:
     :undoc-members:
 
