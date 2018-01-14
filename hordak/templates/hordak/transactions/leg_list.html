@@ -1,27 +1,28 @@
 {% extends 'hordak/base.html' %}
 
-{% block page_name %}List of legs{% endblock %}
+{% block page_name %}Transaction Legs{% endblock %}
 {% block page_description %}See all legs{% endblock %}
 
 {% block content %}
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Trans. Id</th>
-                <th>type</th>
-                <th>account</th>
-                <th>amount</th>
-                <th>description</th>
-                <th></th>
+                <th>Transaction UUID</th>
+                <th>Leg UUID</th>
+                <th>Type</th>
+                <th>Account</th>
+                <th>Amount</th>
+                <th>Description</th>
             </tr>
         </thead>
         <tbody>
             {% for leg in legs %}
             <tr>
-                <td>{{ leg.transaction.id }}-{{ leg.id }}</td>
-                <td>{{ leg.type }}</td>
-                <td>{{ leg.account }}</td>
-                <td>{{ leg.amount }}</td>
+                <td><code>{{ leg.transaction.uuid }}</code></td>
+                <td><code>{{ leg.uuid }}</code></td>
+                <td>{{ leg.type|title }}</td>
+                <td>{{ leg.account.name }}</td>
+                <td style="text-align: right;">{{ leg.amount }}</td>
                 <td>{{ leg.description }}</td>
              </tr>
             {% empty %}
