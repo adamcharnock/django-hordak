@@ -1,0 +1,40 @@
+{% extends 'hordak/base.html' %}
+
+{% block page_name %}Transactions List{% endblock %}
+{% block page_description %}See all transactions{% endblock %}
+
+{% block content %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Legs</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td valign="top"><code>{{ transaction.uuid }}</code></td>
+                <td valign="top">{{ transaction.date }}</td>
+                <td>
+                        <dl>
+                        {% for leg in transaction.legs.all %}
+                          <dt>{{ leg.type|title }} <strong>{{ leg.account.name }}</strong></dt>
+                          <dd style="margin: 5px 0 10px 20px; text-align: right">{{ leg.amount }}</dd>
+                        {% endfor %}
+                        </dl>
+
+                </td>
+                <td valign="top">{{ transaction.description }}</td>
+            </tr>
+            {% empty %}
+                <tr>
+                <td colspan="6" class="text-center">No transaction exist</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

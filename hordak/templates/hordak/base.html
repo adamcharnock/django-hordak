@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title></title>
+        <title>Accounting</title>
         {% block base_styling %}
         <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet">
         {% endblock %}
@@ -14,4 +14,15 @@
         {% block scripts %}{% endblock %}
         {% block extra_js %}{% endblock %}
     </body>
+    <footer>
+        <p>
+            <a href="{% url 'hordak:accounts_create' %}">Create account</a> |
+            <a href="{% url 'hordak:transactions_create' %}">Create transaction</a> |
+            <a href="{% url 'hordak:currency_trade' %}">Currency exchange</a> |
+            <a href="{% url 'hordak:import_create' %}">Import statements</a> |
+            <a href="{% url 'hordak:transactions_reconcile' %}">Reconcile statements</a> |
+            <a href="{% url 'hordak:transactions_list' %}">List transactions</a> |
+            <a href="{% url 'hordak:legs_list' %}">List legs</a>
+        </p>
+    </footer>
 </html>

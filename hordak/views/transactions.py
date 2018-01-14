@@ -43,6 +43,26 @@ class CurrencyTradeView(LoginRequiredMixin, CreateView):
         return kwargs
 
 
+class TransactionsListView(LoginRequiredMixin, ListView):
+    """View for listing transactions
+
+    """
+    model = Transaction
+    template_name = 'hordak/transactions/transaction_list.html'
+    context_object_name = 'transactions'
+    ordering = ['-date', '-pk']
+
+
+class LegsListView(LoginRequiredMixin, ListView):
+    """View for listing legs
+
+    """
+    model = Leg
+    template_name = 'hordak/transactions/leg_list.html'
+    context_object_name = 'legs'
+    ordering = ['-transaction__date', '-transaction__pk', '-pk']
+
+
 class TransactionDeleteView(LoginRequiredMixin, DeleteView):
     model = Transaction
     slug_url_kwarg = 'uuid'
