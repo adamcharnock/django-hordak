@@ -39,6 +39,18 @@ ensure data integrity. MySQL could be certainly supported in future, volunteers 
     notes
     changelog
 
+Current limitations
+-------------------
+
+Django Hordak currently does not guarantee sequential primary keys of database entities.
+IDs are created using regular Postgres sequences, and as a result IDs may skip numbers in
+certain circumstances. This may conflict with regulatory and audit requirements for
+some projects. This is an
+`area <https://stackoverflow.com/a/19006312/764723>`_
+`for <https://www.postgresql.org/message-id/44E376F6.7010802@seaworthysys.com>`_
+`future <https://wiki.postgresql.org/wiki/FAQ#Why_are_there_gaps_in_the_numbering_of_my_sequence.2FSERIAL_column.3F_Why_aren.27t_my_sequence_numbers_reused_on_transaction_abort.3F>`_
+`work <https://stackoverflow.com/questions/9984196/postgresql-gapless-sequences/9985219#9985219>`_.
+
 Indices and tables
 ==================
 
