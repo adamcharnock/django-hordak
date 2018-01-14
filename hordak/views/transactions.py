@@ -60,7 +60,7 @@ class LegsListView(LoginRequiredMixin, ListView):
     model = Leg
     template_name = 'hordak/transactions/leg_list.html'
     context_object_name = 'legs'
-    ordering = ['-pk']
+    ordering = ['-transaction__date', '-transaction__pk', '-pk']
 
 
 class TransactionDeleteView(LoginRequiredMixin, DeleteView):
