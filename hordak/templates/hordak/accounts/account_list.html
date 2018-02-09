@@ -30,6 +30,8 @@
                 <td>
                     {% if account.is_leaf_node %}
                         <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Transactions</a>
+                    {% else %}
+                    <a href="{% url 'hordak:accounts_transactions' account.uuid %}" class="btn btn-default btn-xs">Parent</a>
                     {% endif %}
                 </td>
                 <td>
@@ -44,11 +46,4 @@
         </tbody>
     </table>
 
-    <p>
-        <a href="{% url 'hordak:accounts_create' %}">Create account</a> |
-        <a href="{% url 'hordak:transactions_create' %}">Create transaction</a> |
-        <a href="{% url 'hordak:currency_trade' %}">Currency exchange</a> |
-        <a href="{% url 'hordak:import_create' %}">Import statements</a> |
-        <a href="{% url 'hordak:transactions_reconcile' %}">Reconcile statements</a>
-    </p>
 {% endblock %}

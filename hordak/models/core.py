@@ -90,7 +90,7 @@ class Account(MPTTModel):
     )
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True, on_delete=models.CASCADE)
     code = models.CharField(max_length=3)
     full_code = models.CharField(max_length=100, db_index=True, unique=True)
     # TODO: Implement this child_code_width field, as it is probably a good idea
@@ -328,7 +328,7 @@ class Transaction(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
     date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
     description = models.TextField(default='', blank=True)
-
+    
     objects = TransactionManager()
 
     class Meta:
@@ -384,7 +384,7 @@ class Leg(models.Model):
     """
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, related_name='legs')
+    account = models.ForeignKey(Account, related_name='legs',on_delete=models.CASCADE)
     amount = MoneyField(max_digits=13, decimal_places=2,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)
@@ -456,7 +456,7 @@ class StatementImport(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
-    bank_account = models.ForeignKey(Account, related_name='imports')
+    bank_account = models.ForeignKey(Account, related_name='imports',on_delete=models.CASCADE)
     source = models.CharField(max_length=20,
                               help_text='A value uniquely identifying where this data came from. '
                                         'Examples: "csv", "teller.io".')
@@ -499,7 +499,7 @@ class StatementLine(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     date = models.DateField()
-    statement_import = models.ForeignKey(StatementImport, related_name='lines')
+    statement_import = models.ForeignKey(StatementImport, related_name='lines',on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=13, decimal_places=2)
     description = models.TextField(default='', blank=True)
     type = models.CharField(max_length=50, default='')

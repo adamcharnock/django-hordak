@@ -23,7 +23,7 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         account1 = self.account(code='5')
         account2 = self.account(parent=account1, name='Account 2', code='1')
         account2.refresh_from_db()
-        self.assertEqual(str(account2), '51 Account 2 [€0.00]')
+        self.assertEqual(str(account2).replace('\xa0',''), '51 Account 2 [€0.00]')
 
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
@@ -96,6 +96,21 @@ class AccountTestCase(DataProvider, TransactionTestCase):
 
         self.assertEqual(account1.simple_balance(), Balance(100, 'EUR'))
         self.assertEqual(account2.simple_balance(), Balance(-100, 'EUR'))
+
+    def test_balance_3legs(self):
+        account1 = self.account()
+        account2 = self.account()
+        account3 = self.account()
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100, 'EUR'))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-40, 'EUR'))
+            Leg.objects.create(transaction=transaction, account=account3, amount=Money(-60, 'EUR'))
+
+        self.assertEqual(account1.simple_balance(), Balance(100, 'EUR'))
+        self.assertEqual(account2.simple_balance(), Balance(-40, 'EUR'))
+        self.assertEqual(account3.simple_balance(), Balance(-60, 'EUR'))
 
     def test_balance_simple_as_of(self):
         account1 = self.account()
