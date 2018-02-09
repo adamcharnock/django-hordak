@@ -26,11 +26,14 @@
                         <td>
                             {% if line.transaction %}
                                 <td>
+                                    <dl>
                                     {% for leg in line.transaction.legs.all %}
                                         {% if leg.account != line.statement_import.bank_account %}
-                                            {{ leg.account }}
+                                            <dt>{{ leg.account.name }}</dt>
+                                            <dd>{{ leg.amount|abs }}</dd>
                                         {% endif %}
                                     {% endfor %}
+                                    </dl>
                                 </td>
                                 <td>
                                 <form action="{% url 'hordak:transactions_unreconcile' line.uuid %}" method="post">
