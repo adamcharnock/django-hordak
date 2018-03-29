@@ -1,5 +1,30 @@
 ----
 
+Version 1.6.1, Thu 29 Mar 2018
+===============================
+
+f095f32e86	auto-migrations (Pavel Sutyrin)
+188314fc73	Minor improvement to reconcile UI (Adam Charnock)
+34e1efdc62	Disabling builds for python 3.7 until travis sorts itself out (Adam Charnock)
+ecf693c21a	Fixing links in 'Current limitations' section of docs (Adam Charnock)
+403afa5d32	Fixing building of docs for AccountTransactionView (was renamed to AccountTransactionsView) (Adam Charnock)
+40437cb59c	Adding 'Current limitations' to docs (Adam Charnock)
+be734095d0	Updates to leg table rendering (thanks to @al1p-R) (Adam Charnock)
+20830785d6	Minor tweaks to ordering in Leg view (thanks to @al1p-R) (Adam Charnock)
+7c7df45818	Whitespace fixes (Adam Charnock)
+e15aeaa5ca	Updates to transaction table rendering (thanks to @al1p-R) (Adam Charnock)
+b4f823997c	Putting whitespace back (Adam Charnock)
+52f72d23b4	Remove protected white space in Balance string. (Jonas Hagen)
+92c6246227	Make string comparison in test more robust. (Jonas Hagen)
+df410bab5c	Fix switched description string. (Jonas Hagen)
+e531fb5cb1	Extend split amount test with negative amount. (Jonas Hagen)
+85a3cdaaef	Adapt currency string in testcase to babel format. (Jonas Hagen)
+1c142d937f	test file for CSV bank account import (al1p-R)
+424d6a1b2a	fix comment error (al1p-R)
+5fbb1d04ab	Adding list of transactions and list of legs
+    Moving footer to base.html (al1p-R)
+
+
 Version 1.6.0, Thu 04 Jan 2018
 ===============================
 
