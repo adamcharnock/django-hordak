@@ -42,6 +42,10 @@ DEBIT = 'debit'
 CREDIT = 'credit'
 
 
+def json_default():
+    return {}
+
+
 class AccountQuerySet(models.QuerySet):
 
     def net_balance(self, raw=False):
@@ -328,7 +332,7 @@ class Transaction(models.Model):
     timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
     date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
     description = models.TextField(default='', blank=True)
-    
+
     objects = TransactionManager()
 
     class Meta:
@@ -460,7 +464,7 @@ class StatementImport(models.Model):
     source = models.CharField(max_length=20,
                               help_text='A value uniquely identifying where this data came from. '
                                         'Examples: "csv", "teller.io".')
-    extra = JSONField(default={}, help_text='Any extra data relating to the import, probably specific '
+    extra = JSONField(default=json_default, help_text='Any extra data relating to the import, probably specific '
                                             'to the data source.')
 
     objects = StatementImportManager()
@@ -508,7 +512,7 @@ class StatementLine(models.Model):
     transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
                                     help_text='Reconcile this statement line to this transaction',
                                     on_delete=models.SET_NULL)
-    source_data = JSONField(default={}, help_text='Original data received from the data source.')
+    source_data = JSONField(default=json_default, help_text='Original data received from the data source.')
 
     objects = StatementLineManager()
 
