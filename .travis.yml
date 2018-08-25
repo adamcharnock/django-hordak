@@ -28,3 +28,10 @@ after_success:
 
 addons:
   postgresql: "9.5"
+
+matrix:
+  exclude:
+    - python: "3.4"
+      env: DJANGO="Django>=2.0,<2.1"
+    - python: "3.4"
+      env: DJANGO="Django>=2.1,<2.2"
