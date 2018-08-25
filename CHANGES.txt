@@ -1,5 +1,19 @@
 ----
 
+Version 1.7.0, Sat 25 Aug 2018
+===============================
+
+c08f7c940e	Removing support for django 2.1 because there seems to be a strange bug with django-mptt (Adam Charnock)
+8167b178a4	Fixing how django gets installed so as to not trip django 2's checks (Adam Charnock)
+f51fc9041e	psycopg2 -> psycopg2-binary (Adam Charnock)
+76207b74ba	Fixing warning regarding immutable default values (Adam Charnock)
+0553403d60	Adding missing migration (Adam Charnock)
+09cf48d1c6	Excluding django2 from testing on python 3.4 (Adam Charnock)
+ced1cec03c	Dropping django 1.10 support, it has reached EOL and django-money no longer supports it (Adam Charnock)
+95498a7c03	Excluding django2 from testing on python 3.4 (Adam Charnock)
+b2511d3116	Removing restriction on Django < 2. Testing on Django 2.1. (Adam Charnock)
+
+
 Version 1.6.1, Thu 29 Mar 2018
 ===============================
 
