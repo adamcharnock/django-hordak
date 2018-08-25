@@ -8,9 +8,9 @@ services:
   - postgresql
 
 env:
-  - DJANGO="django>=2.1,<2.2"
-  - DJANGO="django>=2.0,<2.1"
   - DJANGO="django>=1.11,<1.12"
+  - DJANGO="django>=2.0,<2.1"
+  - DJANGO="django>=2.1,<2.2"
 
 install:
   - python setup.py develop
@@ -31,6 +31,6 @@ addons:
 matrix:
   exclude:
     - python: "3.4"
-      env: DJANGO="Django>=2.0,<2.1"
+      env: DJANGO="django>=2.0,<2.1"
     - python: "3.4"
-      env: DJANGO="Django>=2.1,<2.2"
+      env: DJANGO="django>=2.1,<2.2"
