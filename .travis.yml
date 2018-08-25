@@ -12,11 +12,13 @@ env:
   - DJANGO="django>=2.0,<2.1"
   - DJANGO="django>=2.1,<2.2"
 
+before_install:
+  - pip install -q $DJANGO
+
 install:
   - python setup.py develop
   - pip install .
   - pip install requests-mock mock pytest coveralls
-  - pip install "$DJANGO"
 
 script:
   - env
