@@ -78,6 +78,20 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         self.assertIn('bank account', error)
         self.assertIn('currency', error)
 
+    def test_post_no_code(self):
+        response = self.client.post(self.view_url, data=dict(
+            name='Test Account',
+            code='',
+            type='IN',
+            is_bank_account='',
+            currencies='EUR, GBP',
+        ))
+        if response.context:
+            self.assertFalse(response.context['form'].errors)
+        account = Account.objects.get()
+        self.assertEqual(account.code, None)
+        self.assertEqual(account.full_code, None)
+
 
 class AccountUpdateViewTestCase(DataProvider, TestCase):
 
@@ -109,3 +123,18 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.assertEqual(self.account1.type, Account.TYPES.expense)  # Not editable, so unchanged
         self.assertEqual(self.account1.is_bank_account, False)  # Not editable, so unchanged
         self.assertEqual(self.account1.currencies, ['USD'])  # Not editable, so unchanged
+
+    def test_post_no_code(self):
+        response = self.client.post(self.view_url, data=dict(
+            name='My Account',
+            code='',
+            type='LI',
+            is_bank_account='yes',
+            currencies='EUR, GBP',
+        ))
+        if response.context:
+            self.assertFalse(response.context['form'].errors)
+
+        self.account1.refresh_from_db()
+        self.assertEqual(self.account1.code, None)
+        self.assertEqual(self.account1.full_code, None)
