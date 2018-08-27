@@ -191,7 +191,7 @@ class Account(MPTTModel):
             as_of (Date): Only include transactions on or before this date
             raw (bool): If true the returned balance should not have its sign
                         adjusted for display purposes.
-            **kwargs (dict): Will be used to filter the transaction legs
+            kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
             Balance
@@ -215,7 +215,7 @@ class Account(MPTTModel):
                         adjusted for display purposes.
             leg_query (models.Q): Django Q-expression, will be used to filter the transaction legs.
                                   allows for more complex filtering than that provided by **kwargs.
-            **kwargs (dict): Will be used to filter the transaction legs
+            kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
             Balance
