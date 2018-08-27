@@ -301,6 +301,36 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         self.assertEqual(account2.full_code, 'A0')
         self.assertEqual(account3.full_code, 'A09')
 
+    def test_full_code_changes_on_update_with_null_code(self):
+        account1 = self.account(code='5')
+        account2 = self.account(parent=account1, code='0')
+        account3 = self.account(parent=account2, code='9')
+        account1.code = None
+        account1.save()
+
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, None)
+        self.assertEqual(account2.full_code, None)
+        self.assertEqual(account3.full_code, None)
+
+    def test_full_code_changes_on_update_with_empty_string_code(self):
+        account1 = self.account(code='5')
+        account2 = self.account(parent=account1, code='0')
+        account3 = self.account(parent=account2, code='9')
+        account1.code = ''
+        account1.save()
+
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, None)
+        self.assertEqual(account2.full_code, None)
+        self.assertEqual(account3.full_code, None)
+
     def test_child_asset_account_can_be_bank_account(self):
         """Regression test for: #Postgres check bank_accounts_are_asset_accounts
         does not work on child bank accounts
