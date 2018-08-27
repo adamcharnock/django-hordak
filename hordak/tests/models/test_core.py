@@ -19,6 +19,13 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         account2 = self.account(parent=account1, code='1')
         self.assertEqual(str(account1), 'Account 1')
 
+    def test_str_root_no_code(self):
+        # Account code should not be rendered as we should not
+        # associate transaction legs with non-leaf accounts
+        account1 = self.account(name='Account 1')
+        account2 = self.account(parent=account1)
+        self.assertEqual(str(account1), 'Account 1')
+
     def test_str_child(self):
         account1 = self.account(code='5')
         account2 = self.account(parent=account1, name='Account 2', code='1')

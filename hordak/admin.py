@@ -15,7 +15,7 @@ class AccountAdmin(MPTTModelAdmin):
 
     def code_(self, obj):
         if obj.is_leaf_node():
-            return obj.full_code
+            return obj.full_code or '-'
         else:
             return ''
 

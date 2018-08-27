@@ -155,7 +155,11 @@ class Account(MPTTModel):
                 else:
                     return name
             else:
-                return '{} {} [{}]'.format(self.full_code, name, balance)
+                if self.full_code:
+                    return '{} {} [{}]'.format(self.full_code, name, balance)
+                else:
+                    return '{} [{}]'.format(name, balance)
+
         else:
             return name
 
