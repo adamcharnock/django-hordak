@@ -95,8 +95,8 @@ class Account(MPTTModel):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True, on_delete=models.CASCADE)
-    code = models.CharField(max_length=3)
-    full_code = models.CharField(max_length=100, db_index=True, unique=True)
+    code = models.CharField(max_length=3, null=True, blank=True)
+    full_code = models.CharField(max_length=100, db_index=True, unique=True, null=True, blank=True)
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     type = models.CharField(max_length=2, choices=TYPES, blank=True)
@@ -155,7 +155,11 @@ class Account(MPTTModel):
                 else:
                     return name
             else:
-                return '{} {} [{}]'.format(self.full_code, name, balance)
+                if self.full_code:
+                    return '{} {} [{}]'.format(self.full_code, name, balance)
+                else:
+                    return '{} [{}]'.format(name, balance)
+
         else:
             return name
 
