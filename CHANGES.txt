@@ -1,5 +1,18 @@
 ----
 
+Version 1.8.0, Tue 28 Aug 2018
+===============================
+
+ba632bccfb	Adding settings page to docs (Adam Charnock)
+3a0215bd8e	fixing docstring sphinx errors (Adam Charnock)
+cbc31a3e34	Potential fix for migration checking in travis (Adam Charnock)
+a4abc75174	Check for missed migrations (Pavel Sutyrin)
+8e73ae707e	Adding tests for account creation/updating views when no account code is specified (Adam Charnock)
+edb34f4e8b	Updating update_full_account_codes to handle null account codes (Adam Charnock)
+1efd39deca	Better handling of potential lack of Account.full_code (Adam Charnock)
+195bb27c7e	make account code unrequired (Petr Dlouhý)
+
+
 Version 1.7.0, Sat 25 Aug 2018
 ===============================
 
