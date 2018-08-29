@@ -20,6 +20,11 @@ Add to installed apps:
     Hordak uses `django-mptt`_ to provide the account tree structure. It must therefore be listed
     in ``INSTALLED_APPS`` as shown above.
 
+If you need different than default values of the ``HORDAK_DECIMAL_PLACES`` and ``HORDAK_MAX_DIGITS`` variables
+in :ref:`settings <settings>` it is right time to do it before running migrations.
+If you would want to change these values in future, you will have
+to deal with creating and maintaining your own ``hordak`` migration for that.
+
 Run the migrations::
 
     ./manage.py migrate
