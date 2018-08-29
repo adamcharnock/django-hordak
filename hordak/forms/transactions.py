@@ -21,7 +21,7 @@ class SimpleTransactionForm(forms.ModelForm):
     """
     from_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
     to_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
-    amount = MoneyField(decimal_places=2)
+    amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
 
     class Meta:
         model = Transaction
@@ -102,7 +102,7 @@ class LegForm(forms.ModelForm):
     """
     account = TreeNodeChoiceField(Account.objects.all(), to_field_name='uuid')
     description = forms.CharField(required=False)
-    amount = MoneyField(required=True, decimal_places=2)
+    amount = MoneyField(required=True, decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
 
     class Meta:
         model = Leg
@@ -165,7 +165,7 @@ class CurrencyTradeForm(forms.Form):
         queryset=Account.objects.filter(children__isnull=True),
         to_field_name='uuid'
     )
-    source_amount = MoneyField(decimal_places=2)
+    source_amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
     trading_account = forms.ModelChoiceField(
         queryset=Account.objects.filter(children__isnull=True, type=Account.TYPES.trading),
         to_field_name='uuid',
@@ -174,7 +174,7 @@ class CurrencyTradeForm(forms.Form):
                   'perhaps create one.'
     )
     destination_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
-    destination_amount = MoneyField(decimal_places=2)
+    destination_amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
     description = forms.CharField(widget=forms.Textarea, required=False)
 
     def clean(self):
