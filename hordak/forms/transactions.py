@@ -1,9 +1,10 @@
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms import BaseInlineFormSet, inlineformset_factory
 from djmoney.forms import MoneyField
+
+from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, DEFAULT_CURRENCY, CURRENCIES
 from hordak.models import Account, Transaction, Leg
 from moneyed import Money
 from mptt.forms import TreeNodeChoiceField
@@ -21,7 +22,7 @@ class SimpleTransactionForm(forms.ModelForm):
     """
     from_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
     to_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name='uuid')
-    amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
+    amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
 
     class Meta:
         model = Transaction
@@ -31,14 +32,14 @@ class SimpleTransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Limit currency choices if setup
-        default_currency = getattr(settings, 'DEFAULT_CURRENCY', 'EUR')
+        default_currency = DEFAULT_CURRENCY
         amount_field, currency_field = self.fields['amount'].fields
 
         self.fields['amount'].widget.widgets[1].choices = currency_field.choices = [
             (code, name)
             for code, name
             in currency_field.choices
-            if code == default_currency or code in getattr(settings, 'CURRENCIES', [])
+            if code == default_currency or code in CURRENCIES
         ]
         self.fields['amount'].initial[1] = default_currency
 
@@ -102,7 +103,7 @@ class LegForm(forms.ModelForm):
     """
     account = TreeNodeChoiceField(Account.objects.all(), to_field_name='uuid')
     description = forms.CharField(required=False)
-    amount = MoneyField(required=True, decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
+    amount = MoneyField(required=True, max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
 
     class Meta:
         model = Leg
@@ -165,7 +166,7 @@ class CurrencyTradeForm(forms.Form):
         queryset=Account.objects.filter(children__isnull=True),
         to_field_name='uuid'
     )
-    source_amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
+    source_amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
     trading_account = forms.ModelChoiceField(
         queryset=Account.objects.filter(children__isnull=True, type=Account.TYPES.trading),
         to_field_name='uuid',
@@ -174,7 +175,7 @@ class CurrencyTradeForm(forms.Form):
                   'perhaps create one.'
     )
     destination_account = forms.ModelChoiceField(queryset=Account.objects.filter(children__isnull=True), to_field_name='uuid')
-    destination_amount = MoneyField(decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
+    destination_amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
     description = forms.CharField(widget=forms.Textarea, required=False)
 
     def clean(self):

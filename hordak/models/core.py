@@ -18,7 +18,6 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.conf import settings
 from django.contrib.postgres.fields.array import ArrayField
 from django.contrib.postgres.fields.jsonb import JSONField
 from django.db import models
@@ -33,6 +32,7 @@ from model_utils import Choices
 
 from hordak import defaults
 from hordak import exceptions
+from hordak.defaults import MAX_DIGITS, DECIMAL_PLACES
 
 from hordak.utilities.currency import Balance
 
@@ -394,7 +394,7 @@ class Leg(models.Model):
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
     account = models.ForeignKey(Account, related_name='legs',on_delete=models.CASCADE)
-    amount = MoneyField(max_digits=getattr(settings, 'HORDAK_MAX_DIGITS', 13), decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2),
+    amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES,
                         help_text='Record debits as positive, credits as negative',
                         default_currency=defaults.INTERNAL_CURRENCY)
     description = models.TextField(default='', blank=True)
@@ -509,7 +509,7 @@ class StatementLine(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     date = models.DateField()
     statement_import = models.ForeignKey(StatementImport, related_name='lines',on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=getattr(settings, 'HORDAK_MAX_DIGITS', 13), decimal_places=getattr(settings, 'HORDAK_DECIMAL_PLACES', 2))
+    amount = models.DecimalField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
     description = models.TextField(default='', blank=True)
     type = models.CharField(max_length=50, default='')
     # TODO: Add constraint to ensure transaction amount = statement line amount
