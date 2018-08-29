@@ -20,7 +20,6 @@ from hordak.views.accounts import AccountListView, AccountCreateView, AccountUpd
 from hordak.views.transactions import TransactionsReconcileView
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-
-    url(r'^', include('hordak.urls', namespace='hordak'))
+    url(r"^admin/", admin.site.urls),
+    url(r"^", include("hordak.urls", namespace="hordak")),
 ]

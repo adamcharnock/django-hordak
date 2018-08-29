@@ -10,9 +10,7 @@ class Migration(migrations.Migration):
 
     """
 
-    dependencies = [
-        ('hordak', '0015_auto_20170302_2109'),
-    ]
+    dependencies = [("hordak", "0015_auto_20170302_2109")]
 
     operations = [
         migrations.RunSQL(
@@ -28,11 +26,9 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """
-            ,
-            'DROP FUNCTION check_account_type()'
+            """,
+            "DROP FUNCTION check_account_type()",
         ),
-
         migrations.RunSQL(
             """
             CREATE TRIGGER check_account_type_trigger
@@ -40,8 +36,7 @@ class Migration(migrations.Migration):
             FOR EACH ROW
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE check_account_type();
-            """
-            ,
-            'DROP TRIGGER IF EXISTS check_account_type_trigger ON hordak_account'
+            """,
+            "DROP TRIGGER IF EXISTS check_account_type_trigger ON hordak_account",
         ),
     ]

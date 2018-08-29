@@ -7,9 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0001_initial'),
-    ]
+    dependencies = [("hordak", "0001_initial")]
 
     operations = [
         migrations.RunSQL(
@@ -34,19 +32,16 @@ class Migration(migrations.Migration):
                 END;
                 $$
                 LANGUAGE plpgsql
-            """
-            ,
-            'DROP FUNCTION check_leg()'
+            """,
+            "DROP FUNCTION check_leg()",
         ),
-
         migrations.RunSQL(
             """
                 CREATE CONSTRAINT TRIGGER check_leg_trigger
                 AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
                 DEFERRABLE INITIALLY DEFERRED
                 FOR EACH ROW EXECUTE PROCEDURE check_leg();
-            """
-            ,
-            'DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg'
+            """,
+            "DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg",
         ),
     ]

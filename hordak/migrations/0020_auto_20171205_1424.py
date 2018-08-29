@@ -8,24 +8,27 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0019_statementimport_source'),
-    ]
+    dependencies = [("hordak", "0019_statementimport_source")]
 
     operations = [
         migrations.AddField(
-            model_name='statementimport',
-            name='extra',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default={}, help_text='Any extra data relating to the import, probably specific to the data source.'),
+            model_name="statementimport",
+            name="extra",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                default={},
+                help_text="Any extra data relating to the import, probably specific to the data source.",
+            ),
         ),
         migrations.AddField(
-            model_name='statementline',
-            name='source_data',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default={}, help_text='Original data received from the data source.'),
+            model_name="statementline",
+            name="source_data",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                default={}, help_text="Original data received from the data source."
+            ),
         ),
         migrations.AddField(
-            model_name='statementline',
-            name='type',
-            field=models.CharField(default='', max_length=50),
+            model_name="statementline",
+            name="type",
+            field=models.CharField(default="", max_length=50),
         ),
     ]

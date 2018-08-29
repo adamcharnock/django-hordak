@@ -7,9 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0005_account_currencies'),
-    ]
+    dependencies = [("hordak", "0005_account_currencies")]
 
     operations = [
         migrations.RunSQL(
@@ -46,5 +44,5 @@ class Migration(migrations.Migration):
                 $$
                 LANGUAGE plpgsql;
             """
-        ),
+        )
     ]

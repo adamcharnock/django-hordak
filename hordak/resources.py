@@ -9,7 +9,6 @@ from hordak.utilities.statement_import import DATE_FORMATS
 
 
 class Result(_Result):
-
     def append_failed_row(self, row, error):
         # This class can be removed once this is merged:
         #   https://github.com/django-import-export/django-import-export/pull/526
@@ -19,10 +18,9 @@ class Result(_Result):
 
 
 class StatementLineResource(resources.ModelResource):
-
     class Meta:
         model = StatementLine
-        fields = ('date', 'amount', 'description')
+        fields = ("date", "amount", "description")
 
     def __init__(self, date_format, statement_import):
         self.date_format = date_format
@@ -44,7 +42,7 @@ class StatementLineResource(resources.ModelResource):
 
         # Add a new 'similar_total' column. This is a integer of how many
         # identical rows precede this one.
-        self.dataset.append_col(similar_totals, header='similar_total')
+        self.dataset.append_col(similar_totals, header="similar_total")
 
     def before_save_instance(self, instance, using_transactions, dry_run):
         # We need to record this statement line against the parent statement import
@@ -64,14 +62,12 @@ class StatementLineResource(resources.ModelResource):
     def skip_row(self, instance, original):
         # Skip this row if the database already contains the requsite number of
         # rows identical to this one.
-        return instance._row['similar_total'] < self._get_num_similar_objects(instance)
+        return instance._row["similar_total"] < self._get_num_similar_objects(instance)
 
     def _get_num_similar_objects(self, obj):
         """Get any statement lines which would be considered a duplicate of obj"""
         return StatementLine.objects.filter(
-            date=obj.date,
-            amount=obj.amount,
-            description=obj.description,
+            date=obj.date, amount=obj.amount, description=obj.description
         ).count()
 
     def _get_num_similar_rows(self, row, until=None):
@@ -83,14 +79,14 @@ class StatementLineResource(resources.ModelResource):
         use_dual_amounts = F.amount_out in data and F.amount_in in data
 
         if F.date not in data:
-            raise ValueError('No date column found')
+            raise ValueError("No date column found")
 
         try:
             date = datetime.strptime(data[F.date], self.date_format).date()
         except ValueError:
-            raise ValueError('Invalid value for date. Expected {}'.format(
-                dict(DATE_FORMATS)[self.date_format]
-            ))
+            raise ValueError(
+                "Invalid value for date. Expected {}".format(dict(DATE_FORMATS)[self.date_format])
+            )
 
         description = data[F.description]
 
@@ -100,36 +96,32 @@ class StatementLineResource(resources.ModelResource):
             amount_in = data[F.amount_in]
 
             if amount_in and amount_out:
-                raise ValueError('Values found for both Amount In and Amount Out')
+                raise ValueError("Values found for both Amount In and Amount Out")
             if not amount_in and not amount_out:
-                raise ValueError('Value required for either Amount In or Amount Out')
+                raise ValueError("Value required for either Amount In or Amount Out")
 
             if amount_out:
                 try:
                     amount = abs(Decimal(amount_out)) * -1
                 except DecimalException:
-                    raise ValueError('Invalid value found for Amount Out')
+                    raise ValueError("Invalid value found for Amount Out")
             else:
                 try:
                     amount = abs(Decimal(amount_in))
                 except DecimalException:
-                    raise ValueError('Invalid value found for Amount In')
+                    raise ValueError("Invalid value found for Amount In")
         else:
             if F.amount not in data:
-                raise ValueError('No amount column found')
+                raise ValueError("No amount column found")
             if not data[F.amount]:
-                raise ValueError('No value found for amount')
+                raise ValueError("No value found for amount")
             try:
                 amount = Decimal(data[F.amount])
             except:
-                raise DecimalException('Invalid value found for Amount')
+                raise DecimalException("Invalid value found for Amount")
 
-        if amount == Decimal('0'):
-            raise ValueError('Amount of zero not allowed')
+        if amount == Decimal("0"):
+            raise ValueError("Amount of zero not allowed")
 
-        data = dict(
-            date=date,
-            amount=amount,
-            description=description,
-        )
+        data = dict(date=date, amount=amount, description=description)
         return super(StatementLineResource, self).import_obj(obj, data, dry_run)

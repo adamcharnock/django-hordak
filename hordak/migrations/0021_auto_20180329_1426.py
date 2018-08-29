@@ -8,19 +8,38 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0020_auto_20171205_1424'),
-    ]
+    dependencies = [("hordak", "0020_auto_20171205_1424")]
 
     operations = [
         migrations.AlterField(
-            model_name='statementline',
-            name='transaction',
-            field=models.ForeignKey(blank=True, default=None, help_text='Reconcile this statement line to this transaction', null=True, on_delete=django.db.models.deletion.SET_NULL, to='hordak.Transaction'),
+            model_name="statementline",
+            name="transaction",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                help_text="Reconcile this statement line to this transaction",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hordak.Transaction",
+            ),
         ),
         migrations.AlterField(
-            model_name='transactioncsvimportcolumn',
-            name='to_field',
-            field=models.CharField(blank=True, choices=[(None, '-- Do not import --'), ('date', 'Date'), ('amount', 'Amount'), ('amount_out', 'Amount (money out only)'), ('amount_in', 'Amount (money in only)'), ('description', 'Description / Notes')], default=None, max_length=20, null=True, verbose_name='Is'),
+            model_name="transactioncsvimportcolumn",
+            name="to_field",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    (None, "-- Do not import --"),
+                    ("date", "Date"),
+                    ("amount", "Amount"),
+                    ("amount_out", "Amount (money out only)"),
+                    ("amount_in", "Amount (money in only)"),
+                    ("description", "Description / Notes"),
+                ],
+                default=None,
+                max_length=20,
+                null=True,
+                verbose_name="Is",
+            ),
         ),
     ]

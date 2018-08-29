@@ -21,9 +21,10 @@ class AccountListView(LoginRequiredMixin, ListView):
             ]
 
     """
+
     model = Account
-    template_name = 'hordak/accounts/account_list.html'
-    context_object_name = 'accounts'
+    template_name = "hordak/accounts/account_list.html"
+    context_object_name = "accounts"
 
 
 class AccountCreateView(LoginRequiredMixin, CreateView):
@@ -39,9 +40,10 @@ class AccountCreateView(LoginRequiredMixin, CreateView):
             ]
 
     """
+
     form_class = account_forms.AccountForm
-    template_name = 'hordak/accounts/account_create.html'
-    success_url = reverse_lazy('hordak:accounts_list')
+    template_name = "hordak/accounts/account_create.html"
+    success_url = reverse_lazy("hordak:accounts_list")
 
 
 class AccountUpdateView(LoginRequiredMixin, UpdateView):
@@ -61,20 +63,21 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
             ]
 
     """
+
     model = Account
     form_class = account_forms.AccountForm
-    template_name = 'hordak/accounts/account_update.html'
-    slug_field = 'uuid'
-    slug_url_kwarg = 'uuid'
-    context_object_name = 'account'
-    success_url = reverse_lazy('hordak:accounts_list')
+    template_name = "hordak/accounts/account_update.html"
+    slug_field = "uuid"
+    slug_url_kwarg = "uuid"
+    context_object_name = "account"
+    success_url = reverse_lazy("hordak:accounts_list")
 
 
 class AccountTransactionsView(LoginRequiredMixin, SingleObjectMixin, ListView):
-    template_name = 'hordak/accounts/account_transactions.html'
+    template_name = "hordak/accounts/account_transactions.html"
     model = Leg
-    slug_field = 'uuid'
-    slug_url_kwarg = 'uuid'
+    slug_field = "uuid"
+    slug_url_kwarg = "uuid"
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -86,9 +89,13 @@ class AccountTransactionsView(LoginRequiredMixin, SingleObjectMixin, ListView):
         return super(AccountTransactionsView, self).get_object(queryset)
 
     def get_context_object_name(self, obj):
-        return 'legs' if hasattr(obj, '__iter__') else 'account'
+        return "legs" if hasattr(obj, "__iter__") else "account"
 
     def get_queryset(self):
         queryset = super(AccountTransactionsView, self).get_queryset()
-        queryset = Leg.objects.filter(account=self.object).order_by('-transaction__date', '-pk').select_related('transaction')
+        queryset = (
+            Leg.objects.filter(account=self.object)
+            .order_by("-transaction__date", "-pk")
+            .select_related("transaction")
+        )
         return queryset

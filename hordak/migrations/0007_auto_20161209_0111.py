@@ -7,9 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0006_auto_20161209_0108'),
-    ]
+    dependencies = [("hordak", "0006_auto_20161209_0108")]
 
     operations = [
         migrations.RunSQL(
@@ -35,19 +33,16 @@ class Migration(migrations.Migration):
                 END;
                 $$
                 LANGUAGE plpgsql
-            """
-            ,
-            'DROP FUNCTION check_leg_and_account_currency_match()'
+            """,
+            "DROP FUNCTION check_leg_and_account_currency_match()",
         ),
-
         migrations.RunSQL(
             """
                 CREATE CONSTRAINT TRIGGER check_leg_and_account_currency_match_trigger
                 AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
                 DEFERRABLE INITIALLY DEFERRED
                 FOR EACH ROW EXECUTE PROCEDURE check_leg_and_account_currency_match()
-            """
-            ,
-            'DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg'
+            """,
+            "DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg",
         ),
     ]

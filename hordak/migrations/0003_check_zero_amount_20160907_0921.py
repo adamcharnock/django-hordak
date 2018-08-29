@@ -7,14 +7,11 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0002_check_leg_trigger_20160903_1149'),
-    ]
+    dependencies = [("hordak", "0002_check_leg_trigger_20160903_1149")]
 
     operations = [
         migrations.RunSQL(
-            """ALTER TABLE hordak_leg ADD CONSTRAINT zero_amount_check CHECK (amount != 0)"""
-            ,
-            """ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check"""
-        ),
+            """ALTER TABLE hordak_leg ADD CONSTRAINT zero_amount_check CHECK (amount != 0)""",
+            """ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check""",
+        )
     ]

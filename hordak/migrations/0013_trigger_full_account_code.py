@@ -7,9 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0012_account_full_code'),
-    ]
+    dependencies = [("hordak", "0012_account_full_code")]
 
     operations = [
         migrations.RunSQL(
@@ -30,20 +28,16 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """
-            ,
-            'DROP FUNCTION update_full_account_codes()'
+            """,
+            "DROP FUNCTION update_full_account_codes()",
         ),
-
         migrations.RunSQL(
             """
             CREATE TRIGGER update_full_account_codes_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_account
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE update_full_account_codes();
-            """
-            ,
-            'DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account;'
-        )
+            """,
+            "DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account;",
+        ),
     ]
-

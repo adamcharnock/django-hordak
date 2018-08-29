@@ -5,7 +5,10 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, UpdateView, DetailView
 
-from hordak.forms.statement_csv_import import TransactionCsvImportForm, TransactionCsvImportColumnFormSet
+from hordak.forms.statement_csv_import import (
+    TransactionCsvImportForm,
+    TransactionCsvImportColumnFormSet,
+)
 from hordak.models import TransactionCsvImport
 from hordak.resources import StatementLineResource
 
@@ -13,10 +16,10 @@ from hordak.resources import StatementLineResource
 class CreateImportView(LoginRequiredMixin, CreateView):
     model = TransactionCsvImport
     form_class = TransactionCsvImportForm
-    template_name = 'hordak/statement_import/import_create.html'
+    template_name = "hordak/statement_import/import_create.html"
 
     def get_success_url(self):
-        return reverse('hordak:import_setup', args=[self.object.uuid])
+        return reverse("hordak:import_setup", args=[self.object.uuid])
 
 
 class SetupImportView(LoginRequiredMixin, UpdateView):
@@ -25,16 +28,17 @@ class SetupImportView(LoginRequiredMixin, UpdateView):
     This involves mapping columns to import fields, and collecting
     the date format
     """
-    context_object_name = 'transaction_import'
-    slug_url_kwarg = 'uuid'
-    slug_field = 'uuid'
+
+    context_object_name = "transaction_import"
+    slug_url_kwarg = "uuid"
+    slug_field = "uuid"
     model = TransactionCsvImport
-    fields = ('date_format', )
-    template_name = 'hordak/statement_import/import_setup.html'
+    fields = ("date_format",)
+    template_name = "hordak/statement_import/import_setup.html"
 
     def get_context_data(self, **kwargs):
         context = super(SetupImportView, self).get_context_data(**kwargs)
-        context['formset'] = TransactionCsvImportColumnFormSet(instance=self.object)
+        context["formset"] = TransactionCsvImportColumnFormSet(instance=self.object)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -57,13 +61,13 @@ class SetupImportView(LoginRequiredMixin, UpdateView):
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def get_success_url(self):
-        return reverse('hordak:import_dry_run', args=[self.object.uuid])
+        return reverse("hordak:import_dry_run", args=[self.object.uuid])
 
 
 class AbstractImportView(LoginRequiredMixin, DetailView):
-    context_object_name = 'transaction_import'
-    slug_url_kwarg = 'uuid'
-    slug_field = 'uuid'
+    context_object_name = "transaction_import"
+    slug_url_kwarg = "uuid"
+    slug_field = "uuid"
     model = TransactionCsvImport
     dry_run = True
 
@@ -87,16 +91,15 @@ class AbstractImportView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         return super(AbstractImportView, self).get_context_data(
-            result=getattr(self, 'result', None),
-            **kwargs
+            result=getattr(self, "result", None), **kwargs
         )
 
 
 class DryRunImportView(AbstractImportView):
-    template_name = 'hordak/statement_import/import_dry_run.html'
+    template_name = "hordak/statement_import/import_dry_run.html"
     dry_run = True
 
 
 class ExecuteImportView(AbstractImportView):
-    template_name = 'hordak/statement_import/import_execute.html'
+    template_name = "hordak/statement_import/import_execute.html"
     dry_run = False

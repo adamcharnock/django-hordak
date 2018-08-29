@@ -1,11 +1,12 @@
-
 class HordakError(Exception):
     """Abstract exception type for all Hordak errors"""
+
     pass
 
 
 class AccountingError(HordakError):
     """Abstract exception type for errors specifically related to accounting"""
+
     pass
 
 
@@ -14,6 +15,7 @@ class AccountTypeOnChildNode(HordakError):
 
     The type of a child account is always inferred from its root account
     """
+
     pass
 
 
@@ -22,6 +24,7 @@ class ZeroAmountError(HordakError):
 
     Transaction leg amounts must be none zero.
     """
+
     pass
 
 
@@ -33,6 +36,7 @@ class AccountingEquationViolationError(AccountingError):
     0 = Liabilities + Equity + Income - Expenses - Assets
 
     """
+
     pass
 
 
@@ -42,6 +46,7 @@ class LossyCalculationError(HordakError):
     Typically this may happen when trying to multiply/divide a monetary value
     by a float.
     """
+
     pass
 
 
@@ -50,19 +55,23 @@ class BalanceComparisonError(HordakError):
 
     A balance must be compared against another balance or a Money instance
     """
+
     pass
 
 
 class TradingAccountRequiredError(HordakError):
     """Raised when trying to perform a currency exchange via an account other than a 'trading' account"""
+
     pass
 
 
 class InvalidFeeCurrency(HordakError):
     """Raised when fee currency does not match source currency"""
+
     pass
 
 
 class CannotSimplifyError(HordakError):
     """Used internally by Currency class"""
+
     pass

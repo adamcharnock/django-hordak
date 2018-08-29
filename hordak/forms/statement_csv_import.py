@@ -5,17 +5,18 @@ from hordak.models import Account, TransactionCsvImport, StatementImport, Transa
 
 
 class TransactionCsvImportForm(forms.ModelForm):
-    bank_account = forms.ModelChoiceField(Account.objects.filter(is_bank_account=True), label='Import data for account')
+    bank_account = forms.ModelChoiceField(
+        Account.objects.filter(is_bank_account=True), label="Import data for account"
+    )
 
     class Meta:
         model = TransactionCsvImport
-        fields = ('has_headings', 'file')
+        fields = ("has_headings", "file")
 
     def save(self, commit=True):
         exists = bool(self.instance.pk)
         self.instance.hordak_import = StatementImport.objects.create(
-            bank_account=self.cleaned_data['bank_account'],
-            source='csv',
+            bank_account=self.cleaned_data["bank_account"], source="csv"
         )
         obj = super(TransactionCsvImportForm, self).save()
         if not exists:
@@ -24,10 +25,9 @@ class TransactionCsvImportForm(forms.ModelForm):
 
 
 class TransactionCsvImportColumnForm(forms.ModelForm):
-
     class Meta:
         model = TransactionCsvImportColumn
-        fields = ('to_field',)
+        fields = ("to_field",)
 
 
 TransactionCsvImportColumnFormSet = inlineformset_factory(

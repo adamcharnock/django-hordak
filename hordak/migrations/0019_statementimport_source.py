@@ -7,15 +7,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0018_auto_20171205_1256'),
-    ]
+    dependencies = [("hordak", "0018_auto_20171205_1256")]
 
     operations = [
         migrations.AddField(
-            model_name='statementimport',
-            name='source',
-            field=models.CharField(default='csv', help_text='A value uniquely identifying where this data came from. Examples: "csv", "teller.io".', max_length=20),
+            model_name="statementimport",
+            name="source",
+            field=models.CharField(
+                default="csv",
+                help_text='A value uniquely identifying where this data came from. Examples: "csv", "teller.io".',
+                max_length=20,
+            ),
             preserve_default=False,
-        ),
+        )
     ]

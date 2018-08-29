@@ -7,12 +7,6 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0007_auto_20161209_0111'),
-    ]
+    dependencies = [("hordak", "0007_auto_20161209_0111")]
 
-    operations = [
-        migrations.RenameField(
-            'Account', 'has_statements', 'is_bank_account'
-        )
-    ]
+    operations = [migrations.RenameField("Account", "has_statements", "is_bank_account")]

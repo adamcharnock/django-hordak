@@ -5,14 +5,16 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0021_auto_20180329_1426'),
-    ]
+    dependencies = [("hordak", "0021_auto_20180329_1426")]
 
     operations = [
         migrations.AlterField(
-            model_name='account',
-            name='is_bank_account',
-            field=models.BooleanField(blank=True, default=False, help_text='Is this a bank account. This implies we can import bank statements into it and that it only supports a single currency'),
-        ),
+            model_name="account",
+            name="is_bank_account",
+            field=models.BooleanField(
+                blank=True,
+                default=False,
+                help_text="Is this a bank account. This implies we can import bank statements into it and that it only supports a single currency",
+            ),
+        )
     ]

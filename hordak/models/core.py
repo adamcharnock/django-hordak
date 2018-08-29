@@ -38,9 +38,9 @@ from hordak.utilities.currency import Balance
 
 
 #: Debit
-DEBIT = 'debit'
+DEBIT = "debit"
 #: Credit
-CREDIT = 'credit'
+CREDIT = "credit"
 
 
 def json_default():
@@ -48,13 +48,11 @@ def json_default():
 
 
 class AccountQuerySet(models.QuerySet):
-
     def net_balance(self, raw=False):
         return sum((account.balance(raw) for account in self), Balance())
 
 
 class AccountManager(TreeManager):
-
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
@@ -85,34 +83,45 @@ class Account(MPTTModel):
 
 
     """
+
     TYPES = Choices(
-        ('AS', 'asset', 'Asset'),              # Eg. Cash in bank
-        ('LI', 'liability', 'Liability'),      # Eg. Loans, bills paid after the fact (in arrears)
-        ('IN', 'income', 'Income'),            # Eg. Sales, housemate contributions
-        ('EX', 'expense', 'Expense'),          # Eg. Office supplies, paying bills
-        ('EQ', 'equity', 'Equity'),            # Eg. Money from shares
-        ('TR', 'trading', 'Currency Trading')  # Used to represent currency conversions
+        ("AS", "asset", "Asset"),  # Eg. Cash in bank
+        ("LI", "liability", "Liability"),  # Eg. Loans, bills paid after the fact (in arrears)
+        ("IN", "income", "Income"),  # Eg. Sales, housemate contributions
+        ("EX", "expense", "Expense"),  # Eg. Office supplies, paying bills
+        ("EQ", "equity", "Equity"),  # Eg. Money from shares
+        ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     name = models.CharField(max_length=50)
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True, on_delete=models.CASCADE)
+    parent = TreeForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        related_name="children",
+        db_index=True,
+        on_delete=models.CASCADE,
+    )
     code = models.CharField(max_length=3, null=True, blank=True)
     full_code = models.CharField(max_length=100, db_index=True, unique=True, null=True, blank=True)
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     type = models.CharField(max_length=2, choices=TYPES, blank=True)
-    is_bank_account = models.BooleanField(default=False, blank=True,
-                                          help_text='Is this a bank account. This implies we can import bank '
-                                                    'statements into it and that it only supports a single currency')
+    is_bank_account = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text="Is this a bank account. This implies we can import bank "
+        "statements into it and that it only supports a single currency",
+    )
     currencies = ArrayField(models.CharField(max_length=3), db_index=True)
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
 
     class MPTTMeta:
-        order_insertion_by = ['code']
+        order_insertion_by = ["code"]
 
     class Meta:
-        unique_together = (('parent', 'code'),)
+        unique_together = (("parent", "code"),)
 
     def __init__(self, *args, **kwargs):
         super(Account, self).__init__(*args, **kwargs)
@@ -142,24 +151,24 @@ class Account(MPTTModel):
         balances = [account.balance(raw=True) for account in Account.objects.root_nodes()]
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
-                'Account balances do not sum to zero. They sum to {}'.format(sum(balances))
+                "Account balances do not sum to zero. They sum to {}".format(sum(balances))
             )
 
     def __str__(self):
-        name = self.name or 'Unnamed Account'
+        name = self.name or "Unnamed Account"
         if self.is_leaf_node():
             try:
                 balance = self.balance()
             except ValueError:
                 if self.full_code:
-                    return '{} {}'.format(self.full_code, name)
+                    return "{} {}".format(self.full_code, name)
                 else:
                     return name
             else:
                 if self.full_code:
-                    return '{} {} [{}]'.format(self.full_code, name, balance)
+                    return "{} {} [{}]".format(self.full_code, name, balance)
                 else:
-                    return '{} [{}]'.format(name, balance)
+                    return "{} [{}]".format(name, balance)
 
         else:
             return name
@@ -206,8 +215,7 @@ class Account(MPTTModel):
         """
         balances = [
             account.simple_balance(as_of=as_of, raw=raw, leg_query=leg_query, **kwargs)
-            for account
-            in self.get_descendants(include_self=True)
+            for account in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
 
@@ -237,7 +245,7 @@ class Account(MPTTModel):
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
-        return Balance([Money('0', currency) for currency in self.currencies])
+        return Balance([Money("0", currency) for currency in self.currencies])
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
@@ -269,7 +277,7 @@ class Account(MPTTModel):
                 transaction `description` field.
         """
         if not isinstance(amount, Money):
-            raise TypeError('amount must be of type Money')
+            raise TypeError("amount must be of type Money")
 
         if to_account.sign == 1 and to_account.type != self.TYPES.trading:
             # Transferring from two positive-signed accounts implies that
@@ -291,7 +299,6 @@ class Account(MPTTModel):
 
 
 class TransactionManager(models.Manager):
-
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
@@ -333,15 +340,20 @@ class Transaction(models.Model):
         description (str): Optional user-provided description
 
     """
+
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    timestamp = models.DateTimeField(default=timezone.now, help_text='The creation date of this transaction object')
-    date = models.DateField(default=timezone.now, help_text='The date on which this transaction occurred')
-    description = models.TextField(default='', blank=True)
+    timestamp = models.DateTimeField(
+        default=timezone.now, help_text="The creation date of this transaction object"
+    )
+    date = models.DateField(
+        default=timezone.now, help_text="The date on which this transaction occurred"
+    )
+    description = models.TextField(default="", blank=True)
 
     objects = TransactionManager()
 
     class Meta:
-        get_latest_by = 'date'
+        get_latest_by = "date"
 
     def balance(self):
         return self.legs.sum_to_balance()
@@ -351,18 +363,14 @@ class Transaction(models.Model):
 
 
 class LegQuerySet(models.QuerySet):
-
     def sum_to_balance(self):
         """Sum the Legs of the QuerySet to get a `Balance`_ object
         """
-        result = self.values('amount_currency').annotate(total=models.Sum('amount'))
-        return Balance(
-            [Money(r['total'], r['amount_currency']) for r in result]
-        )
+        result = self.values("amount_currency").annotate(total=models.Sum("amount"))
+        return Balance([Money(r["total"], r["amount_currency"]) for r in result])
 
 
 class LegManager(models.Manager):
-
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
@@ -391,13 +399,17 @@ class Leg(models.Model):
         type (str): :attr:`hordak.models.DEBIT` or :attr:`hordak.models.CREDIT`.
 
     """
+
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    transaction = models.ForeignKey(Transaction, related_name='legs', on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, related_name='legs',on_delete=models.CASCADE)
-    amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES,
-                        help_text='Record debits as positive, credits as negative',
-                        default_currency=defaults.INTERNAL_CURRENCY)
-    description = models.TextField(default='', blank=True)
+    transaction = models.ForeignKey(Transaction, related_name="legs", on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, related_name="legs", on_delete=models.CASCADE)
+    amount = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        help_text="Record debits as positive, credits as negative",
+        default_currency=defaults.INTERNAL_CURRENCY,
+    )
+    description = models.TextField(default="", blank=True)
 
     objects = LegManager.from_queryset(LegQuerySet)()
 
@@ -430,23 +442,32 @@ class Leg(models.Model):
         """Get the balance of the account associated with this leg following the transaction"""
         # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
         transaction_date = self.transaction.date
-        return self.account.balance(leg_query=(
-            models.Q(transaction__date__lt=transaction_date)
-            | (models.Q(transaction__date=transaction_date) & models.Q(transaction_id__lte=self.transaction_id))
-        ))
+        return self.account.balance(
+            leg_query=(
+                models.Q(transaction__date__lt=transaction_date)
+                | (
+                    models.Q(transaction__date=transaction_date)
+                    & models.Q(transaction_id__lte=self.transaction_id)
+                )
+            )
+        )
 
     def account_balance_before(self):
         """Get the balance of the account associated with this leg before the transaction"""
         # TODO: Consider moving to annotation, particularly once we can count on Django 1.11's subquery support
         transaction_date = self.transaction.date
-        return self.account.balance(leg_query=(
-            models.Q(transaction__date__lt=transaction_date)
-            | (models.Q(transaction__date=transaction_date) & models.Q(transaction_id__lt=self.transaction_id))
-        ))
+        return self.account.balance(
+            leg_query=(
+                models.Q(transaction__date__lt=transaction_date)
+                | (
+                    models.Q(transaction__date=transaction_date)
+                    & models.Q(transaction_id__lt=self.transaction_id)
+                )
+            )
+        )
 
 
 class StatementImportManager(models.Manager):
-
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
@@ -462,15 +483,20 @@ class StatementImport(models.Model):
             account which represents your bank account)
 
     """
+
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
-    bank_account = models.ForeignKey(Account, related_name='imports',on_delete=models.CASCADE)
-    source = models.CharField(max_length=20,
-                              help_text='A value uniquely identifying where this data came from. '
-                                        'Examples: "csv", "teller.io".')
-    extra = JSONField(default=json_default, help_text='Any extra data relating to the import, probably specific '
-                                            'to the data source.')
+    bank_account = models.ForeignKey(Account, related_name="imports", on_delete=models.CASCADE)
+    source = models.CharField(
+        max_length=20,
+        help_text="A value uniquely identifying where this data came from. "
+        'Examples: "csv", "teller.io".',
+    )
+    extra = JSONField(
+        default=json_default,
+        help_text="Any extra data relating to the import, probably specific " "to the data source.",
+    )
 
     objects = StatementImportManager()
 
@@ -479,7 +505,6 @@ class StatementImport(models.Model):
 
 
 class StatementLineManager(models.Manager):
-
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
 
@@ -505,19 +530,29 @@ class StatementLine(models.Model):
         transaction (Transaction): Optionally, the transaction created for this statement line. This normally
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
     """
+
     uuid = SmallUUIDField(default=uuid_default(), editable=False)
     timestamp = models.DateTimeField(default=timezone.now)
     date = models.DateField()
-    statement_import = models.ForeignKey(StatementImport, related_name='lines',on_delete=models.CASCADE)
+    statement_import = models.ForeignKey(
+        StatementImport, related_name="lines", on_delete=models.CASCADE
+    )
     amount = models.DecimalField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
-    description = models.TextField(default='', blank=True)
-    type = models.CharField(max_length=50, default='')
+    description = models.TextField(default="", blank=True)
+    type = models.CharField(max_length=50, default="")
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
-    transaction = models.ForeignKey(Transaction, default=None, blank=True, null=True,
-                                    help_text='Reconcile this statement line to this transaction',
-                                    on_delete=models.SET_NULL)
-    source_data = JSONField(default=json_default, help_text='Original data received from the data source.')
+    transaction = models.ForeignKey(
+        Transaction,
+        default=None,
+        blank=True,
+        null=True,
+        help_text="Reconcile this statement line to this transaction",
+        on_delete=models.SET_NULL,
+    )
+    source_data = JSONField(
+        default=json_default, help_text="Original data received from the data source."
+    )
 
     objects = StatementLineManager()
 
@@ -552,7 +587,9 @@ class StatementLine(models.Model):
         from_account = self.statement_import.bank_account
 
         transaction = Transaction.objects.create()
-        Leg.objects.create(transaction=transaction, account=from_account, amount=+(self.amount * -1))
+        Leg.objects.create(
+            transaction=transaction, account=from_account, amount=+(self.amount * -1)
+        )
         Leg.objects.create(transaction=transaction, account=to_account, amount=-(self.amount * -1))
 
         transaction.date = self.date

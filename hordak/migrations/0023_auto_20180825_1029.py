@@ -7,19 +7,23 @@ import hordak.models.core
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0022_auto_20180825_1026'),
-    ]
+    dependencies = [("hordak", "0022_auto_20180825_1026")]
 
     operations = [
         migrations.AlterField(
-            model_name='statementimport',
-            name='extra',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default=hordak.models.core.json_default, help_text='Any extra data relating to the import, probably specific to the data source.'),
+            model_name="statementimport",
+            name="extra",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                default=hordak.models.core.json_default,
+                help_text="Any extra data relating to the import, probably specific to the data source.",
+            ),
         ),
         migrations.AlterField(
-            model_name='statementline',
-            name='source_data',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default=hordak.models.core.json_default, help_text='Original data received from the data source.'),
+            model_name="statementline",
+            name="source_data",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                default=hordak.models.core.json_default,
+                help_text="Original data received from the data source.",
+            ),
         ),
     ]

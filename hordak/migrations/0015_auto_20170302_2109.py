@@ -7,19 +7,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0014_auto_20170302_1944'),
-    ]
+    dependencies = [("hordak", "0014_auto_20170302_1944")]
 
     operations = [
-        migrations.RenameField(
-            model_name='account',
-            old_name='_type',
-            new_name='type',
-        ),
+        migrations.RenameField(model_name="account", old_name="_type", new_name="type"),
         migrations.AlterField(
-            model_name='account',
-            name='full_code',
+            model_name="account",
+            name="full_code",
             field=models.CharField(db_index=True, max_length=100, unique=True),
         ),
     ]

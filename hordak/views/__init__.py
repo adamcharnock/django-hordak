@@ -6,12 +6,7 @@ from .transactions import (
     UnreconcileView,
 )
 
-from .accounts import (
-    AccountCreateView,
-    AccountListView,
-    AccountUpdateView,
-    AccountTransactionsView,
-)
+from .accounts import AccountCreateView, AccountListView, AccountUpdateView, AccountTransactionsView
 from .statement_csv_import import (
     CreateImportView,
     SetupImportView,

@@ -5,22 +5,21 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0023_auto_20180825_1029'),
-    ]
+    dependencies = [("hordak", "0023_auto_20180825_1029")]
 
     operations = [
         migrations.AlterField(
-            model_name='account',
-            name='code',
+            model_name="account",
+            name="code",
             field=models.CharField(blank=True, max_length=3, null=True),
         ),
         migrations.AlterField(
-            model_name='account',
-            name='full_code',
-            field=models.CharField(blank=True, db_index=True, max_length=100, null=True, unique=True),
+            model_name="account",
+            name="full_code",
+            field=models.CharField(
+                blank=True, db_index=True, max_length=100, null=True, unique=True
+            ),
         ),
-
         migrations.RunSQL(
             """
             CREATE OR REPLACE FUNCTION update_full_account_codes()
@@ -55,8 +54,7 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """
-            ,
-            'DROP FUNCTION update_full_account_codes()'
+            """,
+            "DROP FUNCTION update_full_account_codes()",
         ),
     ]

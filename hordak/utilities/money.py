@@ -38,11 +38,11 @@ def ratio_split(amount, ratios):
         values.append(value)
 
     # Now round the values, keeping track of the bits we cut off
-    rounded = [v.quantize(Decimal('0.01')) for v in values]
+    rounded = [v.quantize(Decimal("0.01")) for v in values]
     remainders = [v - rounded[i] for i, v in enumerate(values)]
     remainder = sum(remainders)
     # Give the last person the (positive or negative) remainder
-    rounded[-1] = (rounded[-1] + remainder).quantize(Decimal('0.01'))
+    rounded[-1] = (rounded[-1] + remainder).quantize(Decimal("0.01"))
 
     assert sum(rounded) == amount
 

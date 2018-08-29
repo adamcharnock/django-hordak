@@ -60,14 +60,19 @@ from moneyed import Money
 from moneyed.localization import format_money
 
 from hordak import defaults
-from hordak.exceptions import LossyCalculationError, BalanceComparisonError, TradingAccountRequiredError, \
-    InvalidFeeCurrency, CannotSimplifyError
+from hordak.exceptions import (
+    LossyCalculationError,
+    BalanceComparisonError,
+    TradingAccountRequiredError,
+    InvalidFeeCurrency,
+    CannotSimplifyError,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def _cache_key(currency, date):
-    return '{}-{}-{}'.format(defaults.INTERNAL_CURRENCY, currency, date)
+    return "{}-{}-{}".format(defaults.INTERNAL_CURRENCY, currency, date)
 
 
 def _cache_timeout(date_):
@@ -80,10 +85,17 @@ def _cache_timeout(date_):
         return None
 
 
-def currency_exchange(source, source_amount, destination, destination_amount, trading_account,
-                      fee_destination=None, fee_amount=None,
-                      date=None, description=None
-                      ):
+def currency_exchange(
+    source,
+    source_amount,
+    destination,
+    destination_amount,
+    trading_account,
+    fee_destination=None,
+    fee_amount=None,
+    date=None,
+    description=None,
+):
     """ Exchange funds from one currency to another
 
     Use this method to represent a real world currency transfer. Note this
@@ -151,10 +163,14 @@ def currency_exchange(source, source_amount, destination, destination_amount, tr
     from hordak.models import Account, Transaction, Leg
 
     if trading_account.type != Account.TYPES.trading:
-        raise TradingAccountRequiredError('Account {} must be a trading account'.format(trading_account))
+        raise TradingAccountRequiredError(
+            "Account {} must be a trading account".format(trading_account)
+        )
 
     if (fee_destination or fee_amount) and not (fee_destination and fee_amount):
-        raise RuntimeError('You must specify either neither or both fee_destination and fee_amount.')
+        raise RuntimeError(
+            "You must specify either neither or both fee_destination and fee_amount."
+        )
 
     if fee_amount is None:
         # If fees are not specified then set fee_amount to be zero
@@ -162,32 +178,41 @@ def currency_exchange(source, source_amount, destination, destination_amount, tr
     else:
         # If we do have fees then make sure the fee currency matches the source currency
         if fee_amount.currency != source_amount.currency:
-            raise InvalidFeeCurrency('Fee amount currency ({}) must match source amount currency ({})'.format(
-                fee_amount.currency,
-                source_amount.currency
-            ))
+            raise InvalidFeeCurrency(
+                "Fee amount currency ({}) must match source amount currency ({})".format(
+                    fee_amount.currency, source_amount.currency
+                )
+            )
 
     # Checks over and done now. Let's create the transaction
     with db_transaction.atomic():
         transaction = Transaction.objects.create(
             date=date or datetime.date.today(),
-            description=description or 'Exchange of {} to {}, incurring {} fees'.format(
-                source_amount,
-                destination_amount,
-                'no' if fee_amount is None else fee_amount
-            )
+            description=description
+            or "Exchange of {} to {}, incurring {} fees".format(
+                source_amount, destination_amount, "no" if fee_amount is None else fee_amount
+            ),
         )
 
         # Source currency into trading account
         Leg.objects.create(transaction=transaction, account=source, amount=source_amount)
-        Leg.objects.create(transaction=transaction, account=trading_account, amount=-(source_amount - fee_amount))
+        Leg.objects.create(
+            transaction=transaction, account=trading_account, amount=-(source_amount - fee_amount)
+        )
 
         # Any fees
         if fee_amount and fee_destination:
-            Leg.objects.create(transaction=transaction, account=fee_destination, amount=-fee_amount, description='Fees')
+            Leg.objects.create(
+                transaction=transaction,
+                account=fee_destination,
+                amount=-fee_amount,
+                description="Fees",
+            )
 
         # Destination currency out of trading account
-        Leg.objects.create(transaction=transaction, account=trading_account, amount=destination_amount)
+        Leg.objects.create(
+            transaction=transaction, account=trading_account, amount=destination_amount
+        )
         Leg.objects.create(transaction=transaction, account=destination, amount=-destination_amount)
 
     return transaction
@@ -199,12 +224,15 @@ class BaseBackend(object):
     This should be extended to hook into your preferred exchange rate service.
     The primary method which needs defining is :meth:`_get_rate()`.
     """
+
     supported_currencies = []
 
     def __init__(self):
         if not self.is_supported(defaults.INTERNAL_CURRENCY):
-            raise ValueError('Currency specified by INTERNAL_CURRENCY '
-                             'is not supported by this backend: '.format(defaults.INTERNAL_CURRENCY))
+            raise ValueError(
+                "Currency specified by INTERNAL_CURRENCY "
+                "is not supported by this backend: ".format(defaults.INTERNAL_CURRENCY)
+            )
 
     def cache_rate(self, currency, date, rate):
         """
@@ -252,7 +280,7 @@ class BaseBackend(object):
 
     def ensure_supported(self, currency):
         if not self.is_supported(currency):
-            raise ValueError('Currency not supported by backend: {}'.format(currency))
+            raise ValueError("Currency not supported by backend: {}".format(currency))
 
     def is_supported(self, currency):
         return str(currency) in self.supported_currencies
@@ -260,22 +288,54 @@ class BaseBackend(object):
 
 class FixerBackend(BaseBackend):
     """Use fixer.io for currency conversions"""
-    supported_currencies = ['AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'GBP', 'HKD', 'HRK', 'HUF', 'IDR',
-                            'ILS', 'INR', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'RUB', 'SEK',
-                            'SGD', 'THB', 'TRY', 'ZAR', 'EUR', 'USD']
+
+    supported_currencies = [
+        "AUD",
+        "BGN",
+        "BRL",
+        "CAD",
+        "CHF",
+        "CNY",
+        "CZK",
+        "DKK",
+        "GBP",
+        "HKD",
+        "HRK",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NOK",
+        "NZD",
+        "PHP",
+        "PLN",
+        "RON",
+        "RUB",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "ZAR",
+        "EUR",
+        "USD",
+    ]
 
     def _get_rate(self, currency, date_):
         self.ensure_supported(currency)
         response = requests.get(
-            'https://api.fixer.io/{date}?base={base}'.format(
-                base=defaults.INTERNAL_CURRENCY,
-                date=date_.strftime('%Y-%m-%d')
-            ))
+            "https://api.fixer.io/{date}?base={base}".format(
+                base=defaults.INTERNAL_CURRENCY, date=date_.strftime("%Y-%m-%d")
+            )
+        )
         response.raise_for_status()
 
         data = response.json(parse_float=Decimal)
-        rates = data['rates']
-        returned_date = datetime.date(*map(int, data['date'].split('-')))
+        rates = data["rates"]
+        returned_date = datetime.date(*map(int, data["date"].split("-")))
         requested_rate = rates[str(currency)]
 
         for currency, rate in rates.items():
@@ -299,15 +359,16 @@ class Converter(object):
         if str(money.currency) == str(to_currency):
             return copy.copy(money)
         return Money(
-            amount=money.amount * self.rate(money.currency, to_currency, date or datetime.date.today()),
+            amount=money.amount
+            * self.rate(money.currency, to_currency, date or datetime.date.today()),
             currency=to_currency,
         )
 
     def rate(self, from_currency, to_currency, date):
         """Get the exchange rate between the specified currencies"""
-        return (1 / self.backend.get_rate(from_currency, date)) \
-               * \
-               self.backend.get_rate(to_currency, date)
+        return (1 / self.backend.get_rate(from_currency, date)) * self.backend.get_rate(
+            to_currency, date
+        )
 
 
 converter = Converter()
@@ -342,26 +403,29 @@ class Balance(object):
         if len(all_args) % 2 == 0:
             _money_obs = []
             for i in range(0, len(all_args) - 1, 2):
-                _money_obs.append(Money(all_args[i], all_args[i+1]))
+                _money_obs.append(Money(all_args[i], all_args[i + 1]))
 
         self._money_obs = tuple(_money_obs or [])
         self._by_currency = {m.currency.code: m for m in self._money_obs}
         if len(self._by_currency) != len(self._money_obs):
-            raise ValueError('Duplicate currency provided. All Money instances must have a unique currency.')
+            raise ValueError(
+                "Duplicate currency provided. All Money instances must have a unique currency."
+            )
 
     def __str__(self):
         def fmt(money):
             return babel.numbers.format_currency(money.amount, currency=money.currency.code)
-        return ', '.join(map(fmt, self._money_obs)) or 'No values'
+
+        return ", ".join(map(fmt, self._money_obs)) or "No values"
 
     def __repr__(self):
-        return 'Balance: {}'.format(self.__str__())
+        return "Balance: {}".format(self.__str__())
 
     def __getitem__(self, currency):
-        if hasattr(currency, 'code'):
+        if hasattr(currency, "code"):
             currency = currency.code
         elif not isinstance(currency, six.string_types) or len(currency) != 3:
-            raise ValueError('Currencies must be a string of length three, not {}'.format(currency))
+            raise ValueError("Currencies must be a string of length three, not {}".format(currency))
 
         try:
             return self._by_currency[currency]
@@ -370,7 +434,9 @@ class Balance(object):
 
     def __add__(self, other):
         if not isinstance(other, Balance):
-            raise TypeError('Can only add/subtract Balance instances, not Balance and {}.'.format(type(other)))
+            raise TypeError(
+                "Can only add/subtract Balance instances, not Balance and {}.".format(type(other))
+            )
         by_currency = copy.deepcopy(self._by_currency)
         for other_currency, other_money in other._by_currency.items():
             by_currency[other_currency] = other_money + self[other_currency]
@@ -387,16 +453,20 @@ class Balance(object):
 
     def __mul__(self, other):
         if isinstance(other, Balance):
-            raise TypeError('Cannot multiply two Balance instances.')
+            raise TypeError("Cannot multiply two Balance instances.")
         elif isinstance(other, float):
-            raise LossyCalculationError('Cannot multiply a Balance by a float. Use a Decimal or an int.')
+            raise LossyCalculationError(
+                "Cannot multiply a Balance by a float. Use a Decimal or an int."
+            )
         return self.__class__([m * other for m in self._money_obs])
 
     def __truediv__(self, other):
         if isinstance(other, Balance):
-            raise TypeError('Cannot multiply two Balance instances.')
+            raise TypeError("Cannot multiply two Balance instances.")
         elif isinstance(other, float):
-            raise LossyCalculationError('Cannot divide a Balance by a float. Use a Decimal or an int.')
+            raise LossyCalculationError(
+                "Cannot divide a Balance by a float. Use a Decimal or an int."
+            )
         return self.__class__([m / other for m in self._money_obs])
 
     def __abs__(self):
@@ -413,8 +483,10 @@ class Balance(object):
             # Support comparing to integer/Decimal zero as it is useful
             return not self.__bool__()
         elif not isinstance(other, Balance):
-            raise TypeError('Can only compare Balance objects to other '
-                            'Balance objects, not to type {}'.format(type(other)))
+            raise TypeError(
+                "Can only compare Balance objects to other "
+                "Balance objects, not to type {}".format(type(other))
+            )
         return not self - other
 
     def __ne__(self, other):

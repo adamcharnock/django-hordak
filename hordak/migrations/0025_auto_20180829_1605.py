@@ -9,19 +9,23 @@ from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('hordak', '0024_auto_20180827_1148'),
-    ]
+    dependencies = [("hordak", "0024_auto_20180827_1148")]
 
     operations = [
         migrations.AlterField(
-            model_name='leg',
-            name='amount',
-            field=djmoney.models.fields.MoneyField(decimal_places=DECIMAL_PLACES, max_digits=MAX_DIGITS, default=Decimal('0.0'), default_currency='EUR', help_text='Record debits as positive, credits as negative'),
+            model_name="leg",
+            name="amount",
+            field=djmoney.models.fields.MoneyField(
+                decimal_places=DECIMAL_PLACES,
+                max_digits=MAX_DIGITS,
+                default=Decimal("0.0"),
+                default_currency="EUR",
+                help_text="Record debits as positive, credits as negative",
+            ),
         ),
         migrations.AlterField(
-            model_name='statementline',
-            name='amount',
+            model_name="statementline",
+            name="amount",
             field=models.DecimalField(decimal_places=DECIMAL_PLACES, max_digits=MAX_DIGITS),
         ),
     ]

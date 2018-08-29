@@ -27,19 +27,20 @@ class TransactionCreateView(LoginRequiredMixin, CreateView):
                 url(r'^transactions/create/$', TransactionCreateView.as_view(), name='transactions_create'),
             ]
     """
+
     form_class = SimpleTransactionForm
-    success_url = reverse_lazy('hordak:accounts_list')
-    template_name = 'hordak/transactions/transaction_create.html'
+    success_url = reverse_lazy("hordak:accounts_list")
+    template_name = "hordak/transactions/transaction_create.html"
 
 
 class CurrencyTradeView(LoginRequiredMixin, CreateView):
     form_class = CurrencyTradeForm
-    success_url = reverse_lazy('hordak:accounts_list')
-    template_name = 'hordak/transactions/currency_trade.html'
+    success_url = reverse_lazy("hordak:accounts_list")
+    template_name = "hordak/transactions/currency_trade.html"
 
     def get_form_kwargs(self):
         kwargs = super(CurrencyTradeView, self).get_form_kwargs()
-        kwargs.pop('instance')
+        kwargs.pop("instance")
         return kwargs
 
 
@@ -47,29 +48,31 @@ class TransactionsListView(LoginRequiredMixin, ListView):
     """View for listing transactions
 
     """
+
     model = Transaction
-    template_name = 'hordak/transactions/transaction_list.html'
-    context_object_name = 'transactions'
-    ordering = ['-date', '-pk']
+    template_name = "hordak/transactions/transaction_list.html"
+    context_object_name = "transactions"
+    ordering = ["-date", "-pk"]
 
 
 class LegsListView(LoginRequiredMixin, ListView):
     """View for listing legs
 
     """
+
     model = Leg
-    template_name = 'hordak/transactions/leg_list.html'
-    context_object_name = 'legs'
-    ordering = ['-transaction__date', '-transaction__pk', '-pk']
+    template_name = "hordak/transactions/leg_list.html"
+    context_object_name = "legs"
+    ordering = ["-transaction__date", "-transaction__pk", "-pk"]
 
 
 class TransactionDeleteView(LoginRequiredMixin, DeleteView):
     model = Transaction
-    slug_url_kwarg = 'uuid'
-    slug_field = 'uuid'
-    template_name = 'hordak/transactions/transaction_delete.html'
-    context_object_name = 'transaction'
-    success_url = reverse_lazy('hordak:accounts_list')
+    slug_url_kwarg = "uuid"
+    slug_field = "uuid"
+    template_name = "hordak/transactions/transaction_delete.html"
+    context_object_name = "transaction"
+    success_url = reverse_lazy("hordak:accounts_list")
 
 
 class TransactionsReconcileView(LoginRequiredMixin, ListView):
@@ -87,15 +90,16 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
                 url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(), name='transactions_reconcile'),
             ]
     """
-    template_name = 'hordak/transactions/reconcile.html'
+
+    template_name = "hordak/transactions/reconcile.html"
     model = StatementLine
     paginate_by = 50
-    context_object_name = 'statement_lines'
-    ordering = ['-date', '-pk']
-    success_url = reverse_lazy('hordak:accounts_list')
+    context_object_name = "statement_lines"
+    ordering = ["-date", "-pk"]
+    success_url = reverse_lazy("hordak:accounts_list")
 
     def get_uuid(self):
-        return self.request.POST.get('reconcile') or self.request.GET.get('reconcile')
+        return self.request.POST.get("reconcile") or self.request.GET.get("reconcile")
 
     def get_object(self, queryset=None):
         # Get any Statement Line instance that was specified
@@ -110,7 +114,7 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
         try:
             obj = queryset.get()
         except queryset.model.DoesNotExist:
-            raise Http404('No unreconciled statement line found for {}'.format(uuid))
+            raise Http404("No unreconciled statement line found for {}".format(uuid))
 
         return obj
 
@@ -148,7 +152,7 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
                 account=bank_account,
                 amount=amount,
                 # Note that bank accounts can only have one currency
-                amount_currency=bank_account.currencies[0]
+                amount_currency=bank_account.currencies[0],
             )
 
             # We need to create a new leg formset in order to pass in the
@@ -166,10 +170,9 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
         return self.render_to_response(self.get_context_data())
 
     def form_invalid(self, transaction_form, leg_formset):
-        return self.render_to_response(self.get_context_data(
-            transaction_form=transaction_form,
-            leg_formset=leg_formset
-        ))
+        return self.render_to_response(
+            self.get_context_data(transaction_form=transaction_form, leg_formset=leg_formset)
+        )
 
     def get_context_data(self, **kwargs):
         # If a Statement Line has been selected for reconciliation,
@@ -184,8 +187,7 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
     def get_transaction_form(self):
         return TransactionForm(
-            data=self.request.POST or None,
-            initial=dict(description=self.object.description)
+            data=self.request.POST or None, initial=dict(description=self.object.description)
         )
 
     def get_leg_formset(self, **kwargs):
@@ -193,8 +195,7 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
 
 class UnreconcileView(LoginRequiredMixin, View):
-
     def post(self, request, uuid):
         statement_line = get_object_or_404(StatementLine, uuid=uuid)
         statement_line.transaction.delete()
-        return HttpResponseRedirect(reverse('hordak:transactions_reconcile'))
+        return HttpResponseRedirect(reverse("hordak:transactions_reconcile"))
