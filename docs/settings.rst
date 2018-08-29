@@ -17,7 +17,7 @@ CURRENCIES
 
 Default: ``[]``
 
-Any currencies (additional to ``DEFAULT_CURRENCY``) that you will wish to create accounts in.
+Any currencies (additional to ``DEFAULT_CURRENCY``) for which you wish to create accounts.
 For example, you may have ``"EUR"`` for your ``DEFAULT_CURRENCY``, and ``["USD", "GBP"]`` for your
 additional ``CURRENCIES``.
 
@@ -27,7 +27,7 @@ HORDAK_DECIMAL_PLACES
 
 Default: ``2``
 
-Number of decimal places that is used for storing monetary values in ``Decimal`` data type.
+Number of decimal places available within monetary values.
 
 
 HORDAK_MAX_DIGITS
@@ -35,4 +35,7 @@ HORDAK_MAX_DIGITS
 
 Default: ``13``
 
-Number of maximal numer of digits allowed in monetary values (which are stored in ``Decimal`` data type). Decimal places both right and left of decimal point are counted.
+Maximum number of digits allowed in monetary values.
+Decimal places both right and left of decimal point are included in this count.
+Therefore a maximum value of 9,999,999.999 would require ``HORDAK_MAX_DIGITS=10``
+and ``HORDAK_DECIMAL_PLACES=3``.
