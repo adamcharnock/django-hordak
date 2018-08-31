@@ -1,5 +1,16 @@
 ----
 
+Version 1.8.1, Fri 31 Aug 2018
+===============================
+
+3106397098	Adding note on MIGRATION_MODULES to docs, #21 (Adam Charnock)
+4058656896	Running the black code formatter across the codebase (Adam Charnock)
+50076e26ca	Adding pre-commit hook to run the black code formatter (Adam Charnock)
+8a71d0a02a	Tweaking docs wording around the new HORDAK_MAX_DIGITS/HORDAK_DECIMAL_PLACES settings (Adam Charnock)
+7c39b49947	Moving settings to hordak.defaults. This way we set all our defaults in one place. (Adam Charnock)
+18ed6f0843	allow set number of decimal_places in settings (Petr Dlouhý)
+
+
 Version 1.8.0, Tue 28 Aug 2018
 ===============================
 
