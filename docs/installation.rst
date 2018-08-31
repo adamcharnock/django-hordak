@@ -23,7 +23,8 @@ Add to installed apps:
 Before continuing, ensure the ``HORDAK_DECIMAL_PLACES`` and ``HORDAK_MAX_DIGITS``
 :ref:`settings <settings>` are set as desired.
 Changing these values in future will require you to create your
-own custom database migration in order to update your schema. It is
+own custom database migration in order to update your schema
+(perhaps by using Django's ``MIGRATION_MODULES`` setting). It is
 therefore best to be sure of these values now.
 
 Once ready, run the migrations::
