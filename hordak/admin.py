@@ -52,7 +52,7 @@ class TransactionAdmin(admin.ModelAdmin):
 
 @admin.register(models.Leg)
 class LegAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'uuid', 'transaction', 'account', 'amount', 'description']
 
 
 @admin.register(models.StatementImport)
