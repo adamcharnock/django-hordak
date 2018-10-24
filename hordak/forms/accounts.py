@@ -24,7 +24,11 @@ class AccountForm(forms.ModelForm):
             initial = kwargs.get("kwargs", {})
             if "code" not in initial:
                 # TODO: This could be made more robust
-                initial["code"] = "{0:02d}".format(Account.objects.count() + 1)
+                try:
+                    account_code = Account.objects.latest("pk").id + 1
+                except Account.DoesNotExist:
+                    account_code = 1
+                initial["code"] = "{0:02d}".format(account_code)
             kwargs["initial"] = initial
 
         super(AccountForm, self).__init__(*args, **kwargs)
