@@ -1,5 +1,12 @@
 ----
 
+Version 1.8.2, Wed 24 Oct 2018
+===============================
+
+ac0d280e8a	Fixing account creation when intermediate accounts are missing (Adam Charnock)
+45760fe7e6	add more information to LegAdmin list_display (Petr Dlouhý)
+
+
 Version 1.8.1, Fri 31 Aug 2018
 ===============================
 
