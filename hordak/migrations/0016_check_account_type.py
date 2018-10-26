@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     """
 
-    dependencies = [("hordak", "0015_auto_20170302_2109")]
+    dependencies = [("hordak", "0009_bank_accounts_are_asset_accounts")]
 
     operations = [
         migrations.RunSQL(
