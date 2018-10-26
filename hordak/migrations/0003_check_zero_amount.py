@@ -7,7 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [("hordak", "0002_check_leg_trigger_20160903_1149")]
+    dependencies = [("hordak", "0001_initial")]
 
     operations = [
         migrations.RunSQL(

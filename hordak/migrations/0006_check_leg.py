@@ -7,7 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [("hordak", "0005_account_currencies")]
+    dependencies = [("hordak", "0003_check_zero_amount")]
 
     operations = [
         migrations.RunSQL(
@@ -44,5 +44,14 @@ class Migration(migrations.Migration):
                 $$
                 LANGUAGE plpgsql;
             """
-        )
+        ),
+        migrations.RunSQL(
+            """
+                CREATE CONSTRAINT TRIGGER check_leg_trigger
+                AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
+                DEFERRABLE INITIALLY DEFERRED
+                FOR EACH ROW EXECUTE PROCEDURE check_leg();
+            """,
+            "DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg",
+        ),
     ]

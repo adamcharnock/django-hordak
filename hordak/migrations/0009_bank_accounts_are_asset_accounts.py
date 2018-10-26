@@ -7,14 +7,14 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [("hordak", "0008_auto_20161209_0129")]
+    dependencies = [("hordak", "0007_check_leg_and_account_currency_match")]
 
     operations = [
         migrations.RunSQL(
             """
                 ALTER TABLE hordak_account
                 ADD CONSTRAINT bank_accounts_are_asset_accounts
-                CHECK (is_bank_account = FALSE OR _type = 'AS')
+                CHECK (is_bank_account = FALSE OR type = 'AS')
             """,
             """ALTER TABLE hordak_account DROP CONSTRAINT bank_accounts_are_asset_accounts""",
         )
