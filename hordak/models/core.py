@@ -129,7 +129,14 @@ class Account(MPTTModel):
 
     def save(self, *args, **kwargs):
         is_creating = not bool(self.pk)
-        super(Account, self).save(*args, **kwargs)
+        if is_creating:
+            update_fields = None
+        else:
+            update_fields = [
+                'uuid', 'name', 'parent', 'code', 'type',
+                'is_bank_account', 'currencies'
+            ]
+            
         do_refresh = False
 
         # If we've just created a non-root node then we're going to need to load
