@@ -16,7 +16,7 @@ setup(
     long_description=open("README.rst").read() if exists("README.rst") else "",
     include_package_data=True,
     install_requires=[
-        "django>=1.10, <2.1",
+        "django>=1.10",
         "django-mptt>=0.8",
         "django-model-utils>=2.5.0",
         "dj-database-url>=0.4.1",
