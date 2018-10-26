@@ -136,7 +136,8 @@ class Account(MPTTModel):
                 'uuid', 'name', 'parent', 'code', 'type',
                 'is_bank_account', 'currencies'
             ]
-            
+        super(Account, self).save(*args, update_fields=update_fields, **kwargs)
+        
         do_refresh = False
 
         # If we've just created a non-root node then we're going to need to load
