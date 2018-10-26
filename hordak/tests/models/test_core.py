@@ -33,7 +33,7 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, name="Account 2", code="1")
         account2.refresh_from_db()
-        self.assertEqual(str(account2).replace("\xa0", ""), "51 Account 2 [€0.00]")
+        self.assertRegex(str(account2).replace("\xa0", ""), r'51 Account 2 \[(€0\.00|0,00€)\]')
 
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
