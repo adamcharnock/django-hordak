@@ -133,14 +133,19 @@ class Account(MPTTModel):
             update_fields = None
         else:
             # See issues #19 & #31. It seems that on Django 1.2, django-mptt's left/right
-            # tree fields get overwritten on save. The solution here is to exclude them from 
+            # tree fields get overwritten on save. The solution here is to exclude them from
             # being modified upon saving by using the save methods' update_fields argument.
             update_fields = [
-                'uuid', 'name', 'parent', 'code', 'type',
-                'is_bank_account', 'currencies'
+                "uuid",
+                "name",
+                "parent",
+                "code",
+                "type",
+                "is_bank_account",
+                "currencies",
             ]
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
-        
+
         do_refresh = False
 
         # If we've just created a non-root node then we're going to need to load
