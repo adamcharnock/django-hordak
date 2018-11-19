@@ -12,6 +12,9 @@ from . import models
 @admin.register(models.Account)
 class AccountAdmin(MPTTModelAdmin):
     list_display = ("name", "code_", "type_", "balance")
+    raw_id_fields = (
+        'parent',
+    )
 
     def code_(self, obj):
         if obj.is_leaf_node():
@@ -25,6 +28,10 @@ class AccountAdmin(MPTTModelAdmin):
 
 class LegInline(admin.TabularInline):
     model = models.Leg
+    raw_id_fields = (
+        "account",
+    )
+    extra = 0
 
 
 @admin.register(models.Transaction)
@@ -38,6 +45,9 @@ class TransactionAdmin(admin.ModelAdmin):
         "uuid",
     ]
     readonly_fields = ("timestamp",)
+    search_fields = (
+        "legs__account__name",
+    )
     inlines = [LegInline]
 
     def debited_accounts(self, obj):
@@ -53,6 +63,15 @@ class TransactionAdmin(admin.ModelAdmin):
 @admin.register(models.Leg)
 class LegAdmin(admin.ModelAdmin):
     list_display = ['id', 'uuid', 'transaction', 'account', 'amount', 'description']
+    search_fields = (
+        "account__name",
+        "account__id",
+        "description",
+    )
+    raw_id_fields = (
+        "account",
+        'transaction',
+    )
 
 
 @admin.register(models.StatementImport)
