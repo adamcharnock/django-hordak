@@ -1,5 +1,11 @@
 ----
 
+Version 1.8.3, Sat 08 Dec 2018
+===============================
+
+42d56996f1	Striping whitespace from fields on import (fixes issue with duplicates) (Adam Charnock)
+
+
 Version 1.8.2, Wed 24 Oct 2018
 ===============================
 
