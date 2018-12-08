@@ -31,6 +31,13 @@ class StatementLineResource(resources.ModelResource):
         return Result
 
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
+        def _strip(s):
+            return s.strip() if isinstance(s, str) else s
+
+        # Remove whitespace
+        for index, values in enumerate(dataset):
+            dataset[index] = tuple(map(_strip, values))
+
         # We're going to need this to check for duplicates (because
         # there could be multiple identical transactions)
         self.dataset = dataset

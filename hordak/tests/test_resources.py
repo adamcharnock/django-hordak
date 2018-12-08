@@ -47,6 +47,21 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         # The record in the second should have been ignored
         self.assertEqual(StatementLine.objects.count(), 1)
 
+    def test_import_skip_duplicates_whitespace(self):
+        dataset1 = tablib.Dataset(
+            ["15/6/2016", "5.10", "Example payment"], headers=["date", "amount", "description"]
+        )
+        dataset2 = tablib.Dataset(
+            ["15/6/2016", "5.10", "Example payment "],  # Whitespace added
+            headers=["date", "amount", "description"],
+        )
+
+        self.makeResource().import_data(dataset1)
+        self.makeResource().import_data(dataset2)
+
+        # The record in the second should have been ignored
+        self.assertEqual(StatementLine.objects.count(), 1)
+
     def test_import_two_identical(self):
         """Ensure they both get imported and that one doesnt get skipped as a duplicate
 
