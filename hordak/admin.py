@@ -12,18 +12,38 @@ from . import models
 @admin.register(models.Account)
 class AccountAdmin(MPTTModelAdmin):
     list_display = ("name", "code_", "type_", "balance")
+    readonly_fields = (
+        "balance",
+    )
     raw_id_fields = (
         'parent',
     )
+    search_fields = (
+        'code',
+        'full_code',
+        'name',
+    )
+    list_filter = (
+        'type',
+    )
+
+    def balance(self, obj):
+        return obj.balance()
+    balance.admin_order_field = "balance_sum"
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset(*args, **kwargs).annotate(balance_sum=Sum('legs__amount'))
 
     def code_(self, obj):
         if obj.is_leaf_node():
             return obj.full_code or "-"
         else:
             return ""
+    code_.admin_order_field = "full_code"
 
     def type_(self, obj):
         return models.Account.TYPES[obj.type]
+    type_.admin_order_field = "type"
 
 
 class LegInline(admin.TabularInline):
