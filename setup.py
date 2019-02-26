@@ -28,5 +28,6 @@ setup(
         "django-money>=0.9.1",
         "django-import-export>=0.5.0",
         "babel==2.5.1",
+        'openpyxl<=2.6;python_version<"3.5"',
     ],
 )
