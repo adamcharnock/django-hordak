@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import (
     TestCase,
@@ -33,7 +34,11 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, name="Account 2", code="1")
         account2.refresh_from_db()
-        self.assertEqual(str(account2).replace("\xa0", ""), "51 Account 2 [€0.00]")
+
+        with patch("babel.numbers.format_currency", return_value="FORMATTED"):
+            # NOTE: We don't want to test the currency formatting. In part because
+            # we assume babel has the covered, but also because it will vary with system locale
+            self.assertEqual(str(account2).replace("\xa0", ""), "51 Account 2 [FORMATTED]")
 
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
