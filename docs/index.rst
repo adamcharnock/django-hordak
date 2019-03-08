@@ -36,6 +36,7 @@ ensure data integrity. MySQL could be certainly supported in future, volunteers 
     settings
     customising-templates
     accounting-for-developers
+    hordak-database-triggers
     api/index
     notes
     changelog
