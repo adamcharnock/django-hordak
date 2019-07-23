@@ -20,7 +20,7 @@ install:
 
 script:
   - env
-  - if [ "$DJANGO" == "django>=2.1,<2.2" ]; then env PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak; fi
+  - if [ "$TRAVIS_PYTHON_VERSION" != "3.5" ]; then env PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak; fi
   - env PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
 
 after_success:
