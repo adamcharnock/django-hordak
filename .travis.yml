@@ -1,6 +1,5 @@
 language: python
 python:
-  - "3.4"
   - "3.5"
   - "3.6"
 
@@ -11,6 +10,7 @@ env:
   - DJANGO="django>=1.11,<1.12"
   - DJANGO="django>=2.0,<2.1"
   - DJANGO="django>=2.1,<2.2"
+  - DJANGO="django>=2.2,<3.0"
 
 install:
   - python setup.py develop
@@ -28,13 +28,3 @@ after_success:
 
 addons:
   postgresql: "9.5"
-
-matrix:
-  exclude:
-    - python: "3.4"
-      env: DJANGO="django>=2.0,<2.1"
-    - python: "3.4"
-      env: DJANGO="django>=2.1,<2.2"
-
-  allow_failures:
-    - env: DJANGO="django>=2.1,<2.2"
