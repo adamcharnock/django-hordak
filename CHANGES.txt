@@ -1,5 +1,26 @@
 ----
 
+Version 1.9.0, Tue 23 Jul 2019
+===============================
+
+e8dc979e9d	re-enable migration check and update migrations after mptt update (Petr Dlouhý)
+c3753a4f01	update .travis.yml Django versions; drop Python 3.4 testing (Petr Dlouhý)
+e142f22d61	Applying black formatting (Adam Charnock)
+f6b9401d7a	Adding comment to explain Django 1.2 fix (Adam Charnock)
+01b1ba3806	Doh! forgot the save call! (p-baum)
+111927a60f	Fix for #19 (p-baum)
+2e86cb8f0e	AccountAdmin: add search fields (Petr Dlouhý)
+a5e556d346	few performance fixes for admin (Petr Dlouhý)
+82b5df568d	Complete trigger documentation (coler-j)
+968d636780	Docs RST (coler-j)
+ef85e74324	Adds docs for triggers and constraints (coler-j)
+61b05faf80	Fixing requirement for python 3.4 (Adam Charnock)
+0509f5aee9	Fixes for travis CI (Adam Charnock)
+c4b2c1135e	Using patch to bypass locale-dependent formatting (Adam Charnock)
+2ad1865dc9	Applying back command to perform code formatting (Adam Charnock)
+22328061eb	Fix #29 (p-baum)
+
+
 Version 1.8.3, Sat 08 Dec 2018
 ===============================
 
