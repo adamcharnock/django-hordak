@@ -5,7 +5,7 @@ Double Entry Accounting for Developers
 
 Hordak is inherently aimed at software developers as it provides core
 functionality only. Friendly interfaces can certainly be built on top of it, but
-if you are here there is a good change you are a developer.
+if you are here there is a good chance you are a developer.
 
 If you are learning about accounting as developer you may feel – as I did – that
 most of the material available doesn't quite relate to the developer/STEM mindset. I
