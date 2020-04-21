@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from hordak.defaults import DECIMAL_PLACES
 
 def ratio_split(amount, ratios):
     """ Split in_value according to the ratios specified in `ratios`
@@ -30,20 +31,29 @@ def ratio_split(amount, ratios):
     Returns: list(Decimal)
 
     """
+    precision = Decimal(10) ** Decimal(-DECIMAL_PLACES)
+    assert amount == amount.quantize(precision)
+    
+    # Distribute the amount according to the ratios:
     ratio_total = sum(ratios)
-    divided_value = amount / ratio_total
-    values = []
-    for ratio in ratios:
-        value = divided_value * ratio
-        values.append(value)
+    values = [amount * ratio / ratio_total for ratio in ratios]
 
-    # Now round the values, keeping track of the bits we cut off
-    rounded = [v.quantize(Decimal("0.01")) for v in values]
-    remainders = [v - rounded[i] for i, v in enumerate(values)]
-    remainder = sum(remainders)
-    # Give the last person the (positive or negative) remainder
-    rounded[-1] = (rounded[-1] + remainder).quantize(Decimal("0.01"))
-
+    # Now round the values to the desired number of decimal places:
+    rounded = [v.quantize(precision) for v in values]
+    
+    # The rounded values may not add up to the exact amount.
+    # Use the Largest Remainder algorithm to distribute the
+    # difference between participants with non-zero ratios:
+    participants = [i for i in range(len(ratios)) if ratios[i] != Decimal(0)]
+    for p in sorted(participants, key=lambda i: rounded[i] - values[i]):
+        total = sum(rounded)
+        if total < amount:
+            rounded[p] += precision
+        elif total > amount:
+            rounded[p] -= precision
+        else:
+            break
+    
     assert sum(rounded) == amount
 
     return rounded
