@@ -1,5 +1,18 @@
 ----
 
+Version 1.10.0, Tue 21 Apr 2020
+================================
+
+97cacf78f1	Adding note to readme (Adam Charnock)
+90f9ad6375	Testing against python 3.7 & 3.8 (Adam Charnock)
+912ce3b46c	Dropping python 3.5 support (Adam Charnock)
+567a554639	CI fixes (Adam Charnock)
+23ce58dbb6	make update_full_account_codes trigger more effective on large number of accounts with null codes (Petr Dlouhý)
+cea092bbb9	Fix typo (Ali Parvizi)
+92423c930d	added/fixed tests for ratio_split() (Damien Drix)
+e00a82a31d	use the largest remainder method for distributing change in ratio_split() (Damien Drix)
+
+
 Version 1.9.0, Tue 23 Jul 2019
 ===============================
 
