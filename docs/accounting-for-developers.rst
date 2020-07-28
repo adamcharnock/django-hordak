@@ -35,7 +35,7 @@ time I distilled it down to the following:
         explanation is, *'accountants don't like negative numbers.'* A more nuanced interpretation
         is that a positive number indicates not a positive amount of money, but a positive amount of
         whatever the account is. So an expense of $1,000 is a positive amount of expense, even though it
-        probably means your $1,000 less well off.
+        probably means you're $1,000 less well off.
 
 
 .. [3] An upshot of this sign flipping in 4 is that points 2 & 3 appear not be be obeyed from an external perspective.
