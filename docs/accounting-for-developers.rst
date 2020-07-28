@@ -11,6 +11,14 @@ If you are learning about accounting as developer you may feel – as I did – 
 most of the material available doesn't quite relate to the developer/STEM mindset. I
 therefore provide some resources here that may be of use.
 
+.. note::
+
+    According to this `Hacker News discussion`_, some of what follows may be either incorrect
+    or abhorrent to those with a good knowledge of accounting practices. I still
+    feel the following is useful, and that taken as a whole it describes a working
+    double entry accounting system.
+
+
 Accounting in six bullet points (& three footnotes)
 ---------------------------------------------------
 
@@ -118,3 +126,5 @@ Let's show how we represent a single housemate's payment:
 
 Because the bank account is an asset account, we flip the sign of its balance.
 **The result is that both accounts increase in value.**
+
+.. _hacker news discussion: https://news.ycombinator.com/item?id=23964513
