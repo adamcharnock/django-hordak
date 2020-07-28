@@ -43,5 +43,5 @@ django-hordak is packaged using seed_.
 
 .. _seed: https://github.com/adamcharnock/seed/
 .. _swiftwind: https://github.com/adamcharnock/swiftwind/
-.. _simple model layer: https://github.com/adamcharnock/django-hordak/blob/master/hordak/models.py
+.. _simple model layer: https://github.com/adamcharnock/django-hordak/blob/master/hordak/models/core.py
 .. _battlecat: https://github.com/adamcharnock/battlecat
