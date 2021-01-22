@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.db import transaction as db_transaction
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
+from django.utils.translation import gettext_lazy as _
 from moneyed import Money
 
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
@@ -92,8 +93,8 @@ class Account(MPTTModel):
         ("EQ", "equity", "Equity"),  # Eg. Money from shares
         ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    name = models.CharField(max_length=50)
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    name = models.CharField(max_length=50, verbose_name=_("name"))
     parent = TreeForeignKey(
         "self",
         null=True,
@@ -101,19 +102,21 @@ class Account(MPTTModel):
         related_name="children",
         db_index=True,
         on_delete=models.CASCADE,
+        verbose_name=_("parent")
     )
-    code = models.CharField(max_length=3, null=True, blank=True)
-    full_code = models.CharField(max_length=100, db_index=True, unique=True, null=True, blank=True)
+    code = models.CharField(max_length=3, null=True, blank=True, verbose_name=_("code"))
+    full_code = models.CharField(max_length=100, db_index=True, unique=True, null=True, blank=True, verbose_name=_("full_code"))
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
-    type = models.CharField(max_length=2, choices=TYPES, blank=True)
+    type = models.CharField(max_length=2, choices=TYPES, blank=True, verbose_name=_("type"))
     is_bank_account = models.BooleanField(
         default=False,
         blank=True,
         help_text="Is this a bank account. This implies we can import bank "
         "statements into it and that it only supports a single currency",
+        verbose_name=_('is bank account')
     )
-    currencies = ArrayField(models.CharField(max_length=3), db_index=True)
+    currencies = ArrayField(models.CharField(max_length=3), db_index=True, verbose_name=_("currencies"))
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
 
@@ -122,6 +125,7 @@ class Account(MPTTModel):
 
     class Meta:
         unique_together = (("parent", "code"),)
+        verbose_name=_("account")
 
     def __init__(self, *args, **kwargs):
         super(Account, self).__init__(*args, **kwargs)
@@ -357,19 +361,20 @@ class Transaction(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
     timestamp = models.DateTimeField(
-        default=timezone.now, help_text="The creation date of this transaction object"
+        default=timezone.now, help_text="The creation date of this transaction object", verbose_name=_("timestamp")
     )
     date = models.DateField(
-        default=timezone.now, help_text="The date on which this transaction occurred"
+        default=timezone.now, help_text="The date on which this transaction occurred", verbose_name=_("date")
     )
-    description = models.TextField(default="", blank=True)
+    description = models.TextField(default="", blank=True, verbose_name=_("description"))
 
     objects = TransactionManager()
 
     class Meta:
         get_latest_by = "date"
+        verbose_name=_("transaction")
 
     def balance(self):
         return self.legs.sum_to_balance()
@@ -416,16 +421,17 @@ class Leg(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    transaction = models.ForeignKey(Transaction, related_name="legs", on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, related_name="legs", on_delete=models.CASCADE)
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    transaction = models.ForeignKey(Transaction, related_name="legs", on_delete=models.CASCADE, verbose_name=_("transaction"))
+    account = models.ForeignKey(Account, related_name="legs", on_delete=models.CASCADE, verbose_name=_("account"))
     amount = MoneyField(
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Record debits as positive, credits as negative",
         default_currency=defaults.INTERNAL_CURRENCY,
+        verbose_name=_("amount")
     )
-    description = models.TextField(default="", blank=True)
+    description = models.TextField(default="", blank=True, verbose_name=_("description"))
 
     objects = LegManager.from_queryset(LegQuerySet)()
 
@@ -482,6 +488,9 @@ class Leg(models.Model):
             )
         )
 
+    class Meta:
+        verbose_name=_("Leg")
+
 
 class StatementImportManager(models.Manager):
     def get_by_natural_key(self, uuid):
@@ -500,24 +509,29 @@ class StatementImport(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    timestamp = models.DateTimeField(default=timezone.now)
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
-    bank_account = models.ForeignKey(Account, related_name="imports", on_delete=models.CASCADE)
+    bank_account = models.ForeignKey(Account, related_name="imports", on_delete=models.CASCADE, verbose_name=_("bank account"))
     source = models.CharField(
         max_length=20,
         help_text="A value uniquely identifying where this data came from. "
         'Examples: "csv", "teller.io".',
+        verbose_name=_("source"),
     )
     extra = JSONField(
         default=json_default,
         help_text="Any extra data relating to the import, probably specific " "to the data source.",
+        verbose_name=_("extra")
     )
 
     objects = StatementImportManager()
 
     def natural_key(self):
         return (self.uuid,)
+
+    class Meta:
+        verbose_name=_("statementImport")
 
 
 class StatementLineManager(models.Manager):
@@ -547,15 +561,15 @@ class StatementLine(models.Model):
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    timestamp = models.DateTimeField(default=timezone.now)
-    date = models.DateField()
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
+    date = models.DateField(verbose_name=_("date"))
     statement_import = models.ForeignKey(
-        StatementImport, related_name="lines", on_delete=models.CASCADE
+        StatementImport, related_name="lines", on_delete=models.CASCADE, verbose_name=_("statement import")
     )
-    amount = models.DecimalField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
-    description = models.TextField(default="", blank=True)
-    type = models.CharField(max_length=50, default="")
+    amount = models.DecimalField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES, verbose_name=_("amount"))
+    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    type = models.CharField(max_length=50, default="", verbose_name=_("type"))
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
     transaction = models.ForeignKey(
@@ -565,9 +579,10 @@ class StatementLine(models.Model):
         null=True,
         help_text="Reconcile this statement line to this transaction",
         on_delete=models.SET_NULL,
+        verbose_name=_("transaction"),
     )
     source_data = JSONField(
-        default=json_default, help_text="Original data received from the data source."
+        default=json_default, help_text="Original data received from the data source.", verbose_name=_("source data")
     )
 
     objects = StatementLineManager()
@@ -614,3 +629,6 @@ class StatementLine(models.Model):
         self.transaction = transaction
         self.save()
         return transaction
+
+    class Meta:
+        verbose_name=_("statementLine")
