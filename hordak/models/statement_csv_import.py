@@ -4,6 +4,7 @@ from io import StringIO
 import six
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from model_utils import Choices
 from tablib import Dataset
@@ -18,17 +19,17 @@ class TransactionCsvImport(models.Model):
         ("done", "Import complete"),
     )
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False)
-    timestamp = models.DateTimeField(default=timezone.now, editable=False)
+    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    timestamp = models.DateTimeField(default=timezone.now, editable=False, verbose_name=_("timestamp"))
     has_headings = models.BooleanField(
-        default=True, verbose_name="First line of file contains headings"
+        default=True, verbose_name=_("First line of file contains headings")
     )
-    file = models.FileField(upload_to="transaction_imports", verbose_name="CSV file to import")
-    state = models.CharField(max_length=20, choices=STATES, default="pending")
+    file = models.FileField(upload_to="transaction_imports", verbose_name=_("CSV file to import"))
+    state = models.CharField(max_length=20, choices=STATES, default="pending", verbose_name=_("state"))
     date_format = models.CharField(
-        choices=DATE_FORMATS, max_length=50, default="%d-%m-%Y", null=False
+        choices=DATE_FORMATS, max_length=50, default="%d-%m-%Y", null=False, verbose_name=_("date format")
     )
-    hordak_import = models.ForeignKey("hordak.StatementImport", on_delete=models.CASCADE)
+    hordak_import = models.ForeignKey("hordak.StatementImport", on_delete=models.CASCADE,verbose_name=_("hordak import"))
 
     def _get_csv_reader(self):
         # TODO: Refactor to support multiple readers (xls, quickbooks, etc)
@@ -103,15 +104,15 @@ class TransactionCsvImportColumn(models.Model):
     )
 
     transaction_import = models.ForeignKey(
-        TransactionCsvImport, related_name="columns", on_delete=models.CASCADE
+        TransactionCsvImport, related_name="columns", on_delete=models.CASCADE, verbose_name=_("transaction import")
     )
-    column_number = models.PositiveSmallIntegerField()
-    column_heading = models.CharField(max_length=100, default="", blank=True, verbose_name="Column")
+    column_number = models.PositiveSmallIntegerField(verbose_name=_("column number"))
+    column_heading = models.CharField(max_length=100, default="", blank=True, verbose_name=_("Column"))
     # TODO: Create a constraint to limit to_field to only valid values
     to_field = models.CharField(
-        max_length=20, blank=True, default=None, null=True, choices=TO_FIELDS, verbose_name="Is"
+        max_length=20, blank=True, default=None, null=True, choices=TO_FIELDS, verbose_name=_("Is")
     )
-    example = models.CharField(max_length=200, blank=True, default="", null=False)
+    example = models.CharField(max_length=200, blank=True, default="", null=False,verbose_name=_("example"))
 
     class Meta:
         unique_together = (
@@ -119,6 +120,7 @@ class TransactionCsvImportColumn(models.Model):
             ("transaction_import", "column_number"),
         )
         ordering = ["transaction_import", "column_number"]
+        verbose_name=_("transactionCsvImportColumn")
 
     def save(self, *args, **kwargs):
         if not self.to_field:
