@@ -18,12 +18,16 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
+import uuid
+
+try:
+    from django.db.models import JSONField
+except ImportError:
+    from django.contrib.postgres.fields.jsonb import JSONField
 from django.contrib.postgres.fields.array import ArrayField
-from django.contrib.postgres.fields.jsonb import JSONField
 from django.db import models
 from django.utils import timezone
 from django.db import transaction as db_transaction
-from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
 from django.utils.translation import gettext_lazy as _
 from moneyed import Money
@@ -70,7 +74,7 @@ class Account(MPTTModel):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for account. Use to prevent leaking of IDs (if desired).
+        uuid: UUID for account. Use to prevent leaking of IDs (if desired).
         name (str): Name of the account. Required.
         parent (Account|None): Parent account, nonen if root account
         code (str): Account code. Must combine with account codes of parent
@@ -93,7 +97,7 @@ class Account(MPTTModel):
         ("EQ", "equity", "Equity"),  # Eg. Money from shares
         ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = uuid.uuid1()
     name = models.CharField(max_length=50, verbose_name=_("name"))
     parent = TreeForeignKey(
         "self",

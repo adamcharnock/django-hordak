@@ -1,11 +1,12 @@
 import csv
 from io import StringIO
 
+import uuid
+
 import six
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django_smalluuid.models import SmallUUIDField, uuid_default
 from model_utils import Choices
 from tablib import Dataset
 
@@ -19,7 +20,7 @@ class TransactionCsvImport(models.Model):
         ("done", "Import complete"),
     )
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = uuid.uuid1()
     timestamp = models.DateTimeField(default=timezone.now, editable=False, verbose_name=_("timestamp"))
     has_headings = models.BooleanField(
         default=True, verbose_name=_("First line of file contains headings")
