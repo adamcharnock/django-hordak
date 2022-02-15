@@ -1,3 +1,4 @@
+import django
 from uuid import UUID
 import datetime
 
@@ -26,7 +27,11 @@ def do_import(token, account_uuid, bank_account, since=None):
 
     for line_data in data:
         uuid = UUID(hex=line_data["id"])
-        if StatementLine.objects.filter(uuid=uuid):
+        if django.VERSION >= (3, 0, 0):
+            uuid_f = str(uuid)
+        else:
+            uuid_f = uuid
+        if StatementLine.objects.filter(uuid=uuid_f):
             continue
 
         description = ", ".join(filter(bool, [line_data["counterparty"], line_data["description"]]))
