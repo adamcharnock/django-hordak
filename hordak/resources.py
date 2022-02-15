@@ -81,7 +81,7 @@ class StatementLineResource(resources.ModelResource):
         """Get the number of rows similar to row which precede the index `until`"""
         return len(list(filter(lambda r: row == r, self.dataset[:until])))
 
-    def import_obj(self, obj, data, dry_run):
+    def import_obj(self, obj, data, dry_run, *args, **kwargs):
         F = TransactionCsvImportColumn.TO_FIELDS
         use_dual_amounts = F.amount_out in data and F.amount_in in data
 
