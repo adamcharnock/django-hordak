@@ -1,0 +1,98 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ '**' ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  tests:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+        
+    strategy:
+      matrix:
+        DJANGO_VERSION: [ '2.2.*', '3.0.*', '3.1.*', '3.2.*', '4.0.*']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
+        exclude:
+          - DJANGO_VERSION: '4.0.*'
+            python-version: '3.7'
+      fail-fast: false
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+              python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}
+
+      - name: Install
+        run: |
+           python setup.py develop
+           pip install -e .
+           pip install requests-mock mock pytest coveralls
+           pip install psycopg2==2.8.6
+           pip install Django==${{ matrix.DJANGO_VERSION }}
+           pip install codecov
+
+      - name: Testing
+        run: |
+          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
+          PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
+          case "${{ matrix.DJANGO_VERSION }},${{ matrix.python-version }}" in
+            "2.2.*,3.10"|"3.0.*,3.10"|"3.1.*,3.10")  # Django runs with warnings in this python version
+              PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
+              ;;
+            *)
+              # Run with -W error::DeprecationWarning once django-money doesn't raise deprecation warnings
+              PYTHONPATH=`pwd` python -Wall -m coverage run --source=hordak ./manage.py test hordak
+              ;;
+          esac
+          coverage xml && codecov
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost/postgres"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install
+        run: pip install flake8 isort black mypy django-stubs dj_database_url
+      - name: Running Flake8
+        run: flake8
+      - name: Running isort
+        run: python -m isort . --check-only --diff
+      - name: Running black
+        run: black --check .
+      - name: Running black
+        run: black --check .
+      - name: Running mypy
+        run: mypy .

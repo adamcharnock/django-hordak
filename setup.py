@@ -22,12 +22,12 @@ setup(
         "dj-database-url>=0.4.1",
         "psycopg2-binary>=2.6.2",
         "django-extensions>=1.7.3",
-        "django-smalluuid>=1.1.1",
+        "django-smalluuid>=1.2.1",
         "requests>=2",
-        "py-moneyed>=0.6.0",
+        "py-moneyed>=0.6.0,<2.0",  # version limited to be installable with django-money
         "django-money>=0.9.1",
         "django-import-export>=0.5.0",
-        "babel==2.5.1",
+        "babel>=2.5.1",
         'openpyxl<=2.6;python_version<"3.5"',
     ],
 )
