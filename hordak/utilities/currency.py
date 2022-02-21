@@ -49,6 +49,7 @@ import copy
 import datetime
 import logging
 from decimal import Decimal
+from typing import List
 
 import babel.numbers
 import requests
@@ -237,7 +238,7 @@ class BaseBackend(object):
     The primary method which needs defining is :meth:`_get_rate()`.
     """
 
-    supported_currencies = []
+    supported_currencies: List[str] = []
 
     def __init__(self):
         if not self.is_supported(defaults.INTERNAL_CURRENCY):

@@ -103,7 +103,7 @@ def handle_float_decimal_combinations(value, arg, operation):
 
 
 @register.filter
-def sub(value, arg):
+def sub(value, arg, is_safe=False):
     """Subtract the arg from the value."""
     try:
         nvalue, narg = handle_float_decimal_combinations(
@@ -117,10 +117,7 @@ def sub(value, arg):
             return ""
 
 
-sub.is_safe = False
-
-
-@register.filter(name="addition")
+@register.filter(name="addition", is_safe=False)
 def addition(value, arg):
     """Float-friendly replacement for Django's built-in `add` filter."""
     try:
@@ -133,6 +130,3 @@ def addition(value, arg):
             return value + arg
         except Exception:
             return ""
-
-
-addition.is_safe = False

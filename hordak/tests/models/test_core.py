@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
-from django.test.testcases import TransactionTestCase
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from moneyed.classes import Money
 
@@ -21,7 +20,7 @@ from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
 
-class AccountTestCase(DataProvider, TransactionTestCase):
+class AccountTestCase(DataProvider, DbTransactionTestCase):
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
