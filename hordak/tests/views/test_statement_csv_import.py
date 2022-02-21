@@ -2,7 +2,7 @@ import logging
 
 import six
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from hordak.models import (

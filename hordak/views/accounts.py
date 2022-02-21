@@ -36,7 +36,9 @@ class AccountCreateView(LoginRequiredMixin, CreateView):
 
             urlpatterns = [
                 ...
-                url(r'^accounts/create/$', AccountCreateView.as_view(success_url=reverse_lazy('accounts_list')), name='accounts_create'),
+                url(r'^accounts/create/$',
+                    AccountCreateView.as_view(success_url=reverse_lazy('accounts_list')),
+                    name='accounts_create'),
             ]
 
     """
@@ -59,7 +61,9 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
 
             urlpatterns = [
                 ...
-                url(r'^accounts/update/(?P<uuid>.+)/$', AccountUpdateView.as_view(success_url=reverse_lazy('accounts_list')), name='accounts_update'),
+                url(r'^accounts/update/(?P<uuid>.+)/$',
+                    AccountUpdateView.as_view(success_url=reverse_lazy('accounts_list')),
+                    name='accounts_update'),
             ]
 
     """

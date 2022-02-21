@@ -1,4 +1,4 @@
-from decimal import Decimal, DecimalException
+from decimal import Decimal, DecimalException, InvalidOperation
 
 from django.utils.datetime_safe import datetime
 from import_export import resources
@@ -126,7 +126,7 @@ class StatementLineResource(resources.ModelResource):
                 raise ValueError("No value found for amount")
             try:
                 amount = Decimal(data[F.amount])
-            except:
+            except InvalidOperation:
                 raise DecimalException("Invalid value found for Amount")
 
         if amount == Decimal("0"):

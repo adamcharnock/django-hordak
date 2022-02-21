@@ -99,7 +99,8 @@ class LegForm(forms.ModelForm):
 
         account (TreeNodeChoiceField): Choose an account the leg will interact with
         description (forms.CharField): Optional description/notes for this leg
-        amount (MoneyField): The amount for this leg. Positive values indicate money coming into the transaction,
+        amount (MoneyField): The amount for this leg.
+            Positive values indicate money coming into the transaction,
             negative values indicate money leaving the transaction.
 
     See Also:

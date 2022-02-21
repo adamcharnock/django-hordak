@@ -17,7 +17,8 @@ Classes
 
 ``Money`` **instances**:
 
-    The ``Money`` class is provided by `moneyd`_ and combines both an amount and a currency into a single value.
+    The ``Money`` class is provided by `moneyd`_ and combines both an amount and
+    a currency into a single value.
     Hordak uses these these as the core unit of monetary value.
 
 ``Balance`` **instances (see below for more details)**:
@@ -54,9 +55,7 @@ import requests
 import six
 from django.core.cache import cache
 from django.db import transaction as db_transaction
-from django.utils.translation import get_language, to_locale
 from moneyed import Money
-from moneyed.localization import format_money
 
 from hordak import defaults
 from hordak.exceptions import (
@@ -102,7 +101,8 @@ def currency_exchange(
     process doesn't care about exchange rates, only about the value
     of currency going in and out of the transaction.
 
-    You can also record any exchange fees by syphoning off funds to ``fee_account`` of amount ``fee_amount``. Note
+    You can also record any exchange fees by syphoning off funds to
+    ``fee_account`` of amount ``fee_amount``. Note
     that the free currency must be the same as the source currency.
 
     Examples:
@@ -143,22 +143,26 @@ def currency_exchange(
         source_amount (Money): A ``Money`` instance containing the inbound amount and currency.
         destination (Account): The account the funds will be placed into
         destination_amount (Money): A ``Money`` instance containing the outbound amount and currency
-        trading_account (Account): The trading account to be used. The normalised balance of this account will indicate
-            gains/losses you have made as part of your activity via this account. Note that the normalised balance
-            fluctuates with the current exchange rate.
+        trading_account (Account): The trading account to be used.
+            The normalised balance of this account will indicate
+            gains/losses you have made as part of your activity via this account.
+            Note that the normalised balance fluctuates with the current exchange rate.
         fee_destination (Account): Your exchange may incur fees. Specifying this will move incurred fees
             into this account (optional).
         fee_amount (Money): The amount and currency of any incurred fees (optional).
-        description (str): Description for the transaction. Will default to describing funds in/out & fees (optional).
+        description (str): Description for the transaction.
+            Will default to describing funds in/out & fees (optional).
         date (datetime.date): The date on which the transaction took place. Defaults to today (optional).
 
     Returns:
         (Transaction): The transaction created
 
     See Also:
-        You can see the above example in practice in ``CurrencyExchangeTestCase.test_fees`` in `test_currency.py`_.
+        You can see the above example in practice in
+        ``CurrencyExchangeTestCase.test_fees`` in `test_currency.py`_.
 
-    .. _test_currency.py: https://github.com/adamcharnock/django-hordak/blob/master/hordak/tests/utilities/test_currency.py
+    .. _test_currency.py:
+        https://github.com/adamcharnock/django-hordak/blob/master/hordak/tests/utilities/test_currency.py
     """
     from hordak.models import Account, Leg, Transaction
 
@@ -238,8 +242,8 @@ class BaseBackend(object):
     def __init__(self):
         if not self.is_supported(defaults.INTERNAL_CURRENCY):
             raise ValueError(
-                "Currency specified by INTERNAL_CURRENCY "
-                "is not supported by this backend: ".format(defaults.INTERNAL_CURRENCY)
+                f"Currency specified by {defaults.INTERNAL_CURRENCY} "
+                "is not supported by this backend: "
             )
 
     def cache_rate(self, currency, date, rate):
@@ -247,9 +251,7 @@ class BaseBackend(object):
         Cache a rate for future use
         """
         if not self.is_supported(defaults.INTERNAL_CURRENCY):
-            logger.info(
-                'Tried to cache unsupported currency "{}". Ignoring.'.format(currency)
-            )
+            logger.info(f'Tried to cache unsupported currency "{currency}". Ignoring.')
         else:
             cache.set(_cache_key(currency, date), str(rate), _cache_timeout(date))
 

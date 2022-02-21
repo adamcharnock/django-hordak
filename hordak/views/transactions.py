@@ -83,7 +83,8 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
             urlpatterns = [
                 ...
-                url(r'^transactions/reconcile/$', TransactionsReconcileView.as_view(), name='transactions_reconcile'),
+                url(r'^transactions/reconcile/$',
+                    TransactionsReconcileView.as_view(), name='transactions_reconcile'),
             ]
     """
 
