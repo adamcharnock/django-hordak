@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
-import getpass
 import os
 
 import dj_database_url
@@ -126,4 +125,4 @@ STATIC_URL = "/static/"
 
 LOGIN_URL = "/auth/login/"
 
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

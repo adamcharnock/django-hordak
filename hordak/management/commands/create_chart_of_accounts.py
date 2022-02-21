@@ -27,7 +27,8 @@ class Command(BaseCommand):
             "--currency",
             nargs="+",
             dest="currency",
-            help="The currency of the accounts to create. Can specify multiple times for multiple currency support.",
+            help="The currency of the accounts to create. "
+            "Can specify multiple times for multiple currency support.",
             required=True,
         )
 
@@ -82,7 +83,7 @@ class Command(BaseCommand):
         assets_current_cash = Account.objects.create(
             parent=assets_current, name="Cash", code="0", **kw
         )
-        assets_current_receivables = Account.objects.create(
+        Account.objects.create(
             parent=assets_current, name="Accounts Receivable", code="1", **kw
         )
 

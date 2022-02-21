@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
-from django.test.testcases import TestCase
 from django.test.testcases import TransactionTestCase
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from moneyed.classes import Money
@@ -27,14 +26,14 @@ class AccountTestCase(DataProvider, TransactionTestCase):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
         account1 = self.account(name="Account 1", code="5")
-        account2 = self.account(parent=account1, code="1")
+        self.account(parent=account1, code="1")
         self.assertEqual(str(account1), "Account 1")
 
     def test_str_root_no_code(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
         account1 = self.account(name="Account 1")
-        account2 = self.account(parent=account1)
+        self.account(parent=account1)
         self.assertEqual(str(account1), "Account 1")
 
     def test_str_child(self):
@@ -51,7 +50,7 @@ class AccountTestCase(DataProvider, TransactionTestCase):
 
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
-        account2 = Account(parent=account1)
+        Account(parent=account1)
         self.assertEqual(str(account1), "Unnamed Account")
 
     def test_str_child_no_data_unsaved(self):
@@ -369,7 +368,7 @@ class AccountTestCase(DataProvider, TransactionTestCase):
 
     def test_full_code_error_on_non_unique(self):
         account1 = self.account(code="5")
-        account2 = self.account(parent=account1, code="0")
+        self.account(parent=account1, code="0")
 
         with self.assertRaises(DatabaseError):
             self.account(parent=account1, code="0")
@@ -538,12 +537,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            leg1 = Leg.objects.create(
-                transaction=transaction, account=account1, amount=100
-            )
-            leg2 = Leg.objects.create(
-                transaction=transaction, account=account2, amount=-100
-            )
+            Leg.objects.create(transaction=transaction, account=account1, amount=100)
+            Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
         leg3 = Leg(transaction=transaction, account=account2, amount=Money(0, "EUR"))
         self.assertRaises(exceptions.ZeroAmountError, leg3.save)
@@ -558,9 +553,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             leg1 = Leg.objects.create(
                 transaction=transaction, account=account1, amount=100
             )
-            leg2 = Leg.objects.create(
-                transaction=transaction, account=account2, amount=-100
-            )
+            Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
         with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
