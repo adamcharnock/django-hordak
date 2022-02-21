@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib import admin
 from django.db.models import Sum
 from mptt.admin import MPTTModelAdmin
@@ -5,6 +7,10 @@ from mptt.admin import MPTTModelAdmin
 from hordak.models import TransactionCsvImport, TransactionCsvImportColumn
 
 from . import models
+
+
+def admin_attr_decorator(func: Any):
+    return func
 
 
 @admin.register(models.Account)
@@ -19,6 +25,7 @@ class AccountAdmin(MPTTModelAdmin):
     )
     list_filter = ("type",)
 
+    @admin_attr_decorator
     def balance(self, obj):
         return obj.balance()
 
@@ -31,6 +38,7 @@ class AccountAdmin(MPTTModelAdmin):
             .annotate(balance_sum=Sum("legs__amount"))
         )
 
+    @admin_attr_decorator
     def code_(self, obj):
         if obj.is_leaf_node():
             return obj.full_code or "-"
@@ -39,6 +47,7 @@ class AccountAdmin(MPTTModelAdmin):
 
     code_.admin_order_field = "full_code"
 
+    @admin_attr_decorator
     def type_(self, obj):
         return models.Account.TYPES[obj.type]
 

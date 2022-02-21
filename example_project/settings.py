@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+from typing import List
 
 import dj_database_url
 
@@ -28,7 +29,7 @@ SECRET_KEY = "7lz1x9*1dfc_60vktfj4hrneiude(t%84re6*!)kpc=ifk(7@3"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: List[str] = []
 
 
 # Application definition

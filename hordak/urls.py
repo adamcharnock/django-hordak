@@ -1,4 +1,4 @@
-from django.urls import include, path
+from django.urls import path
 
 from hordak.views import accounts, statement_csv_import, transactions
 
@@ -70,6 +70,3 @@ urlpatterns = [
         name="import_execute",
     ),
 ]
-
-# Also add in the authentication views that we need to login/logout etc
-urlpatterns += [path("auth/", include("django.contrib.auth.urls"))]
