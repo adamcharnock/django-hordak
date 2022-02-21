@@ -3,11 +3,11 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms import BaseInlineFormSet, inlineformset_factory
 from djmoney.forms import MoneyField
-
-from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, DEFAULT_CURRENCY, CURRENCIES
-from hordak.models import Account, Transaction, Leg
 from moneyed import Money
 from mptt.forms import TreeNodeChoiceField
+
+from hordak.defaults import CURRENCIES, DECIMAL_PLACES, DEFAULT_CURRENCY, MAX_DIGITS
+from hordak.models import Account, Leg, Transaction
 
 
 class SimpleTransactionForm(forms.ModelForm):
@@ -21,8 +21,12 @@ class SimpleTransactionForm(forms.ModelForm):
         * :meth:`hordak.models.Account.transfer_to()`.
     """
 
-    from_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name="uuid")
-    to_account = TreeNodeChoiceField(queryset=Account.objects.all(), to_field_name="uuid")
+    from_account = TreeNodeChoiceField(
+        queryset=Account.objects.all(), to_field_name="uuid"
+    )
+    to_account = TreeNodeChoiceField(
+        queryset=Account.objects.all(), to_field_name="uuid"
+    )
     amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
 
     class Meta:
@@ -105,7 +109,9 @@ class LegForm(forms.ModelForm):
 
     account = TreeNodeChoiceField(Account.objects.all(), to_field_name="uuid")
     description = forms.CharField(required=False)
-    amount = MoneyField(required=True, max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
+    amount = MoneyField(
+        required=True, max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES
+    )
 
     class Meta:
         model = Leg
@@ -137,7 +143,9 @@ class BaseLegFormSet(BaseInlineFormSet):
         kwargs.update(statement_line=self.statement_line)
         if index == 0:
             kwargs.update(
-                initial=dict(amount=Money(abs(self.statement_line.amount), self.currency))
+                initial=dict(
+                    amount=Money(abs(self.statement_line.amount), self.currency)
+                )
             )
         return kwargs
 
@@ -149,7 +157,9 @@ class BaseLegFormSet(BaseInlineFormSet):
 
         amounts = [f.cleaned_data["amount"] for f in self.forms if f.has_changed()]
         if Money(self.statement_line.amount, self.currency) != sum(amounts):
-            raise ValidationError("Amounts must add up to {}".format(self.statement_line.amount))
+            raise ValidationError(
+                "Amounts must add up to {}".format(self.statement_line.amount)
+            )
 
 
 LegFormSet = inlineformset_factory(
@@ -168,7 +178,9 @@ class CurrencyTradeForm(forms.Form):
     )
     source_amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
     trading_account = forms.ModelChoiceField(
-        queryset=Account.objects.filter(children__isnull=True, type=Account.TYPES.trading),
+        queryset=Account.objects.filter(
+            children__isnull=True, type=Account.TYPES.trading
+        ),
         to_field_name="uuid",
         help_text="The account in which to perform the trade. "
         "This account must support both the source and destination currency. If none exist "
@@ -177,7 +189,9 @@ class CurrencyTradeForm(forms.Form):
     destination_account = forms.ModelChoiceField(
         queryset=Account.objects.filter(children__isnull=True), to_field_name="uuid"
     )
-    destination_amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
+    destination_amount = MoneyField(
+        max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES
+    )
     description = forms.CharField(widget=forms.Textarea, required=False)
 
     def clean(self):
@@ -218,13 +232,21 @@ class CurrencyTradeForm(forms.Form):
         source_amount = self.cleaned_data.get("source_amount")
         destination_amount = self.cleaned_data.get("destination_amount")
 
-        transaction = Transaction.objects.create(description=self.cleaned_data.get("description"))
-        Leg.objects.create(transaction=transaction, account=source_account, amount=source_amount)
-        Leg.objects.create(transaction=transaction, account=trading_account, amount=-source_amount)
+        transaction = Transaction.objects.create(
+            description=self.cleaned_data.get("description")
+        )
+        Leg.objects.create(
+            transaction=transaction, account=source_account, amount=source_amount
+        )
+        Leg.objects.create(
+            transaction=transaction, account=trading_account, amount=-source_amount
+        )
         Leg.objects.create(
             transaction=transaction, account=trading_account, amount=destination_amount
         )
         Leg.objects.create(
-            transaction=transaction, account=destination_account, amount=-destination_amount
+            transaction=transaction,
+            account=destination_account,
+            amount=-destination_amount,
         )
         return transaction

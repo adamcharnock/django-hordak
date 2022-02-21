@@ -1,20 +1,21 @@
-from decimal import Decimal
-
 from datetime import date
+from decimal import Decimal
 from uuid import UUID
 
-from django.test.testcases import TestCase
 import requests_mock
+from django.test.testcases import TestCase
 
 from hordak.data_sources import tellerio
 from hordak.models import StatementImport
-from hordak.models.core import StatementLine, Account
+from hordak.models.core import Account, StatementLine
 from hordak.tests.utils import DataProvider
 
 
 class TellerIoDataSourceTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.bank = self.account(name="bank", type=Account.TYPES.asset, is_bank_account=True)
+        self.bank = self.account(
+            name="bank", type=Account.TYPES.asset, is_bank_account=True
+        )
 
     @requests_mock.mock()
     def test_simple(self, m):
@@ -38,7 +39,8 @@ class TellerIoDataSourceTestCase(DataProvider, TestCase):
 
         self.assertEqual(statement_import.source, "teller.io")
         self.assertEqual(
-            statement_import.extra, {"account_uuid": "11111111-1111-4111-1111-111111111111"}
+            statement_import.extra,
+            {"account_uuid": "11111111-1111-4111-1111-111111111111"},
         )
 
         self.assertEqual(line1.uuid, UUID("11111111-1111-4111-2222-111111111111"))

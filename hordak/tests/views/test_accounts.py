@@ -12,7 +12,9 @@ class AccountListViewTestCase(DataProvider, TestCase):
         self.login()
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
-        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
+        self.income_account = self.account(
+            is_bank_account=False, type=Account.TYPES.income
+        )
 
     def test_get(self):
         response = self.client.get(self.view_url)
@@ -35,7 +37,11 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         response = self.client.post(
             self.view_url,
             data=dict(
-                name="Test Account", code="01", type="IN", is_bank_account="", currencies="EUR, GBP"
+                name="Test Account",
+                code="01",
+                type="IN",
+                is_bank_account="",
+                currencies="EUR, GBP",
             ),
         )
         if response.context:
@@ -51,7 +57,11 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         """Bank accounts must be asset accounts"""
         form = AccountForm(
             data=dict(
-                name="Test Account", code="01", type="IN", is_bank_account="yes", currencies="GBP"
+                name="Test Account",
+                code="01",
+                type="IN",
+                is_bank_account="yes",
+                currencies="GBP",
             )
         )
         self.assertFalse(form.is_valid())
@@ -79,7 +89,11 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         response = self.client.post(
             self.view_url,
             data=dict(
-                name="Test Account", code="", type="IN", is_bank_account="", currencies="EUR, GBP"
+                name="Test Account",
+                code="",
+                type="IN",
+                is_bank_account="",
+                currencies="EUR, GBP",
             ),
         )
         if response.context:
@@ -92,7 +106,10 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
 class AccountUpdateViewTestCase(DataProvider, TestCase):
     def setUp(self):
         self.account1 = self.account(
-            code="01", currencies=["USD"], type=Account.TYPES.expense, is_bank_account=False
+            code="01",
+            currencies=["USD"],
+            type=Account.TYPES.expense,
+            is_bank_account=False,
         )
         self.view_url = reverse("hordak:accounts_update", args=[self.account1.uuid])
         self.login()
@@ -120,15 +137,25 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.account1.refresh_from_db()
         self.assertEqual(self.account1.name, "My Account")
         self.assertEqual(self.account1.code, "04")
-        self.assertEqual(self.account1.type, Account.TYPES.expense)  # Not editable, so unchanged
-        self.assertEqual(self.account1.is_bank_account, False)  # Not editable, so unchanged
-        self.assertEqual(self.account1.currencies, ["USD"])  # Not editable, so unchanged
+        self.assertEqual(
+            self.account1.type, Account.TYPES.expense
+        )  # Not editable, so unchanged
+        self.assertEqual(
+            self.account1.is_bank_account, False
+        )  # Not editable, so unchanged
+        self.assertEqual(
+            self.account1.currencies, ["USD"]
+        )  # Not editable, so unchanged
 
     def test_post_no_code(self):
         response = self.client.post(
             self.view_url,
             data=dict(
-                name="My Account", code="", type="LI", is_bank_account="yes", currencies="EUR, GBP"
+                name="My Account",
+                code="",
+                type="LI",
+                is_bank_account="yes",
+                currencies="EUR, GBP",
             ),
         )
         if response.context:

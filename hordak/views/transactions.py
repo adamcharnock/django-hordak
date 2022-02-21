@@ -3,17 +3,17 @@ from django.db import transaction as db_transaction
 from django.http import Http404
 from django.http.response import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, ListView, DeleteView
+from django.views.generic import CreateView, DeleteView, ListView
 
-from hordak.forms import SimpleTransactionForm, TransactionForm, LegFormSet
+from hordak.forms import LegFormSet, SimpleTransactionForm, TransactionForm
 from hordak.forms.transactions import CurrencyTradeForm
-from hordak.models import StatementLine, Leg, Transaction
+from hordak.models import Leg, StatementLine, Transaction
 
 
 class TransactionCreateView(LoginRequiredMixin, CreateView):
-    """ View for creation of simple transactions.
+    """View for creation of simple transactions.
 
     This functionality is provided by :class:`hordak.models.Account.transfer_to()`,
     see the method's documentation for additional details.
@@ -45,9 +45,7 @@ class CurrencyTradeView(LoginRequiredMixin, CreateView):
 
 
 class TransactionsListView(LoginRequiredMixin, ListView):
-    """View for listing transactions
-
-    """
+    """View for listing transactions"""
 
     model = Transaction
     template_name = "hordak/transactions/transaction_list.html"
@@ -56,9 +54,7 @@ class TransactionsListView(LoginRequiredMixin, ListView):
 
 
 class LegsListView(LoginRequiredMixin, ListView):
-    """View for listing legs
-
-    """
+    """View for listing legs"""
 
     model = Leg
     template_name = "hordak/transactions/leg_list.html"
@@ -76,7 +72,7 @@ class TransactionDeleteView(LoginRequiredMixin, DeleteView):
 
 
 class TransactionsReconcileView(LoginRequiredMixin, ListView):
-    """ Handle rendering and processing in the reconciliation view
+    """Handle rendering and processing in the reconciliation view
 
     Note that this only extends ListView, and we implement the form
     processing functionality manually.
@@ -171,7 +167,9 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
     def form_invalid(self, transaction_form, leg_formset):
         return self.render_to_response(
-            self.get_context_data(transaction_form=transaction_form, leg_formset=leg_formset)
+            self.get_context_data(
+                transaction_form=transaction_form, leg_formset=leg_formset
+            )
         )
 
     def get_context_data(self, **kwargs):
@@ -187,11 +185,14 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
     def get_transaction_form(self):
         return TransactionForm(
-            data=self.request.POST or None, initial=dict(description=self.object.description)
+            data=self.request.POST or None,
+            initial=dict(description=self.object.description),
         )
 
     def get_leg_formset(self, **kwargs):
-        return LegFormSet(data=self.request.POST or None, statement_line=self.object, **kwargs)
+        return LegFormSet(
+            data=self.request.POST or None, statement_line=self.object, **kwargs
+        )
 
 
 class UnreconcileView(LoginRequiredMixin, View):

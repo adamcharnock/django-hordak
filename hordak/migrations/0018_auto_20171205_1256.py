@@ -10,7 +10,9 @@ class Migration(migrations.Migration):
     dependencies = [("hordak", "0017_auto_20171203_1516")]
 
     operations = [
-        migrations.RenameModel(old_name="TransactionImport", new_name="TransactionCsvImport"),
+        migrations.RenameModel(
+            old_name="TransactionImport", new_name="TransactionCsvImport"
+        ),
         migrations.RenameModel(
             old_name="TransactionImportColumn", new_name="TransactionCsvImportColumn"
         ),

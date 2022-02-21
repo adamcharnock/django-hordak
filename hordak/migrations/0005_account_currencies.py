@@ -15,7 +15,10 @@ class Migration(migrations.Migration):
             model_name="account",
             name="currencies",
             field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.CharField(max_length=3), db_index=True, default=["EUR"], size=None
+                base_field=models.CharField(max_length=3),
+                db_index=True,
+                default=["EUR"],
+                size=None,
             ),
             preserve_default=False,
         )

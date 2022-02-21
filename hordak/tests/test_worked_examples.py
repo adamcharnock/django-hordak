@@ -1,9 +1,9 @@
-from django.test import TestCase
 from django.db import transaction as db_transaction
+from django.test import TestCase
 from moneyed import Money
 
-from hordak.models import Account, Transaction, Leg, StatementImport, StatementLine
-from hordak.tests.utils import DataProvider, BalanceUtils
+from hordak.models import Account, Leg, StatementImport, StatementLine, Transaction
+from hordak.tests.utils import BalanceUtils, DataProvider
 from hordak.utilities.currency import Balance
 
 
@@ -38,19 +38,25 @@ class CapitalGainsTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertBalanceEqual(self.painting_cost.balance(), 100000)
 
         # Painting goes up in value by 10k
-        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, Money(10000, "EUR"))
+        self.income_unrealised_gain.transfer_to(
+            self.painting_unrealised_gain, Money(10000, "EUR")
+        )
 
         self.assertBalanceEqual(self.painting_unrealised_gain.balance(), 10000)
         self.assertBalanceEqual(self.income_unrealised_gain.balance(), 10000)
 
         # Painting goes up in value by 20k
-        self.income_unrealised_gain.transfer_to(self.painting_unrealised_gain, Money(20000, "EUR"))
+        self.income_unrealised_gain.transfer_to(
+            self.painting_unrealised_gain, Money(20000, "EUR")
+        )
 
         self.assertBalanceEqual(self.painting_unrealised_gain.balance(), 30000)
         self.assertBalanceEqual(self.income_unrealised_gain.balance(), 30000)
 
         # We sell the painting (having accurately estimated the gains in value)
-        self.income_unrealised_gain.transfer_to(self.income_realised_gain, Money(30000, "EUR"))
+        self.income_unrealised_gain.transfer_to(
+            self.income_realised_gain, Money(30000, "EUR")
+        )
         self.painting_cost.transfer_to(self.cash, Money(100000, "EUR"))
         self.painting_unrealised_gain.transfer_to(self.cash, Money(30000, "EUR"))
 
@@ -111,7 +117,9 @@ class UtilityBillTestCase(DataProvider, TestCase):
     def setUp(self):
         self.cash = self.account(name="Cash", type=Account.TYPES.asset)
         self.gas_expense = self.account(name="Gas Expense", type=Account.TYPES.expense)
-        self.gas_payable = self.account(name="Gas Payable", type=Account.TYPES.liability)
+        self.gas_payable = self.account(
+            name="Gas Payable", type=Account.TYPES.liability
+        )
 
     def test_utility_bill(self):
         # Month 1
@@ -157,10 +165,14 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         self.lia_elec_payable = self.account(
             name="Gas & Electricity Payable", parent=self.lia, code="2"
         )
-        self.lia_rates_payable = self.account(name="Council Tax Payable", parent=self.lia, code="3")
+        self.lia_rates_payable = self.account(
+            name="Council Tax Payable", parent=self.lia, code="3"
+        )
 
         self.inc = self.account(name="Income", type=T.income, code="2")
-        self.inc_housemate = self.account(name="Housemate Income", parent=self.inc, code="1")
+        self.inc_housemate = self.account(
+            name="Housemate Income", parent=self.inc, code="1"
+        )
         self.inc_housemate_1 = self.account(
             name="Housemate 1 Income", parent=self.inc_housemate, code="1"
         )
@@ -176,7 +188,9 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         self.ex_food = self.account(name="Food", parent=self.ex, code="4")
 
     def create_incoming_rent_payments(self, amount1, amount2):
-        statement_import = StatementImport.objects.create(bank_account=self.bank, source="csv")
+        statement_import = StatementImport.objects.create(
+            bank_account=self.bank, source="csv"
+        )
         line1 = StatementLine.objects.create(
             date="2016-01-01", statement_import=statement_import, amount=amount1
         )
@@ -188,7 +202,7 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         return (line1, line2)
 
     def test_one_month(self):
-        """ Test payments over the course of three months
+        """Test payments over the course of three months
 
         Costs are:
 
@@ -226,10 +240,16 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         # Create transaction for housemate1's payment
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-01-31")
-            Leg.objects.create(transaction=transaction, account=self.inc_housemate_1, amount=-620)
-            Leg.objects.create(transaction=transaction, account=self.ex_rent, amount=500)
+            Leg.objects.create(
+                transaction=transaction, account=self.inc_housemate_1, amount=-620
+            )
+            Leg.objects.create(
+                transaction=transaction, account=self.ex_rent, amount=500
+            )
             Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
-            Leg.objects.create(transaction=transaction, account=self.ex_rates, amount=30)
+            Leg.objects.create(
+                transaction=transaction, account=self.ex_rates, amount=30
+            )
             Leg.objects.create(transaction=transaction, account=self.ex_food, amount=70)
 
             line1.transaction = transaction
@@ -238,10 +258,16 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         # Create transaction for housemate2's payment
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-01-31")
-            Leg.objects.create(transaction=transaction, account=self.inc_housemate_2, amount=-620)
-            Leg.objects.create(transaction=transaction, account=self.ex_rent, amount=500)
+            Leg.objects.create(
+                transaction=transaction, account=self.inc_housemate_2, amount=-620
+            )
+            Leg.objects.create(
+                transaction=transaction, account=self.ex_rent, amount=500
+            )
             Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
-            Leg.objects.create(transaction=transaction, account=self.ex_rates, amount=30)
+            Leg.objects.create(
+                transaction=transaction, account=self.ex_rates, amount=30
+            )
             Leg.objects.create(transaction=transaction, account=self.ex_food, amount=70)
 
             line2.transaction = transaction

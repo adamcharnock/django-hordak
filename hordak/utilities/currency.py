@@ -43,30 +43,30 @@ Currency conversion makes use of Django's cache. It is therefore recommended tha
 
 """
 from __future__ import division
+
+import copy
+import datetime
 import logging
 from decimal import Decimal
 
 import babel.numbers
 import requests
-import datetime
-
 import six
-import copy
 from django.core.cache import cache
 from django.db import transaction as db_transaction
-from django.utils.translation import get_language
-from django.utils.translation import to_locale
+from django.utils.translation import get_language, to_locale
 from moneyed import Money
 from moneyed.localization import format_money
 
 from hordak import defaults
 from hordak.exceptions import (
-    LossyCalculationError,
     BalanceComparisonError,
-    TradingAccountRequiredError,
-    InvalidFeeCurrency,
     CannotSimplifyError,
+    InvalidFeeCurrency,
+    LossyCalculationError,
+    TradingAccountRequiredError,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ def currency_exchange(
     date=None,
     description=None,
 ):
-    """ Exchange funds from one currency to another
+    """Exchange funds from one currency to another
 
     Use this method to represent a real world currency transfer. Note this
     process doesn't care about exchange rates, only about the value
@@ -160,7 +160,7 @@ def currency_exchange(
 
     .. _test_currency.py: https://github.com/adamcharnock/django-hordak/blob/master/hordak/tests/utilities/test_currency.py
     """
-    from hordak.models import Account, Transaction, Leg
+    from hordak.models import Account, Leg, Transaction
 
     if trading_account.type != Account.TYPES.trading:
         raise TradingAccountRequiredError(
@@ -190,14 +190,20 @@ def currency_exchange(
             date=date or datetime.date.today(),
             description=description
             or "Exchange of {} to {}, incurring {} fees".format(
-                source_amount, destination_amount, "no" if fee_amount is None else fee_amount
+                source_amount,
+                destination_amount,
+                "no" if fee_amount is None else fee_amount,
             ),
         )
 
         # Source currency into trading account
-        Leg.objects.create(transaction=transaction, account=source, amount=source_amount)
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=-(source_amount - fee_amount)
+            transaction=transaction, account=source, amount=source_amount
+        )
+        Leg.objects.create(
+            transaction=transaction,
+            account=trading_account,
+            amount=-(source_amount - fee_amount),
         )
 
         # Any fees
@@ -213,13 +219,15 @@ def currency_exchange(
         Leg.objects.create(
             transaction=transaction, account=trading_account, amount=destination_amount
         )
-        Leg.objects.create(transaction=transaction, account=destination, amount=-destination_amount)
+        Leg.objects.create(
+            transaction=transaction, account=destination, amount=-destination_amount
+        )
 
     return transaction
 
 
 class BaseBackend(object):
-    """ Top-level exchange rate backend
+    """Top-level exchange rate backend
 
     This should be extended to hook into your preferred exchange rate service.
     The primary method which needs defining is :meth:`_get_rate()`.
@@ -239,7 +247,9 @@ class BaseBackend(object):
         Cache a rate for future use
         """
         if not self.is_supported(defaults.INTERNAL_CURRENCY):
-            logger.info('Tried to cache unsupported currency "{}". Ignoring.'.format(currency))
+            logger.info(
+                'Tried to cache unsupported currency "{}". Ignoring.'.format(currency)
+            )
         else:
             cache.set(_cache_key(currency, date), str(rate), _cache_timeout(date))
 
@@ -347,7 +357,9 @@ class FixerBackend(BaseBackend):
 class Converter(object):
     # TODO: Make configurable
 
-    def __init__(self, base_currency=defaults.INTERNAL_CURRENCY, backend=FixerBackend()):
+    def __init__(
+        self, base_currency=defaults.INTERNAL_CURRENCY, backend=FixerBackend()
+    ):
         self.base_currency = base_currency
         self.backend = backend
 
@@ -414,7 +426,9 @@ class Balance(object):
 
     def __str__(self):
         def fmt(money):
-            return babel.numbers.format_currency(money.amount, currency=money.currency.code)
+            return babel.numbers.format_currency(
+                money.amount, currency=money.currency.code
+            )
 
         return ", ".join(map(fmt, self._money_obs)) or "No values"
 
@@ -425,7 +439,9 @@ class Balance(object):
         if hasattr(currency, "code"):
             currency = currency.code
         elif not isinstance(currency, six.string_types) or len(currency) != 3:
-            raise ValueError("Currencies must be a string of length three, not {}".format(currency))
+            raise ValueError(
+                "Currencies must be a string of length three, not {}".format(currency)
+            )
 
         try:
             return self._by_currency[currency]
@@ -435,7 +451,9 @@ class Balance(object):
     def __add__(self, other):
         if not isinstance(other, Balance):
             raise TypeError(
-                "Can only add/subtract Balance instances, not Balance and {}.".format(type(other))
+                "Can only add/subtract Balance instances, not Balance and {}.".format(
+                    type(other)
+                )
             )
         by_currency = copy.deepcopy(self._by_currency)
         for other_currency, other_money in other._by_currency.items():

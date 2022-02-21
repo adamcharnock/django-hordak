@@ -31,7 +31,9 @@ class TransactionCsvImportFormTestCase(DataProvider, TestCase):
             file=self.f,
         )
         form = TransactionCsvImportForm(
-            data=dict(bank_account=self.account.pk), files=dict(file=self.f), instance=obj
+            data=dict(bank_account=self.account.pk),
+            files=dict(file=self.f),
+            instance=obj,
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()

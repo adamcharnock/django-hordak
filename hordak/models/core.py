@@ -21,20 +21,17 @@ Additionally, there are models which related to the import of external bank stat
 from django.contrib.postgres.fields.array import ArrayField
 from django.contrib.postgres.fields.jsonb import JSONField
 from django.db import models
-from django.utils import timezone
 from django.db import transaction as db_transaction
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
-from django.utils.translation import gettext_lazy as _
-from moneyed import Money
-
-from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from model_utils import Choices
+from moneyed import Money
+from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 
-from hordak import defaults
-from hordak import exceptions
-from hordak.defaults import MAX_DIGITS, DECIMAL_PLACES
-
+from hordak import defaults, exceptions
+from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 from hordak.utilities.currency import Balance
 
 
@@ -59,7 +56,7 @@ class AccountManager(TreeManager):
 
 
 class Account(MPTTModel):
-    """ Represents an account
+    """Represents an account
 
     An account may have a parent, and may have zero or more children. Only root
     accounts can have a type, all child accounts are assumed to have the same
@@ -87,13 +84,19 @@ class Account(MPTTModel):
 
     TYPES = Choices(
         ("AS", "asset", "Asset"),  # Eg. Cash in bank
-        ("LI", "liability", "Liability"),  # Eg. Loans, bills paid after the fact (in arrears)
+        (
+            "LI",
+            "liability",
+            "Liability",
+        ),  # Eg. Loans, bills paid after the fact (in arrears)
         ("IN", "income", "Income"),  # Eg. Sales, housemate contributions
         ("EX", "expense", "Expense"),  # Eg. Office supplies, paying bills
         ("EQ", "equity", "Equity"),  # Eg. Money from shares
         ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     name = models.CharField(max_length=50, verbose_name=_("name"))
     parent = TreeForeignKey(
         "self",
@@ -102,21 +105,32 @@ class Account(MPTTModel):
         related_name="children",
         db_index=True,
         on_delete=models.CASCADE,
-        verbose_name=_("parent")
+        verbose_name=_("parent"),
     )
     code = models.CharField(max_length=3, null=True, blank=True, verbose_name=_("code"))
-    full_code = models.CharField(max_length=100, db_index=True, unique=True, null=True, blank=True, verbose_name=_("full_code"))
+    full_code = models.CharField(
+        max_length=100,
+        db_index=True,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name=_("full_code"),
+    )
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
-    type = models.CharField(max_length=2, choices=TYPES, blank=True, verbose_name=_("type"))
+    type = models.CharField(
+        max_length=2, choices=TYPES, blank=True, verbose_name=_("type")
+    )
     is_bank_account = models.BooleanField(
         default=False,
         blank=True,
         help_text="Is this a bank account. This implies we can import bank "
         "statements into it and that it only supports a single currency",
-        verbose_name=_('is bank account')
+        verbose_name=_("is bank account"),
     )
-    currencies = ArrayField(models.CharField(max_length=3), db_index=True, verbose_name=_("currencies"))
+    currencies = ArrayField(
+        models.CharField(max_length=3), db_index=True, verbose_name=_("currencies")
+    )
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
 
@@ -125,7 +139,7 @@ class Account(MPTTModel):
 
     class Meta:
         unique_together = (("parent", "code"),)
-        verbose_name=_("account")
+        verbose_name = _("account")
 
     def __init__(self, *args, **kwargs):
         super(Account, self).__init__(*args, **kwargs)
@@ -168,10 +182,14 @@ class Account(MPTTModel):
     @classmethod
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
-        balances = [account.balance(raw=True) for account in Account.objects.root_nodes()]
+        balances = [
+            account.balance(raw=True) for account in Account.objects.root_nodes()
+        ]
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
-                "Account balances do not sum to zero. They sum to {}".format(sum(balances))
+                "Account balances do not sum to zero. They sum to {}".format(
+                    sum(balances)
+                )
             )
 
     def __str__(self):
@@ -304,7 +322,9 @@ class Account(MPTTModel):
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
             direction = -1
-        elif self.type == self.TYPES.liability and to_account.type == self.TYPES.expense:
+        elif (
+            self.type == self.TYPES.liability and to_account.type == self.TYPES.expense
+        ):
             # Transfers from liability -> asset accounts should reduce both.
             # For example, moving money from Rent Payable (liability) to your Rent (expense) account
             # should use the funds you've built up in the liability account to pay off the expense account.
@@ -313,8 +333,12 @@ class Account(MPTTModel):
             direction = 1
 
         transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount * direction)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount * direction)
+        Leg.objects.create(
+            transaction=transaction, account=self, amount=+amount * direction
+        )
+        Leg.objects.create(
+            transaction=transaction, account=to_account, amount=-amount * direction
+        )
         return transaction
 
 
@@ -324,7 +348,7 @@ class TransactionManager(models.Manager):
 
 
 class Transaction(models.Model):
-    """ Represents a transaction
+    """Represents a transaction
 
     A transaction is a movement of funds between two accounts. Each transaction
     will have two or more legs, each leg specifies an account and an amount.
@@ -361,20 +385,28 @@ class Transaction(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(
-        default=timezone.now, help_text="The creation date of this transaction object", verbose_name=_("timestamp")
+        default=timezone.now,
+        help_text="The creation date of this transaction object",
+        verbose_name=_("timestamp"),
     )
     date = models.DateField(
-        default=timezone.now, help_text="The date on which this transaction occurred", verbose_name=_("date")
+        default=timezone.now,
+        help_text="The date on which this transaction occurred",
+        verbose_name=_("date"),
     )
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
 
     objects = TransactionManager()
 
     class Meta:
         get_latest_by = "date"
-        verbose_name=_("transaction")
+        verbose_name = _("transaction")
 
     def balance(self):
         return self.legs.sum_to_balance()
@@ -385,8 +417,7 @@ class Transaction(models.Model):
 
 class LegQuerySet(models.QuerySet):
     def sum_to_balance(self):
-        """Sum the Legs of the QuerySet to get a `Balance`_ object
-        """
+        """Sum the Legs of the QuerySet to get a `Balance`_ object"""
         result = self.values("amount_currency").annotate(total=models.Sum("amount"))
         return Balance([Money(r["total"], r["amount_currency"]) for r in result])
 
@@ -405,7 +436,7 @@ class LegManager(models.Manager):
 
 
 class Leg(models.Model):
-    """ The leg of a transaction
+    """The leg of a transaction
 
     Represents a single amount either into or out of a transaction. All legs for a transaction
     must sum to zero, all legs must be of the same currency.
@@ -421,17 +452,31 @@ class Leg(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
-    transaction = models.ForeignKey(Transaction, related_name="legs", on_delete=models.CASCADE, verbose_name=_("transaction"))
-    account = models.ForeignKey(Account, related_name="legs", on_delete=models.CASCADE, verbose_name=_("account"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
+    transaction = models.ForeignKey(
+        Transaction,
+        related_name="legs",
+        on_delete=models.CASCADE,
+        verbose_name=_("transaction"),
+    )
+    account = models.ForeignKey(
+        Account,
+        related_name="legs",
+        on_delete=models.CASCADE,
+        verbose_name=_("account"),
+    )
     amount = MoneyField(
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Record debits as positive, credits as negative",
         default_currency=defaults.INTERNAL_CURRENCY,
-        verbose_name=_("amount")
+        verbose_name=_("amount"),
     )
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
 
     objects = LegManager.from_queryset(LegQuerySet)()
 
@@ -489,7 +534,7 @@ class Leg(models.Model):
         )
 
     class Meta:
-        verbose_name=_("Leg")
+        verbose_name = _("Leg")
 
 
 class StatementImportManager(models.Manager):
@@ -498,7 +543,7 @@ class StatementImportManager(models.Manager):
 
 
 class StatementImport(models.Model):
-    """ Records an import of a bank statement
+    """Records an import of a bank statement
 
     Attributes:
 
@@ -509,10 +554,17 @@ class StatementImport(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
-    bank_account = models.ForeignKey(Account, related_name="imports", on_delete=models.CASCADE, verbose_name=_("bank account"))
+    bank_account = models.ForeignKey(
+        Account,
+        related_name="imports",
+        on_delete=models.CASCADE,
+        verbose_name=_("bank account"),
+    )
     source = models.CharField(
         max_length=20,
         help_text="A value uniquely identifying where this data came from. "
@@ -521,8 +573,9 @@ class StatementImport(models.Model):
     )
     extra = JSONField(
         default=json_default,
-        help_text="Any extra data relating to the import, probably specific " "to the data source.",
-        verbose_name=_("extra")
+        help_text="Any extra data relating to the import, probably specific "
+        "to the data source.",
+        verbose_name=_("extra"),
     )
 
     objects = StatementImportManager()
@@ -531,7 +584,7 @@ class StatementImport(models.Model):
         return (self.uuid,)
 
     class Meta:
-        verbose_name=_("statementImport")
+        verbose_name = _("statementImport")
 
 
 class StatementLineManager(models.Manager):
@@ -540,7 +593,7 @@ class StatementLineManager(models.Manager):
 
 
 class StatementLine(models.Model):
-    """ Records an single imported bank statement line
+    """Records an single imported bank statement line
 
     A StatementLine is purely a utility to aid in the creation of transactions
     (in the process known as reconciliation). StatementLines have no impact on
@@ -561,14 +614,23 @@ class StatementLine(models.Model):
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     date = models.DateField(verbose_name=_("date"))
     statement_import = models.ForeignKey(
-        StatementImport, related_name="lines", on_delete=models.CASCADE, verbose_name=_("statement import")
+        StatementImport,
+        related_name="lines",
+        on_delete=models.CASCADE,
+        verbose_name=_("statement import"),
     )
-    amount = models.DecimalField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES, verbose_name=_("amount"))
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    amount = models.DecimalField(
+        max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES, verbose_name=_("amount")
+    )
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
     type = models.CharField(max_length=50, default="", verbose_name=_("type"))
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
@@ -582,7 +644,9 @@ class StatementLine(models.Model):
         verbose_name=_("transaction"),
     )
     source_data = JSONField(
-        default=json_default, help_text="Original data received from the data source.", verbose_name=_("source data")
+        default=json_default,
+        help_text="Original data received from the data source.",
+        verbose_name=_("source data"),
     )
 
     objects = StatementLineManager()
@@ -621,7 +685,9 @@ class StatementLine(models.Model):
         Leg.objects.create(
             transaction=transaction, account=from_account, amount=+(self.amount * -1)
         )
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-(self.amount * -1))
+        Leg.objects.create(
+            transaction=transaction, account=to_account, amount=-(self.amount * -1)
+        )
 
         transaction.date = self.date
         transaction.save()
@@ -631,4 +697,4 @@ class StatementLine(models.Model):
         return transaction
 
     class Meta:
-        verbose_name=_("statementLine")
+        verbose_name = _("statementLine")

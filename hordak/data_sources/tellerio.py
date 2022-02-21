@@ -1,7 +1,7 @@
-import django
-from uuid import UUID
 import datetime
+from uuid import UUID
 
+import django
 import requests
 from django.db import transaction
 
@@ -22,7 +22,9 @@ def do_import(token, account_uuid, bank_account, since=None):
     data = response.json()
 
     statement_import = StatementImport.objects.create(
-        source="teller.io", extra={"account_uuid": account_uuid}, bank_account=bank_account
+        source="teller.io",
+        extra={"account_uuid": account_uuid},
+        bank_account=bank_account,
     )
 
     for line_data in data:
@@ -34,7 +36,9 @@ def do_import(token, account_uuid, bank_account, since=None):
         if StatementLine.objects.filter(uuid=uuid_f):
             continue
 
-        description = ", ".join(filter(bool, [line_data["counterparty"], line_data["description"]]))
+        description = ", ".join(
+            filter(bool, [line_data["counterparty"], line_data["description"]])
+        )
         date = datetime.date(*map(int, line_data["date"].split("-")))
 
         if not since or date >= since:
