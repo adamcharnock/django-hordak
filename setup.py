@@ -29,7 +29,7 @@ setup(
         "py-moneyed>=0.6.0,<2.0",  # version limited to be installable with django-money
         "django-money>=0.9.1",
         "django-import-export>=0.5.0",
-        "babel>=2.5.1",
+        "babel>=2.9.1",
         'openpyxl<=2.6;python_version<"3.5"',
     ],
 )
