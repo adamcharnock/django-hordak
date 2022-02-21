@@ -1,5 +1,11 @@
 ----
 
+Version 1.10.1, Mon 21 Feb 2022
+================================
+
+* Updates for Django 4.0
+* Tested in Python 3.6 - 3.10, Django 2.2 - 4.0
+
 Version 1.10.0, Tue 21 Apr 2020
 ================================
 
