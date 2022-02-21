@@ -21,8 +21,8 @@ Requirements
 
 Hordak is `tested against`_:
 
- * Django >= 1.10, <= 2.0
- * Python >= 3.4
+ * Django >= 2.2, <= 4.0
+ * Python >= 3.6
  * Postgres >= 9.5
 
 Postgres is required, MySQL is unsupported. This is due to the database constraints we apply to
