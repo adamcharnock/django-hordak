@@ -22,7 +22,13 @@ Additionally, there are models which related to the import of external bank stat
 """
 
 from django.contrib.postgres.fields.array import ArrayField
-from django.contrib.postgres.fields.jsonb import JSONField
+
+
+try:
+    from django.db.models import JSONField
+except ImportError:
+    from django.contrib.postgres.fields.jsonb import JSONField
+
 from django.db import models
 from django.db import transaction as db_transaction
 from django.utils import timezone
