@@ -1,7 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 
-from hordak.views import accounts, statement_csv_import
-from hordak.views import transactions
+from hordak.views import accounts, statement_csv_import, transactions
+
 
 app_name = "hordak"
 
@@ -17,7 +17,9 @@ urlpatterns = [
         name="transactions_delete",
     ),
     path(
-        "transactions/currency/", transactions.CurrencyTradeView.as_view(), name="currency_trade"
+        "transactions/currency/",
+        transactions.CurrencyTradeView.as_view(),
+        name="currency_trade",
     ),
     path(
         "transactions/reconcile/",
@@ -36,7 +38,9 @@ urlpatterns = [
         name="transactions_unreconcile",
     ),
     path("", accounts.AccountListView.as_view(), name="accounts_list"),
-    path("accounts/create/", accounts.AccountCreateView.as_view(), name="accounts_create"),
+    path(
+        "accounts/create/", accounts.AccountCreateView.as_view(), name="accounts_create"
+    ),
     path(
         "accounts/update/<str:uuid>/",
         accounts.AccountUpdateView.as_view(),
@@ -47,7 +51,9 @@ urlpatterns = [
         accounts.AccountTransactionsView.as_view(),
         name="accounts_transactions",
     ),
-    path("import/", statement_csv_import.CreateImportView.as_view(), name="import_create"),
+    path(
+        "import/", statement_csv_import.CreateImportView.as_view(), name="import_create"
+    ),
     path(
         "import/<str:uuid>/setup/",
         statement_csv_import.SetupImportView.as_view(),

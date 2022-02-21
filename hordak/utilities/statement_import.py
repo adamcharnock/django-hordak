@@ -1,4 +1,3 @@
-
 DATE_FORMATS = (
     ("%d-%m-%Y", "dd-mm-yyyy"),
     ("%d/%m/%Y", "dd/mm/yyyy"),

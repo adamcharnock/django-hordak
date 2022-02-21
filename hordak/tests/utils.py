@@ -40,13 +40,15 @@ class DataProvider(object):
         currencies=("EUR",),
         **kwargs
     ):
-        """ Utility for creating accounts for use in test cases
+        """Utility for creating accounts for use in test cases
 
         Returns:
             Account
         """
         name = name or "Account {}".format(Account.objects.count() + 1)
-        code = code if code is not None else Account.objects.filter(parent=parent).count()
+        code = (
+            code if code is not None else Account.objects.filter(parent=parent).count()
+        )
 
         return Account.objects.create(
             name=name,
@@ -74,16 +76,23 @@ class DataProvider(object):
 
 class BalanceUtils(object):
     def assertBalanceEqual(self, balance, value):
-        assert not isinstance(
-            value, Balance
-        ), "The second argument to assertBalanceEqual() should be a regular " "integer/Decimal type, not a Balance object. If you wish to compare " "two Balance objects then use assertEqual()"
+        assert not isinstance(value, Balance), (
+            "The second argument to assertBalanceEqual() should be a regular "
+            "integer/Decimal type, not a Balance object. If you wish to compare "
+            "two Balance objects then use assertEqual()"
+        )
 
         monies = balance.monies()
-        assert len(monies) in (0, 1), "Can only compare balances which contain a single currency"
+        assert len(monies) in (
+            0,
+            1,
+        ), "Can only compare balances which contain a single currency"
         if not monies and value == 0:
             # Allow comparing balances without a currency to zero
             return
 
-        assert len(monies) == 1, "Can only compare balances which contain a single currency"
+        assert (
+            len(monies) == 1
+        ), "Can only compare balances which contain a single currency"
         balance_amount = balance.monies()[0].amount
         assert balance_amount == value, "Balance {} != {}".format(balance_amount, value)

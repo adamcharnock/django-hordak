@@ -43,7 +43,9 @@ class Command(BaseCommand):
         if accounts_exist:
             if force:
                 self.stdout.write(
-                    self.style.WARNING("Accounts exist, continuing regardless due to --force")
+                    self.style.WARNING(
+                        "Accounts exist, continuing regardless due to --force"
+                    )
                 )
             else:
                 raise CommandError(
@@ -59,14 +61,22 @@ class Command(BaseCommand):
         # Root accounts (level 0)
         T = Account.TYPES
         assets = Account.objects.create(name="Assets", code="1", type=T.asset, **kw)
-        liabilities = Account.objects.create(name="Liabilities", code="2", type=T.liability, **kw)
+        liabilities = Account.objects.create(
+            name="Liabilities", code="2", type=T.liability, **kw
+        )
         equity = Account.objects.create(name="Equity", code="3", type=T.equity, **kw)
         income = Account.objects.create(name="Income", code="4", type=T.income, **kw)
-        expenses = Account.objects.create(name="Expenses", code="5", type=T.expense, **kw)
+        expenses = Account.objects.create(
+            name="Expenses", code="5", type=T.expense, **kw
+        )
 
         # Asset accounts (level 1)
-        assets_current = Account.objects.create(parent=assets, name="Current", code="0", **kw)
-        assets_fixed = Account.objects.create(parent=assets, name="Fixed", code="1", **kw)
+        assets_current = Account.objects.create(
+            parent=assets, name="Current", code="0", **kw
+        )
+        assets_fixed = Account.objects.create(
+            parent=assets, name="Fixed", code="1", **kw
+        )
 
         # Asset accounts (level 2)
         assets_current_cash = Account.objects.create(
@@ -81,7 +91,9 @@ class Command(BaseCommand):
 
         # Asset accounts (level 3)
         Account.objects.create(parent=assets_current_cash, name="Bank", code="0", **kw)
-        Account.objects.create(parent=assets_current_cash, name="Petty Cash", code="9", **kw)
+        Account.objects.create(
+            parent=assets_current_cash, name="Petty Cash", code="9", **kw
+        )
 
         # Liabilities (level 1)
         liability_current = Account.objects.create(
@@ -92,16 +104,28 @@ class Command(BaseCommand):
         )
 
         # Liabilities (level 2)
-        Account.objects.create(parent=liability_current, name="Accounts Payable", code="0", **kw)
-        Account.objects.create(parent=liability_current, name="Accruals", code="1", **kw)
-        Account.objects.create(parent=liability_current, name="Income in Advance", code="2", **kw)
+        Account.objects.create(
+            parent=liability_current, name="Accounts Payable", code="0", **kw
+        )
+        Account.objects.create(
+            parent=liability_current, name="Accruals", code="1", **kw
+        )
+        Account.objects.create(
+            parent=liability_current, name="Income in Advance", code="2", **kw
+        )
 
-        Account.objects.create(parent=liability_non_current, name="Loan", code="0", **kw)
+        Account.objects.create(
+            parent=liability_non_current, name="Loan", code="0", **kw
+        )
 
         # Equity (level 1)
-        Account.objects.create(parent=equity, name="Capital - Ordinary Shares", code="0", **kw)
+        Account.objects.create(
+            parent=equity, name="Capital - Ordinary Shares", code="0", **kw
+        )
         Account.objects.create(parent=equity, name="Retained Earnings", code="1", **kw)
-        Account.objects.create(parent=equity, name="Order Funds Introduced", code="2", **kw)
+        Account.objects.create(
+            parent=equity, name="Order Funds Introduced", code="2", **kw
+        )
         Account.objects.create(parent=equity, name="Order Drawings", code="3", **kw)
 
         # Income (level 1)
@@ -110,21 +134,39 @@ class Command(BaseCommand):
         Account.objects.create(parent=income, name="Other Charges", code="10", **kw)
 
         # Expenses (level 1)
-        expense_direct = Account.objects.create(parent=expenses, name="Direct", code="0", **kw)
-        expense_overhead = Account.objects.create(parent=expenses, name="Overhead", code="1", **kw)
+        expense_direct = Account.objects.create(
+            parent=expenses, name="Direct", code="0", **kw
+        )
+        expense_overhead = Account.objects.create(
+            parent=expenses, name="Overhead", code="1", **kw
+        )
 
         # Expenses (level 2)
-        Account.objects.create(parent=expense_direct, name="Direct Wages", code="0", **kw)
-        Account.objects.create(parent=expense_direct, name="Direct Expenses", code="1", **kw)
+        Account.objects.create(
+            parent=expense_direct, name="Direct Wages", code="0", **kw
+        )
+        Account.objects.create(
+            parent=expense_direct, name="Direct Expenses", code="1", **kw
+        )
 
         Account.objects.create(
             parent=expense_overhead, name="Accountancy & Audit Fees", code="01", **kw
         )
-        Account.objects.create(parent=expense_overhead, name="Bank Fees", code="05", **kw)
-        Account.objects.create(parent=expense_overhead, name="Cleaning", code="10", **kw)
-        Account.objects.create(parent=expense_overhead, name="Consulting", code="15", **kw)
-        Account.objects.create(parent=expense_overhead, name="Depreciation", code="20", **kw)
-        Account.objects.create(parent=expense_overhead, name="IT Services", code="25", **kw)
+        Account.objects.create(
+            parent=expense_overhead, name="Bank Fees", code="05", **kw
+        )
+        Account.objects.create(
+            parent=expense_overhead, name="Cleaning", code="10", **kw
+        )
+        Account.objects.create(
+            parent=expense_overhead, name="Consulting", code="15", **kw
+        )
+        Account.objects.create(
+            parent=expense_overhead, name="Depreciation", code="20", **kw
+        )
+        Account.objects.create(
+            parent=expense_overhead, name="IT Services", code="25", **kw
+        )
         Account.objects.create(
             parent=expense_overhead, name="IT Software & Consumables", code="30", **kw
         )
@@ -132,5 +174,7 @@ class Command(BaseCommand):
             parent=expense_overhead, name="Repairs & Maintenance", code="35", **kw
         )
         Account.objects.create(parent=expense_overhead, name="Travel", code="40", **kw)
-        Account.objects.create(parent=expense_overhead, name="Corporation Tax", code="45", **kw)
+        Account.objects.create(
+            parent=expense_overhead, name="Corporation Tax", code="45", **kw
+        )
         Account.objects.create(parent=expense_overhead, name="Rates", code="50", **kw)

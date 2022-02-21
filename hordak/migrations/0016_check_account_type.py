@@ -6,9 +6,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    """ Set child accounts to have the same type as their parent
-
-    """
+    """Set child accounts to have the same type as their parent"""
 
     dependencies = [("hordak", "0015_auto_20170302_2109")]
 

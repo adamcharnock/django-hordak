@@ -1,56 +1,55 @@
+from django import forms
 from django.contrib import admin
 from django.db import transaction as db_transaction
-from django import forms
 from django.db.models import Sum
-
 from mptt.admin import MPTTModelAdmin
 
-from hordak.models import TransactionCsvImportColumn, TransactionCsvImport
+from hordak.models import TransactionCsvImport, TransactionCsvImportColumn
+
 from . import models
 
 
 @admin.register(models.Account)
 class AccountAdmin(MPTTModelAdmin):
     list_display = ("name", "code_", "type_", "balance")
-    readonly_fields = (
-        "balance",
-    )
-    raw_id_fields = (
-        'parent',
-    )
+    readonly_fields = ("balance",)
+    raw_id_fields = ("parent",)
     search_fields = (
-        'code',
-        'full_code',
-        'name',
+        "code",
+        "full_code",
+        "name",
     )
-    list_filter = (
-        'type',
-    )
+    list_filter = ("type",)
 
     def balance(self, obj):
         return obj.balance()
+
     balance.admin_order_field = "balance_sum"
 
     def get_queryset(self, *args, **kwargs):
-        return super().get_queryset(*args, **kwargs).annotate(balance_sum=Sum('legs__amount'))
+        return (
+            super()
+            .get_queryset(*args, **kwargs)
+            .annotate(balance_sum=Sum("legs__amount"))
+        )
 
     def code_(self, obj):
         if obj.is_leaf_node():
             return obj.full_code or "-"
         else:
             return ""
+
     code_.admin_order_field = "full_code"
 
     def type_(self, obj):
         return models.Account.TYPES[obj.type]
+
     type_.admin_order_field = "type"
 
 
 class LegInline(admin.TabularInline):
     model = models.Leg
-    raw_id_fields = (
-        "account",
-    )
+    raw_id_fields = ("account",)
     extra = 0
 
 
@@ -65,9 +64,7 @@ class TransactionAdmin(admin.ModelAdmin):
         "uuid",
     ]
     readonly_fields = ("timestamp",)
-    search_fields = (
-        "legs__account__name",
-    )
+    search_fields = ("legs__account__name",)
     inlines = [LegInline]
 
     def debited_accounts(self, obj):
@@ -82,7 +79,7 @@ class TransactionAdmin(admin.ModelAdmin):
 
 @admin.register(models.Leg)
 class LegAdmin(admin.ModelAdmin):
-    list_display = ['id', 'uuid', 'transaction', 'account', 'amount', 'description']
+    list_display = ["id", "uuid", "transaction", "account", "amount", "description"]
     search_fields = (
         "account__name",
         "account__id",
@@ -90,7 +87,7 @@ class LegAdmin(admin.ModelAdmin):
     )
     raw_id_fields = (
         "account",
-        'transaction',
+        "transaction",
     )
 
 

@@ -10,5 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [("hordak", "0016_check_account_type")]
 
     operations = [
-        migrations.AlterModelOptions(name="transaction", options={"get_latest_by": "date"})
+        migrations.AlterModelOptions(
+            name="transaction", options={"get_latest_by": "date"}
+        )
     ]

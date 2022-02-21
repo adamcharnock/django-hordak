@@ -21,12 +21,15 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         logging.disable(logging.INFO)
 
     def makeResource(self):
-        statement_import = StatementImport.objects.create(bank_account=self.account, source="csv")
+        statement_import = StatementImport.objects.create(
+            bank_account=self.account, source="csv"
+        )
         return StatementLineResource("%d/%m/%Y", statement_import)
 
     def test_import_one(self):
         dataset = tablib.Dataset(
-            ["15/6/2016", "5.10", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "5.10", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         self.makeResource().import_data(dataset)
 
@@ -38,7 +41,8 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
 
     def test_import_skip_duplicates(self):
         dataset = tablib.Dataset(
-            ["15/6/2016", "5.10", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "5.10", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         self.makeResource().import_data(dataset)
         # Now do the import again
@@ -49,7 +53,8 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
 
     def test_import_skip_duplicates_whitespace(self):
         dataset1 = tablib.Dataset(
-            ["15/6/2016", "5.10", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "5.10", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         dataset2 = tablib.Dataset(
             ["15/6/2016", "5.10", "Example payment "],  # Whitespace added
@@ -155,7 +160,9 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
         self.assertEqual(obj[2].description, "Example payment 2")
 
     def test_error_no_date(self):
-        dataset = tablib.Dataset(["5.10", "Example payment"], headers=["amount", "description"])
+        dataset = tablib.Dataset(
+            ["5.10", "Example payment"], headers=["amount", "description"]
+        )
         result = self.makeResource().import_data(dataset)
         self.assertEqual(len(result.row_errors()), 1)
         self.assertIn("No date", str(result.row_errors()[0][1][0].error))
@@ -179,7 +186,8 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
 
     def test_error_empty_amount(self):
         dataset = tablib.Dataset(
-            ["15/6/2016", "", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         result = self.makeResource().import_data(dataset)
         self.assertEqual(len(result.row_errors()), 1)
@@ -223,21 +231,25 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
 
     def test_error_invalid_amount(self):
         dataset = tablib.Dataset(
-            ["15/6/2016", "a", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "a", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         result = self.makeResource().import_data(dataset)
         self.assertEqual(len(result.row_errors()), 1)
         self.assertIn("Invalid", str(result.row_errors()[0][1][0].error))
 
     def test_error_no_amount(self):
-        dataset = tablib.Dataset(["15/6/2016", "Example payment"], headers=["date", "description"])
+        dataset = tablib.Dataset(
+            ["15/6/2016", "Example payment"], headers=["date", "description"]
+        )
         result = self.makeResource().import_data(dataset)
         self.assertEqual(len(result.row_errors()), 1)
         self.assertIn("No amount", str(result.row_errors()[0][1][0].error))
 
     def test_error_zero_amount(self):
         dataset = tablib.Dataset(
-            ["15/6/2016", "0", "Example payment"], headers=["date", "amount", "description"]
+            ["15/6/2016", "0", "Example payment"],
+            headers=["date", "amount", "description"],
         )
         result = self.makeResource().import_data(dataset)
         self.assertEqual(len(result.row_errors()), 1)

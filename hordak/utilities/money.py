@@ -2,8 +2,9 @@ from decimal import Decimal
 
 from hordak.defaults import DECIMAL_PLACES
 
+
 def ratio_split(amount, ratios):
-    """ Split in_value according to the ratios specified in `ratios`
+    """Split in_value according to the ratios specified in `ratios`
 
     This is special in that it ensures the returned values always sum to
     in_value (i.e. we avoid losses or gains due to rounding errors). As a
@@ -33,14 +34,14 @@ def ratio_split(amount, ratios):
     """
     precision = Decimal(10) ** Decimal(-DECIMAL_PLACES)
     assert amount == amount.quantize(precision)
-    
+
     # Distribute the amount according to the ratios:
     ratio_total = sum(ratios)
     values = [amount * ratio / ratio_total for ratio in ratios]
 
     # Now round the values to the desired number of decimal places:
     rounded = [v.quantize(precision) for v in values]
-    
+
     # The rounded values may not add up to the exact amount.
     # Use the Largest Remainder algorithm to distribute the
     # difference between participants with non-zero ratios:
@@ -53,7 +54,7 @@ def ratio_split(amount, ratios):
             rounded[p] -= precision
         else:
             break
-    
+
     assert sum(rounded) == amount
 
     return rounded

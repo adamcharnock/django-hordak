@@ -4,8 +4,8 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
 
-from hordak.models import Account, Leg
 from hordak.forms import accounts as account_forms
+from hordak.models import Account, Leg
 
 
 class AccountListView(LoginRequiredMixin, ListView):

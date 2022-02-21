@@ -1,12 +1,15 @@
 from __future__ import absolute_import
+
 import logging
+from decimal import Decimal
 
 import babel.numbers
 from django import template
 from django.utils.safestring import mark_safe
-from hordak.utilities.currency import Balance
 from moneyed import Money
-from decimal import Decimal
+
+from hordak.utilities.currency import Balance
+
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -35,7 +38,9 @@ def currency(value):
             locale_value = babel.numbers.format_currency(
                 abs(money.amount), currency=money.currency.code
             )
-            locale_value = locale_value if money.amount >= 0 else "({})".format(locale_value)
+            locale_value = (
+                locale_value if money.amount >= 0 else "({})".format(locale_value)
+            )
             locale_values.append(locale_value)
     else:
         locale_value = babel.numbers.format_decimal(abs(value))
@@ -85,10 +90,14 @@ def valid_numeric(arg):
 
 def handle_float_decimal_combinations(value, arg, operation):
     if isinstance(value, float) and isinstance(arg, Decimal):
-        logger.warning("Unsafe operation: {0!r} {1} {2!r}.".format(value, operation, arg))
+        logger.warning(
+            "Unsafe operation: {0!r} {1} {2!r}.".format(value, operation, arg)
+        )
         value = Decimal(str(value))
     if isinstance(value, Decimal) and isinstance(arg, float):
-        logger.warning("Unsafe operation: {0!r} {1} {2!r}.".format(value, operation, arg))
+        logger.warning(
+            "Unsafe operation: {0!r} {1} {2!r}.".format(value, operation, arg)
+        )
         arg = Decimal(str(arg))
     return value, arg
 

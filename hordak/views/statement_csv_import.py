@@ -3,11 +3,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, UpdateView, DetailView
+from django.views.generic import CreateView, DetailView, UpdateView
 
 from hordak.forms.statement_csv_import import (
-    TransactionCsvImportForm,
     TransactionCsvImportColumnFormSet,
+    TransactionCsvImportForm,
 )
 from hordak.models import TransactionCsvImport
 from hordak.resources import StatementLineResource
@@ -58,7 +58,9 @@ class SetupImportView(LoginRequiredMixin, UpdateView):
         return HttpResponseRedirect(self.get_success_url())
 
     def form_invalid(self, form, formset):
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+        return self.render_to_response(
+            self.get_context_data(form=form, formset=formset)
+        )
 
     def get_success_url(self):
         return reverse("hordak:import_dry_run", args=[self.object.uuid])

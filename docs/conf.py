@@ -20,12 +20,14 @@
 import os
 import sys
 
+
 # sys.path.insert(0, os.path.abspath('.'))
 
 hordak_dir = os.path.abspath("..")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.settings")
 sys.path.insert(0, hordak_dir)
 import django
+
 
 django.setup()
 
@@ -92,6 +94,7 @@ todo_include_todos = False
 #
 import sphinx_rtd_theme
 
+
 html_theme = "sphinx_rtd_theme"
 
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
@@ -135,7 +138,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "DjangoHordak.tex", "Django Hordak Documentation", "Adam Charnock", "manual")
+    (
+        master_doc,
+        "DjangoHordak.tex",
+        "Django Hordak Documentation",
+        "Adam Charnock",
+        "manual",
+    )
 ]
 
 

@@ -19,17 +19,33 @@ class TransactionCsvImport(models.Model):
         ("done", "Import complete"),
     )
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
-    timestamp = models.DateTimeField(default=timezone.now, editable=False, verbose_name=_("timestamp"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now, editable=False, verbose_name=_("timestamp")
+    )
     has_headings = models.BooleanField(
         default=True, verbose_name=_("First line of file contains headings")
     )
-    file = models.FileField(upload_to="transaction_imports", verbose_name=_("CSV file to import"))
-    state = models.CharField(max_length=20, choices=STATES, default="pending", verbose_name=_("state"))
-    date_format = models.CharField(
-        choices=DATE_FORMATS, max_length=50, default="%d-%m-%Y", null=False, verbose_name=_("date format")
+    file = models.FileField(
+        upload_to="transaction_imports", verbose_name=_("CSV file to import")
     )
-    hordak_import = models.ForeignKey("hordak.StatementImport", on_delete=models.CASCADE,verbose_name=_("hordak import"))
+    state = models.CharField(
+        max_length=20, choices=STATES, default="pending", verbose_name=_("state")
+    )
+    date_format = models.CharField(
+        choices=DATE_FORMATS,
+        max_length=50,
+        default="%d-%m-%Y",
+        null=False,
+        verbose_name=_("date format"),
+    )
+    hordak_import = models.ForeignKey(
+        "hordak.StatementImport",
+        on_delete=models.CASCADE,
+        verbose_name=_("hordak import"),
+    )
 
     def _get_csv_reader(self):
         # TODO: Refactor to support multiple readers (xls, quickbooks, etc)
@@ -82,13 +98,14 @@ class TransactionCsvImport(models.Model):
 
         data = list(reader)
         headers = [
-            column.to_field or "col_%s" % column.column_number for column in self.columns.all()
+            column.to_field or "col_%s" % column.column_number
+            for column in self.columns.all()
         ]
         return Dataset(*data, headers=headers)
 
 
 class TransactionCsvImportColumn(models.Model):
-    """ Represents a column in an imported CSV file
+    """Represents a column in an imported CSV file
 
     Stores information regarding how we map to the data in the column
     to our hordak.StatementLine models.
@@ -104,15 +121,27 @@ class TransactionCsvImportColumn(models.Model):
     )
 
     transaction_import = models.ForeignKey(
-        TransactionCsvImport, related_name="columns", on_delete=models.CASCADE, verbose_name=_("transaction import")
+        TransactionCsvImport,
+        related_name="columns",
+        on_delete=models.CASCADE,
+        verbose_name=_("transaction import"),
     )
     column_number = models.PositiveSmallIntegerField(verbose_name=_("column number"))
-    column_heading = models.CharField(max_length=100, default="", blank=True, verbose_name=_("Column"))
+    column_heading = models.CharField(
+        max_length=100, default="", blank=True, verbose_name=_("Column")
+    )
     # TODO: Create a constraint to limit to_field to only valid values
     to_field = models.CharField(
-        max_length=20, blank=True, default=None, null=True, choices=TO_FIELDS, verbose_name=_("Is")
+        max_length=20,
+        blank=True,
+        default=None,
+        null=True,
+        choices=TO_FIELDS,
+        verbose_name=_("Is"),
     )
-    example = models.CharField(max_length=200, blank=True, default="", null=False,verbose_name=_("example"))
+    example = models.CharField(
+        max_length=200, blank=True, default="", null=False, verbose_name=_("example")
+    )
 
     class Meta:
         unique_together = (
@@ -120,7 +149,7 @@ class TransactionCsvImportColumn(models.Model):
             ("transaction_import", "column_number"),
         )
         ordering = ["transaction_import", "column_number"]
-        verbose_name=_("transactionCsvImportColumn")
+        verbose_name = _("transactionCsvImportColumn")
 
     def save(self, *args, **kwargs):
         if not self.to_field:

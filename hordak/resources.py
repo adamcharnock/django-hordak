@@ -92,7 +92,9 @@ class StatementLineResource(resources.ModelResource):
             date = datetime.strptime(data[F.date], self.date_format).date()
         except ValueError:
             raise ValueError(
-                "Invalid value for date. Expected {}".format(dict(DATE_FORMATS)[self.date_format])
+                "Invalid value for date. Expected {}".format(
+                    dict(DATE_FORMATS)[self.date_format]
+                )
             )
 
         description = data[F.description]
