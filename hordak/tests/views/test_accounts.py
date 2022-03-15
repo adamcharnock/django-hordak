@@ -1,9 +1,39 @@
+import django
 from django.test import TestCase
 from django.urls import reverse
 
 from hordak.forms.accounts import AccountForm
-from hordak.models import Account
+from hordak.models import Account, Leg, Transaction
 from hordak.tests.utils import DataProvider
+
+
+class AccountTransactionsViewTestCase(DataProvider, TestCase):
+    def setUp(self):
+        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.income_account = self.account(
+            is_bank_account=False, type=Account.TYPES.income
+        )
+        transaction = Transaction.objects.create()
+        Leg.objects.create(
+            amount=-10, account=self.bank_account, transaction=transaction
+        )
+        Leg.objects.create(
+            amount=10, account=self.income_account, transaction=transaction
+        )
+
+        self.view_url = reverse(
+            "hordak:accounts_transactions", kwargs={"uuid": self.bank_account.uuid}
+        )
+        self.login()
+
+    def test_get(self):
+        response = self.client.get(self.view_url)
+        # Tests needs to be run with LANG="US" environment variable
+        self.assertContains(response, "<td>€10.00</td>", html=True)
+        if django.VERSION >= (3, 0, 0):
+            self.assertContains(response, "<h5>Balance: €&nbsp;10.00</h5>", html=True)
+        else:  # Django 2.2
+            self.assertContains(response, "<h5>Balance: € 10.00</h5>", html=True)
 
 
 class AccountListViewTestCase(DataProvider, TestCase):
