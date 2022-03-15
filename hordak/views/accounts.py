@@ -1,6 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls.base import reverse_lazy
-from django.views import View
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.list import ListView
@@ -78,7 +77,8 @@ class AccountUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("hordak:accounts_list")
 
 
-class AccountTransactionsView(LoginRequiredMixin, SingleObjectMixin, View):
+# TODO: remove ignore comment once https://github.com/typeddjango/django-stubs/issues/873 is fixed
+class AccountTransactionsView(LoginRequiredMixin, SingleObjectMixin, ListView):  # type: ignore
     template_name = "hordak/accounts/account_transactions.html"
     model = Leg
     slug_field = "uuid"
