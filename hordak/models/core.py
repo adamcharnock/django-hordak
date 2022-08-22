@@ -446,6 +446,9 @@ class LegManager(models.Manager):
         return self.filter(amount__lt=0)
 
 
+CustomLegManager = LegManager.from_queryset(LegQuerySet)
+
+
 class Leg(models.Model):
     """The leg of a transaction
 
@@ -489,7 +492,7 @@ class Leg(models.Model):
         default="", blank=True, verbose_name=_("description")
     )
 
-    objects = LegManager.from_queryset(LegQuerySet)()
+    objects = CustomLegManager()
 
     def save(self, *args, **kwargs):
         if self.amount.amount == 0:
