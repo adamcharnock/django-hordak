@@ -22,9 +22,11 @@ jobs:
         
     strategy:
       matrix:
-        DJANGO_VERSION: [ '2.2.*', '3.0.*', '3.1.*', '3.2.*', '4.0.*']
+        DJANGO_VERSION: [ '2.2.*', '3.0.*', '3.1.*', '3.2.*', '4.0.*', '4.1.*']
         python-version: ['3.7', '3.8', '3.9', '3.10']
         exclude:
+          - DJANGO_VERSION: '4.1.*'
+            python-version: '3.7'
           - DJANGO_VERSION: '4.0.*'
             python-version: '3.7'
       fail-fast: false
@@ -67,15 +69,8 @@ jobs:
         run: |
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
           PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
-          case "${{ matrix.DJANGO_VERSION }},${{ matrix.python-version }}" in
-            "2.2.*,3.10"|"3.0.*,3.10"|"3.1.*,3.10")  # Django runs with warnings in this python version
-              PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
-              ;;
-            *)
-              # Run with -W error::DeprecationWarning once django-money doesn't raise deprecation warnings
-              PYTHONPATH=`pwd` python -Wall -m coverage run --source=hordak ./manage.py test hordak
-              ;;
-          esac
+          # Run with -W error::DeprecationWarning once django-money doesn't raise deprecation warnings
+          PYTHONPATH=`pwd` python -Wall -m coverage run --source=hordak ./manage.py test hordak
           coverage xml && codecov
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost/postgres"
