@@ -69,8 +69,7 @@ jobs:
         run: |
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
           PYTHONPATH=`pwd` coverage run --source=hordak ./manage.py test hordak
-          # Run with -W error::DeprecationWarning once django-money doesn't raise deprecation warnings
-          PYTHONPATH=`pwd` python -Wall -m coverage run --source=hordak ./manage.py test hordak
+          PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --source=hordak ./manage.py test hordak
           coverage xml && codecov
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost/postgres"
