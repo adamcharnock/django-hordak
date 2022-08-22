@@ -1,8 +1,23 @@
 #!/usr/bin/env python
 
+import re
 from os.path import exists
 
 from setuptools import find_packages, setup
+
+
+def parse_requirements(file_name):
+    requirements = []
+    for line in open(file_name, "r").read().split("\n"):
+        if re.match(r"(\s*#)|(\s*$)", line):
+            continue
+        if re.match(r"\s*-e\s+", line):
+            requirements.append(re.sub(r"\s*-e\s+.*#egg=(.*)$", r"\1", line))
+        elif re.match(r"(\s*git)|(\s*hg)", line):
+            pass
+        else:
+            requirements.append(line)
+    return requirements
 
 
 setup(
@@ -17,19 +32,5 @@ setup(
     description="Double entry book keeping in Django",
     long_description=open("README.rst").read() if exists("README.rst") else "",
     include_package_data=True,
-    install_requires=[
-        "django>=1.10",
-        "django-mptt>=0.8",
-        "django-model-utils>=2.5.0",
-        "dj-database-url>=0.4.1",
-        "psycopg2-binary>=2.6.2",
-        "django-extensions>=1.7.3",
-        "django-smalluuid>=1.2.1",
-        "requests>=2",
-        "py-moneyed>=0.6.0,<2.0",  # version limited to be installable with django-money
-        "django-money>=0.9.1",
-        "django-import-export>=0.5.0",
-        "babel>=2.9.1",
-        'openpyxl<=2.6;python_version<"3.5"',
-    ],
+    install_requires=parse_requirements("requirements.txt"),
 )
