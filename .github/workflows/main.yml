@@ -77,9 +77,13 @@ jobs:
 
           case "${{ matrix.DJANGO_VERSION }}" in "4.0.*")  # Django 4.0 throws deprecation warning because of django-extensions
               PYTHONPATH=`pwd` coverage run ./manage.py test hordak
+              pip install -e .[subqueries]
+              PYTHONPATH=`pwd` coverage run --append ./manage.py test hordak  # Test with subquery
               ;;
             *)
               PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
+              pip install -e .[subqueries]
+              PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
               ;;
           esac
           coverage xml && codecov
