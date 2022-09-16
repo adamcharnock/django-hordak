@@ -1,26 +1,17 @@
 from __future__ import division
 
 from datetime import date
+from decimal import Decimal
+from unittest.mock import patch
 
-import six
+import requests_mock
+from django.core.cache import cache
+from django.test import TestCase, override_settings
 from moneyed import Money
 
 from hordak.exceptions import LossyCalculationError
 from hordak.models import Account
 from hordak.tests.utils import BalanceUtils, DataProvider
-
-
-if six.PY2:
-    from mock import patch
-else:
-    from unittest.mock import patch
-
-from decimal import Decimal
-
-import requests_mock
-from django.core.cache import cache
-from django.test import TestCase, override_settings
-
 from hordak.utilities.currency import (
     Balance,
     BaseBackend,

@@ -1,4 +1,3 @@
-import six
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
@@ -10,10 +9,8 @@ class TransactionCsvImportTestCase(DataProvider, TestCase):
     def test_create_columns_ok(self):
         f = SimpleUploadedFile(
             "data.csv",
-            six.binary_type(
-                b"Number,Date,Account,Amount,Subcategory,Memo\n"
-                b"1,1/1/1,123456789,123,OTH,Some random notes"
-            ),
+            b"Number,Date,Account,Amount,Subcategory,Memo\n"
+            b"1,1/1/1,123456789,123,OTH,Some random notes",
         )
 
         inst = TransactionCsvImport.objects.create(

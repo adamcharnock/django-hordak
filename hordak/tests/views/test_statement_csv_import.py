@@ -1,6 +1,5 @@
 import logging
 
-import six
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -25,10 +24,8 @@ class DryRunViewTestCase(DataProvider, TestCase):
     def create_import(self, year=b"2000"):
         f = SimpleUploadedFile(
             "data.csv",
-            six.binary_type(
-                b"Number,Date,Account,Amount,Subcategory,Memo\n"
-                b"1,1/1/" + year + b",123456789,123,OTH,Some random notes"
-            ),
+            b"Number,Date,Account,Amount,Subcategory,Memo\n"
+            b"1,1/1/" + year + b",123456789,123,OTH,Some random notes",
         )
         self.transaction_import = TransactionCsvImport.objects.create(
             has_headings=True,
@@ -95,10 +92,8 @@ class ExecuteViewTestCase(DataProvider, TestCase):
     def create_import(self, year=b"2000"):
         f = SimpleUploadedFile(
             "data.csv",
-            six.binary_type(
-                b"Number,Date,Account,Amount,Subcategory,Memo\n"
-                b"1,1/1/" + year + b",123456789,123,OTH,Some random notes"
-            ),
+            b"Number,Date,Account,Amount,Subcategory,Memo\n"
+            b"1,1/1/" + year + b",123456789,123,OTH,Some random notes",
         )
         self.transaction_import = TransactionCsvImport.objects.create(
             has_headings=True,
