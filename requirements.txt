@@ -7,6 +7,6 @@ django-extensions>=1.7.3
 django-smalluuid>=1.2.1
 requests>=2
 django-money>=0.9.1
-django-import-export>=0.5.0,<3.0.0  # Version 3.0.0 might have some incompatibilities, so we use a lower version until it is released
+django-import-export>=0.5.0
 babel>=2.9.1
 openpyxl<=2.6;python_version<"3.5"
