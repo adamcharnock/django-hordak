@@ -1,6 +1,9 @@
 [run]
 
 omit =
-    */admin.py
     hordak/apps.py
     */migrations/*
+plugins =
+    django_coverage_plugin
+branch = True
+source = hordak
