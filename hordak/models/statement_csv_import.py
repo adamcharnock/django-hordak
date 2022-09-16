@@ -1,7 +1,6 @@
 import csv
 from io import StringIO
 
-import six
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -55,9 +54,9 @@ class TransactionCsvImport(models.Model):
     def create_columns(self):
         """For each column in file create a TransactionCsvImportColumn"""
         reader = self._get_csv_reader()
-        headings = six.next(reader)
+        headings = next(reader)
         try:
-            examples = six.next(reader)
+            examples = next(reader)
         except StopIteration:
             examples = []
 
@@ -94,7 +93,7 @@ class TransactionCsvImport(models.Model):
     def get_dataset(self):
         reader = self._get_csv_reader()
         if self.has_headings:
-            six.next(reader)
+            next(reader)
 
         data = list(reader)
         headers = [

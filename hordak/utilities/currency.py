@@ -53,7 +53,6 @@ from typing import List
 
 import babel.numbers
 import requests
-import six
 from django.core.cache import cache
 from django.db import transaction as db_transaction
 from moneyed import Money
@@ -441,7 +440,7 @@ class Balance(object):
     def __getitem__(self, currency):
         if hasattr(currency, "code"):
             currency = currency.code
-        elif not isinstance(currency, six.string_types) or len(currency) != 3:
+        elif not isinstance(currency, str) or len(currency) != 3:
             raise ValueError(
                 "Currencies must be a string of length three, not {}".format(currency)
             )
@@ -495,9 +494,6 @@ class Balance(object):
 
     def __bool__(self):
         return any([bool(m) for m in self._money_obs])
-
-    if six.PY2:
-        __nonzero__ = __bool__
 
     def __eq__(self, other):
         if other == 0:

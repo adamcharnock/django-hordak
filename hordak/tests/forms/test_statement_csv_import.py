@@ -1,4 +1,3 @@
-import six
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
@@ -11,7 +10,7 @@ class TransactionCsvImportFormTestCase(DataProvider, TestCase):
     def setUp(self):
         self.account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.f = SimpleUploadedFile(
-            "data.csv", six.binary_type(b"Number,Date,Account,Amount,Subcategory,Memo")
+            "data.csv", b"Number,Date,Account,Amount,Subcategory,Memo"
         )
 
     def test_create(self):
