@@ -1,4 +1,12 @@
 ----
+Version 1.11.0, xxxxxx
+================================
+
+* Quicker admin listings (especially when installed with ``pip install hordak[subqery]``
+* More informations and filters in admin views
+* Drop suport of old Django versions (<=3.1)
+* Test also in Django 4.1
+
 Version 1.10.2, Tue 15 Mar 2022
 ================================
 
