@@ -33,4 +33,5 @@ setup(
     long_description=open("README.rst").read() if exists("README.rst") else "",
     include_package_data=True,
     install_requires=parse_requirements("requirements.txt"),
+    extras_require={"subqueries": ["django-sql-utils"]},
 )
