@@ -1,4 +1,3 @@
-import django
 from django.test import TestCase
 from django.urls import reverse
 
@@ -30,10 +29,7 @@ class AccountTransactionsViewTestCase(DataProvider, TestCase):
         response = self.client.get(self.view_url)
         # Tests needs to be run with LANG="US" environment variable
         self.assertContains(response, "<td>€10.00</td>", html=True)
-        if django.VERSION >= (3, 0, 0):
-            self.assertContains(response, "<h5>Balance: €&nbsp;10.00</h5>", html=True)
-        else:  # Django 2.2
-            self.assertContains(response, "<h5>Balance: € 10.00</h5>", html=True)
+        self.assertContains(response, "<h5>Balance: €&nbsp;10.00</h5>", html=True)
 
 
 class AccountListViewTestCase(DataProvider, TestCase):

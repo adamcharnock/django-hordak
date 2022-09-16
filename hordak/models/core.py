@@ -20,19 +20,11 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
-from typing import Any
 
 from django.contrib.postgres.fields.array import ArrayField
-
-
-try:
-    JSONField: Any = None
-    from django.db.models import JSONField
-except ImportError:
-    from django.contrib.postgres.fields.jsonb import JSONField
-
 from django.db import models
 from django.db import transaction as db_transaction
+from django.db.models import JSONField
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default

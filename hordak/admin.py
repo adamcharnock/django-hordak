@@ -12,6 +12,8 @@ try:  # SubquerySum is quicker, but django-sql-utils can remain as optional depe
 
     legs_filter = Q(amount__lt=0)
 except ImportError:
+    from django.db.models import Sum
+
     legs_filter = Q(legs__amount__lt=0)
 
 
