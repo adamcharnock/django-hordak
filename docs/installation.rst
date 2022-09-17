@@ -46,7 +46,7 @@ following to your ``urls.py``:
 
     urlpatterns = [
         ...
-        url(r'^', include('hordak.urls', namespace='hordak'))
+        path('', include('hordak.urls', namespace='hordak'))
     ]
 
 You should then be able to create a user and start the development server
