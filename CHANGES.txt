@@ -1,4 +1,9 @@
 ----
+Version 1.11.1, Fri 17 Sep 2022
+================================
+
+* Fix for django-import-export 3.0.0 and remove hold back version in requirements
+
 Version 1.11.0, Fri 16 Sep 2022
 ================================
 
