@@ -66,7 +66,7 @@ class StatementLineResource(resources.ModelResource):
         instance._row = row
         return instance
 
-    def skip_row(self, instance, original):
+    def skip_row(self, instance, original, *args, **kwargs):
         # Skip this row if the database already contains the requsite number of
         # rows identical to this one.
         return instance._row["similar_total"] < self._get_num_similar_objects(instance)
