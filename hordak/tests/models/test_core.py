@@ -47,6 +47,15 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
                 str(account2).replace("\xa0", ""), "51 Account 2 [FORMATTED]"
             )
 
+    def test_str_currency(self):
+        account = self.account(currencies=["EUR", "GBP"])
+        self.assertEqual(str(account), "0 Account 1 [€\xa00.00, £\xa00.00]")
+
+    def test_str_non_existent_currency(self):
+        """__str__ should not fail even if the currency doesn't exist"""
+        account = self.account(currencies=["FOO"])
+        self.assertEqual(str(account), "0 Account 1")
+
     def test_str_root_no_data_unsaved(self):
         account1 = Account()
         Account(parent=account1)

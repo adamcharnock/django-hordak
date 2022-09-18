@@ -67,7 +67,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="01",
                 type="IN",
                 is_bank_account="",
-                currencies="EUR, GBP",
+                currencies="EUR,GBP",
             ),
         )
         if response.context:
@@ -103,7 +103,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="01",
                 type="AS",
                 is_bank_account="yes",
-                currencies="EUR, GBP",
+                currencies="EUR,GBP",
             )
         )
         self.assertFalse(form.is_valid())
@@ -119,7 +119,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="IN",
                 is_bank_account="",
-                currencies="EUR, GBP",
+                currencies="EUR,GBP",
             ),
         )
         if response.context:
@@ -127,6 +127,27 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         account = Account.objects.get()
         self.assertEqual(account.code, None)
         self.assertEqual(account.full_code, None)
+
+    def test_post_invalid_currency(self):
+        response = self.client.post(
+            self.view_url,
+            data=dict(
+                name="Test Account",
+                code="",
+                type="IN",
+                is_bank_account="",
+                currencies="FOO",
+            ),
+        )
+        self.assertEqual(
+            response.context["form"].errors,
+            {
+                "currencies": [
+                    "Item 1 in the array did not validate: Select a valid choice. "
+                    "FOO is not one of the available choices."
+                ]
+            },
+        )
 
 
 class AccountUpdateViewTestCase(DataProvider, TestCase):
