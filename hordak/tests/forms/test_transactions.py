@@ -131,7 +131,9 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
         )
 
         self.trading_gbp_eur = self.account(
-            name="GBP, EUR", type=Account.TYPES.trading, currencies=["GBP", "EUR"]
+            name="GBP, EUR, CZK",
+            type=Account.TYPES.trading,
+            currencies=["GBP", "EUR", "CZK"],
         )
         self.trading_eur_usd = self.account(
             name="EUR, USD", type=Account.TYPES.trading, currencies=["EUR", "USD"]
@@ -283,3 +285,39 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
             )
         )
         self.assertFalse(form.is_valid())
+
+    def test_no_source_account_currency(self):
+        """Source account doesn't support requested currency"""
+        form = CurrencyTradeForm(
+            dict(
+                source_account=self.account_eur.uuid,
+                source_amount_0="100",
+                source_amount_1="CZK",
+                trading_account=self.trading_gbp_eur.uuid,
+                destination_account=self.account_gbp.uuid,
+                destination_amount_0="110",
+                destination_amount_1="GBP",
+            )
+        )
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors, {"__all__": ["Source account does not support CZK"]}
+        )
+
+    def test_no_destination_account_currency(self):
+        """Destination account doesn't support requested currency"""
+        form = CurrencyTradeForm(
+            dict(
+                source_account=self.account_gbp.uuid,
+                source_amount_0="100",
+                source_amount_1="GBP",
+                trading_account=self.trading_gbp_eur.uuid,
+                destination_account=self.account_eur.uuid,
+                destination_amount_0="110",
+                destination_amount_1="CZK",
+            )
+        )
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors, {"__all__": ["Destination account does not support CZK"]}
+        )

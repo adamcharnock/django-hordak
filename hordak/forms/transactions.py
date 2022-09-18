@@ -220,7 +220,9 @@ class CurrencyTradeForm(forms.Form):
             )
         if destination_amount.currency.code not in destination_account.currencies:
             raise ValidationError(
-                "Destination account does not support {}".format(source_amount.currency)
+                "Destination account does not support {}".format(
+                    destination_amount.currency
+                )
             )
 
         return cleaned_data

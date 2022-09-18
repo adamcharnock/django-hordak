@@ -29,8 +29,9 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
+from djmoney.settings import CURRENCY_CHOICES
 from model_utils import Choices
-from moneyed import Money
+from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 
 from hordak import defaults, exceptions
@@ -132,7 +133,9 @@ class Account(MPTTModel):
         verbose_name=_("is bank account"),
     )
     currencies = ArrayField(
-        models.CharField(max_length=3), db_index=True, verbose_name=_("currencies")
+        models.CharField(max_length=3, choices=CURRENCY_CHOICES),
+        db_index=True,
+        verbose_name=_("currencies"),
     )
 
     objects = AccountManager.from_queryset(AccountQuerySet)()
@@ -200,7 +203,7 @@ class Account(MPTTModel):
         if self.is_leaf_node():
             try:
                 balance = self.balance()
-            except ValueError:
+            except (ValueError, CurrencyDoesNotExist):
                 if self.full_code:
                     return "{} {}".format(self.full_code, name)
                 else:
