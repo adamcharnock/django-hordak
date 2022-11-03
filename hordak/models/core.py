@@ -135,6 +135,7 @@ class Account(MPTTModel):
     currencies = ArrayField(
         models.CharField(max_length=3, choices=CURRENCY_CHOICES),
         db_index=True,
+        default=defaults.CURRENCIES,
         verbose_name=_("currencies"),
     )
 
