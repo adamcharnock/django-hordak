@@ -27,7 +27,7 @@ class AccountAdmin(MPTTModelAdmin):
         "balance_sum",
         "income",
     )
-    readonly_fields = ("balance",)
+    readonly_fields = ("balance", "balance_sum", "income")
     raw_id_fields = ("parent",)
     search_fields = (
         "code",
