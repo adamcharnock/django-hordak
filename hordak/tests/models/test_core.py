@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.db import transaction as db_transaction
@@ -28,6 +29,14 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.account(parent=account1, code="1")
         self.assertEqual(str(account1), "Account 1")
 
+    def test_natural_key(self):
+        account = self.account()
+        self.assertEqual(account.natural_key(), (account.uuid,))
+
+    def test_get_by_natural_key(self):
+        account = self.account()
+        self.assertEqual(Account.objects.get_by_natural_key(account.uuid), account)
+
     def test_str_root_no_code(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
@@ -50,6 +59,11 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
     def test_str_currency(self):
         account = self.account(currencies=["EUR", "GBP"])
         self.assertEqual(str(account), "0 Account 1 [€\xa00.00, £\xa00.00]")
+
+    def test_str_currency_no_full_code(self):
+        account = self.account(currencies=["EUR", "GBP"])
+        account.full_code = None
+        self.assertEqual(str(account), "Account 1 [€\xa00.00, £\xa00.00]")
 
     def test_str_non_existent_currency(self):
         """__str__ should not fail even if the currency doesn't exist"""
@@ -301,6 +315,11 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account1.balance(), Balance(-500, "EUR"))
         self.assertEqual(account2.balance(), Balance(500, "EUR"))
 
+    def test_transfer_to_not_money(self):
+        account1 = self.account(type=Account.TYPES.income)
+        with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
+            account1.transfer_to(account1, 500)
+
     def test_transfer_pos_to_pos(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.income)
@@ -467,6 +486,34 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(
             account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")])
         )
+
+    def test_natural_key(self):
+        account1 = self.account(currencies=["USD"])
+        account2 = self.account(currencies=["USD"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            leg = Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(100, "USD")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-100, "USD")
+            )
+        self.assertEqual(leg.natural_key(), (leg.uuid,))
+
+    def test_get_by_natural_key(self):
+        account1 = self.account(currencies=["USD"])
+        account2 = self.account(currencies=["USD"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            leg = Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(100, "USD")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-100, "USD")
+            )
+        self.assertEqual(Leg.objects.get_by_natural_key(*leg.natural_key()), leg)
 
     def test_postgres_trigger_sum_zero(self):
         """ "
@@ -652,6 +699,16 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
         self.account1 = self.account()
         self.account2 = self.account()
 
+    def test_natural_key(self):
+        transaction = Transaction.objects.create(date="2000-01-01")
+        self.assertEqual(transaction.natural_key(), (transaction.uuid,))
+
+    def test_get_by_natural_key(self):
+        transaction = Transaction.objects.create(date="2000-01-01")
+        self.assertEqual(
+            Transaction.objects.get_by_natural_key(transaction.uuid), transaction
+        )
+
     def test_balance(self):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
@@ -683,6 +740,38 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
 
         self.statement_import = StatementImport.objects.create(
             bank_account=self.bank, source="csv"
+        )
+
+    def test_natural_key(self):
+        statement_line = StatementLine.objects.create(
+            statement_import=self.statement_import,
+            date="2000-01-01",
+            amount=Decimal("100"),
+            description="Test",
+        )
+        self.assertEqual(statement_line.natural_key(), (statement_line.uuid,))
+
+    def test_get_by_natural_key(self):
+        statement_line = StatementLine.objects.create(
+            statement_import=self.statement_import,
+            date="2000-01-01",
+            amount=Decimal("100"),
+            description="Test",
+        )
+        self.assertEqual(
+            StatementLine.objects.get_by_natural_key(statement_line.uuid),
+            statement_line,
+        )
+
+    def test_statement_import_natural_key(self):
+        self.assertEqual(
+            self.statement_import.natural_key(), (self.statement_import.uuid,)
+        )
+
+    def test_statement_import_get_by_natural_key(self):
+        self.assertEqual(
+            StatementImport.objects.get_by_natural_key(self.statement_import.uuid),
+            self.statement_import,
         )
 
     def test_is_reconciled(self):
