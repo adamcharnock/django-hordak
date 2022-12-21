@@ -1,7 +1,7 @@
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand
 
-from hordak.models import Account
+from hordak.models import Account, Leg
 
 
 class Command(BaseCommand):
@@ -24,23 +24,32 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        print("Recalculating running totals for all accounts")
-        all_values_are_correct = True
-        queryset = Account.objects.exclude(legs=None)
+        print(
+            f"{'Checking' if options['check'] else 'Recalculating'} running totals for all accounts"
+        )
+        output_string = ""
+        # We are using Legs subquery because it is quicker
+        queryset = Account.objects.filter(pk__in=Leg.objects.values("account"))
         i = 0
         print(f"Found {queryset.count()} accounts")
-        for account in queryset:
+        for account in queryset.all():
             i += 1
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 print(f"Processed {i} accounts")
-            value_correct = account.update_running_totals(check_only=options["check"])
-            if not value_correct:
-                all_values_are_correct = False
+            faulty_values = account.update_running_totals(check_only=options["check"])
+            if faulty_values:
+                for currency, rt_value, correct_value in faulty_values:
+                    output_string += f"Account {account.name} has faulty running total for {currency}"
+                    output_string += f" (should be {correct_value}, is {rt_value})\n"
 
-        if options["mail_admins"] and not all_values_are_correct:
+        if options["mail_admins"] and output_string:
             mail_admins(
                 "Running totals are incorrect",
-                "Running totals are incorrect for some accounts",
+                f"Running totals are incorrect for some accounts\n\n{output_string}",
             )
 
-        return 0 if all_values_are_correct else "Running totals are incorrect"
+        return (
+            f"Running totals are INCORRECT: \n\n{output_string}"
+            if output_string
+            else "Running totals are correct"
+        )
