@@ -93,6 +93,8 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         """
         account1 = self.account()
         account2 = self.account()
+        account1.update_running_totals()
+        account2.update_running_totals()
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
@@ -107,7 +109,11 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         running_total.save()
 
         ret_val = call_command("recalculate_running_totals", *["--check"])
-        self.assertEqual(ret_val, "Running totals are incorrect")
+        self.assertEqual(
+            ret_val,
+            "Running totals are INCORRECT: \n\n"
+            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
+        )
 
     def test_mail_admins(self):
         """
@@ -116,6 +122,8 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         """
         account1 = self.account()
         account2 = self.account()
+        account1.update_running_totals()
+        account2.update_running_totals()
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
@@ -130,8 +138,17 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         running_total.save()
 
         ret_val = call_command("recalculate_running_totals", *["--mail-admins"])
-        self.assertEqual(ret_val, "Running totals are incorrect")
+        self.assertEqual(
+            ret_val,
+            "Running totals are INCORRECT: \n\n"
+            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
+        )
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(
             mail.outbox[0].subject, "[Django] Running totals are incorrect"
+        )
+        self.assertEqual(
+            mail.outbox[0].body,
+            "Running totals are incorrect for some accounts\n\n"
+            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
         )
