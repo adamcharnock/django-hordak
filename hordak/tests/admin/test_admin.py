@@ -1,8 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction as db_transaction
 from django.test.testcases import TestCase
 from django.urls import reverse
+from moneyed.classes import Money
 
-from hordak.models import Account, Leg, Transaction
+from hordak.admin import update_running_totals
+from hordak.models import Account, Leg, RunningTotal, Transaction
 from hordak.tests.utils import DataProvider
 
 
@@ -64,4 +67,40 @@ class TestAdmin(DataProvider, TestCase):
         res = self.client.get(url)
         self.assertContains(
             res, '<td class="field-debited_accounts">Account 4</td>', html=True
+        )
+
+    def test_update_running_totals(self):
+        account1 = self.account(currencies=["EUR", "USD"])
+        account2 = self.account(currencies=["EUR", "USD"])
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(100, "USD")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-100, "USD")
+            )
+
+        RunningTotal.objects.all().delete()
+
+        update_running_totals(None, None, Account.objects.all())
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        self.assertEqual(
+            account1.running_totals.get(currency="EUR").balance, Money(100, "EUR")
+        )
+        self.assertEqual(
+            account2.running_totals.get(currency="EUR").balance, Money(-100, "EUR")
+        )
+        self.assertEqual(
+            account1.running_totals.get(currency="USD").balance, Money(100, "USD")
+        )
+        self.assertEqual(
+            account2.running_totals.get(currency="USD").balance, Money(-100, "USD")
         )
