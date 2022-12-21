@@ -17,6 +17,11 @@ except ImportError:
     legs_filter = Q(legs__amount__lt=0)
 
 
+def update_running_totals(modeladmin, request, queryset):
+    for account in queryset:
+        account.update_running_totals()
+
+
 @admin.register(models.Account)
 class AccountAdmin(MPTTModelAdmin):
     list_display = (
@@ -41,6 +46,7 @@ class AccountAdmin(MPTTModelAdmin):
         "subscribed_userprofile__last_name",
     )
     list_filter = ("type",)
+    actions = [update_running_totals]
 
     @admin.display(ordering="balance_sum")
     def balance(self, obj):
