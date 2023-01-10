@@ -20,6 +20,8 @@ Default: ``[]``
 Any currencies (additional to ``DEFAULT_CURRENCY``) for which you wish to create accounts.
 For example, you may have ``"EUR"`` for your ``DEFAULT_CURRENCY``, and ``["USD", "GBP"]`` for your
 additional ``CURRENCIES``.
+To set different value, than for `dj-money`,
+you can use `HORDAK_CURRENCIES` setting value will be used preferentially.
 
 
 HORDAK_DECIMAL_PLACES
