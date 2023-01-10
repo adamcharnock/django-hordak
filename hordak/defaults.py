@@ -5,7 +5,9 @@ INTERNAL_CURRENCY = getattr(settings, "HORDAK_INTERNAL_CURRENCY", "EUR")
 
 DEFAULT_CURRENCY = getattr(settings, "DEFAULT_CURRENCY", "EUR")
 
-CURRENCIES = getattr(settings, "CURRENCIES", [])
+CURRENCIES = getattr(
+    settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIES", [])
+)
 
 DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)
 

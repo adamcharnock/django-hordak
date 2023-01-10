@@ -40,10 +40,11 @@ class SimpleTransactionForm(forms.ModelForm):
         default_currency = DEFAULT_CURRENCY
         amount_field, currency_field = self.fields["amount"].fields
 
+        currencies = CURRENCIES() if callable(CURRENCIES) else CURRENCIES
         self.fields["amount"].widget.widgets[1].choices = currency_field.choices = [
             (code, name)
             for code, name in currency_field.choices
-            if code == default_currency or code in CURRENCIES
+            if code == default_currency or code in currencies
         ]
         self.fields["amount"].initial[1] = default_currency
 
