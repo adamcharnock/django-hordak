@@ -1,0 +1,7 @@
+requests-mock
+mock
+pytest
+coveralls
+django-coverage-plugin
+django-concurrent-test-helper
+psycopg2==2.8.6
