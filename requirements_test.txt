@@ -3,4 +3,5 @@ mock
 pytest
 coveralls
 django-coverage-plugin
+django-concurrent-test-helper
 psycopg2
