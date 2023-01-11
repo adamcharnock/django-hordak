@@ -1,4 +1,10 @@
 ----
+Version 1.13.0, xxxxxx
+==============================
+* CURRENCIES can be also defined as HORDAK_CURRENCIES to allow to
+  get rid of Django warning and to avoid name collision with django-money.
+  The value can be function.
+
 Version 1.12.0, Thu 3 Nov 2022
 ==============================
 
