@@ -46,7 +46,7 @@ class AccountAdmin(MPTTModelAdmin):
         "subscribed_userprofile__last_name",
     )
     list_filter = ("type",)
-    actions = ["update_running_totals"]
+    actions = [update_running_totals]
 
     @admin.display(ordering="balance_sum")
     def balance(self, obj):
