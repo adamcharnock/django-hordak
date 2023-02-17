@@ -5,7 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("hordak", "0029_alter_leg_amount_currency_and_more"),
     ]

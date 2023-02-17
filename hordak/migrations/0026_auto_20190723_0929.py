@@ -7,7 +7,6 @@ from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("hordak", "0025_auto_20180829_1605"),
     ]

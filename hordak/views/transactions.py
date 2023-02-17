@@ -135,7 +135,6 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
             return self.form_invalid(transaction_form, leg_formset)
 
     def form_valid(self, transaction_form, leg_formset):
-
         with db_transaction.atomic():
             # Save the transaction
             transaction_form.instance.date = self.object.date
