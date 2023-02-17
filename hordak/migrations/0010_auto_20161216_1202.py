@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("hordak", "0009_bank_accounts_are_asset_accounts")]
 
     operations = [

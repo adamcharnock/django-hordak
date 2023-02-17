@@ -6,7 +6,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("hordak", "0016_check_account_type")]
 
     operations = [

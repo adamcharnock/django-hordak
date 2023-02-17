@@ -9,7 +9,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("hordak", "0003_check_zero_amount_20160907_0921")]
 
     operations = [

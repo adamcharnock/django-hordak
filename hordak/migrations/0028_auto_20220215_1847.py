@@ -13,7 +13,6 @@ import hordak.models.core
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("hordak", "0027_trigger_update_full_account_codes_effective"),
     ]

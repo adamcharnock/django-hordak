@@ -13,7 +13,6 @@ import hordak.models.core
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("hordak", "0028_auto_20220215_1847"),
     ]

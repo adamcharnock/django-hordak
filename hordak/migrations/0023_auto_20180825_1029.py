@@ -7,7 +7,6 @@ import hordak.models.core
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("hordak", "0022_auto_20180825_1026")]
 
     operations = [
