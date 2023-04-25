@@ -324,18 +324,34 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
-        if to_account.sign == 1 and to_account.type != self.TYPES.trading:
-            # Transferring from two positive-signed accounts implies that
-            # the caller wants to reduce the first account and increase the second
-            # (which is opposite to the implicit behaviour)
+        if (
+            self.sign == 1
+            and to_account.sign == 1
+            and to_account.type != self.TYPES.trading
+        ):
+            # Liability -> liability and not trading
             direction = -1
         elif (
-            self.type == self.TYPES.liability and to_account.type == self.TYPES.expense
+            self.sign == -1
+            and to_account.sign == 1
+            and to_account.type != self.TYPES.trading
         ):
-            # Transfers from liability -> asset accounts should reduce both.
-            # For example, moving money from Rent Payable (liability) to your Rent (expense) account
-            # should use the funds you've built up in the liability account to pay off the expense account.
-            direction = -1
+            # Asset -> liability and not trading
+            direction = 1
+        elif (
+            self.sign == 1
+            and to_account.sign == -1
+            and to_account.type != self.TYPES.trading
+        ):
+            # Liability -> Asset and not trading
+            direction = 1
+        elif (
+            self.sign == -1
+            and to_account.sign == -1
+            and to_account.type != self.TYPES.trading
+        ):
+            # Asset -> Asset and not trading
+            direction = 1
         else:
             direction = 1
 
