@@ -322,7 +322,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
             account1.transfer_to(account1, 500)
 
-    def test_transfer_pos_to_pos(self):
+    def test_transfer_income_to_income(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -330,7 +330,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_pos_to_neg(self):
+    def test_transfer_income_to_asset(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -338,7 +338,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_neg_to_pos(self):
+    def test_transfer_asset_to_income(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -346,7 +346,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(dst.balance(), Balance(-100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_neg_to_neg(self):
+    def test_transfer_asset_to_asset(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
