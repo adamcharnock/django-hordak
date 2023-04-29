@@ -51,10 +51,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
 
         form = SimpleTransactionForm(
             dict(
-                # Flipped direction for original
-                # https://accountingo.org/financial/double-entry/is-income-a-debit-or-credit/
-                from_account=self.income.uuid,
-                to_account=self.bank.uuid,
+                from_account=self.bank.uuid,
+                to_account=self.income.uuid,
                 description="A test simple transaction",
                 amount_0="50.00",
                 amount_1="EUR",

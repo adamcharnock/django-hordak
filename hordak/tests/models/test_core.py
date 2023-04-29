@@ -58,13 +58,11 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def test_str_currency(self):
         account = self.account(currencies=["EUR", "GBP"])
-        # NOTE: Removing babel's unicode space which differs on platforms
         self.assertEqual(str(account).replace("\xa0", ""), "0 Account 1 [€0.00, £0.00]")
 
     def test_str_currency_no_full_code(self):
         account = self.account(currencies=["EUR", "GBP"])
         account.full_code = None
-        # NOTE: Removing babel's unicode space which differs on platforms
         self.assertEqual(str(account).replace("\xa0", ""), "Account 1 [€0.00, £0.00]")
 
     def test_str_non_existent_currency(self):
@@ -289,10 +287,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account1 = self.account(type=Account.TYPES.income)
         account2 = self.account(type=Account.TYPES.income)
 
-        # Income -> Bank is increasing both
-        # https://accountingo.org/financial/double-entry/is-income-a-debit-or-credit/
-        account1.transfer_to(bank, Money(100, "EUR"))
-        account2.transfer_to(bank, Money(50, "EUR"))
+        bank.transfer_to(account1, Money(100, "EUR"))
+        bank.transfer_to(account2, Money(50, "EUR"))
 
         self.assertEqual(
             Account.objects.filter(type=Account.TYPES.income).net_balance(),
@@ -324,7 +320,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
             account1.transfer_to(account1, 500)
 
-    def test_transfer_income_to_income(self):
+    def test_transfer_pos_to_pos(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -332,7 +328,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_income_to_asset(self):
+    def test_transfer_pos_to_neg(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -340,15 +336,15 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_asset_to_income(self):
+    def test_transfer_neg_to_pos(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
-    def test_transfer_asset_to_asset(self):
+    def test_transfer_neg_to_neg(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
@@ -357,78 +353,23 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         Account.validate_accounting_equation()
 
     def test_transfer_liability_to_expense(self):
-        # Real world: Pay down expected Purchase (i.e. Invoice)
         # When doing this it is probably safe to assume we want to the
         # liability account to contribute to an expense, therefore both should decrease
         src = self.account(type=Account.TYPES.liability)
         dst = self.account(type=Account.TYPES.expense)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_expense_to_liability(self):
-        # Real world: Refund expected but not yet paid (i.e. Credit to Receivibles)
         # This should perform the reverse action to that in the above test_transfer_liability_to_expense()
         src = self.account(type=Account.TYPES.expense)
         dst = self.account(type=Account.TYPES.liability)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_liability_to_asset(self):
-        # Real world: Loan disbursement (i.e. Loan -> Cash)
-        # When doing this it is probably safe to assume we want to the
-        # liability account to contribute to an asset (i.e. cash), therefore both should decrease
-        src = self.account(type=Account.TYPES.liability)
-        dst = self.account(type=Account.TYPES.asset)
-        src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
-
-    def test_transfer_asset_to_liability(self):
-        # Real world: Cash to pay down Debt (i.e. Cash -> Payables)
-        # This should perform the reverse action to that in the above test_transfer_liability_to_asset()
-        src = self.account(type=Account.TYPES.asset)
-        dst = self.account(type=Account.TYPES.liability)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_pay_rent_via_invoice(self):
-        cash = self.account(type=Account.TYPES.asset)
-        expense = self.account(type=Account.TYPES.expense)
-        payable = self.account(type=Account.TYPES.liability)
-
-        # Jul 1 - Landloard sends Invoice for Rent, $1000
-        # We can't pay immediately, so we book it to a Payable (pay later), i.e. Loan
-        payable.transfer_to(expense, Money(1000, "EUR"))
-        self.assertEqual(expense.balance(), Balance(1000, "EUR"))
-        self.assertEqual(payable.balance(), Balance(1000, "EUR"))
-
-        # Jul 6 - We pay the landlord, $1000
-        cash.transfer_to(payable, Money(1000, "EUR"))
-        self.assertEqual(cash.balance(), Balance(-1000, "EUR"))
-        self.assertEqual(payable.balance(), Balance(0, "EUR"))
-        self.assertEqual(expense.balance(), Balance(1000, "EUR"))
-
-    def test_cash_advance_loan_with_repayments(self):
-        cash = self.account(type=Account.TYPES.asset)
-        expense = self.account(type=Account.TYPES.expense)
-        loan = self.account(type=Account.TYPES.liability)
-
-        loan.transfer_to(cash, Money(10000, "EUR"))  # principal
-        loan.transfer_to(expense, Money(1000, "EUR"))  # fee
-        self.assertEqual(cash.balance(), Balance(10000, "EUR"))
-        self.assertEqual(expense.balance(), Balance(1000, "EUR"))
-        self.assertEqual(loan.balance(), Balance(11000, "EUR"))
-
-        cash.transfer_to(loan, Money(100, "EUR"))  # repayment
-        self.assertEqual(cash.balance(), Balance(9900, "EUR"))
-        self.assertEqual(loan.balance(), Balance(10900, "EUR"))
 
     def test_currency_exchange(self):
         src = self.account(type=Account.TYPES.asset, currencies=["GBP"])
