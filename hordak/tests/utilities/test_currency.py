@@ -3,6 +3,7 @@ from __future__ import division
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
+import warnings
 
 import requests_mock
 from django.core.cache import cache
@@ -128,9 +129,7 @@ class ConverterTestCase(CacheTestCase):
         self.converter = Converter(backend=TestBackend())
 
     def test_rate_gbp_usd(self):
-        self.assertEqual(
-            self.converter.rate("GBP", "USD", date(2000, 5, 15)), Decimal("1.5")
-        )
+        self.assertEqual(self.converter.rate("GBP", "USD", date(2000, 5, 15)), Decimal("1.5"))
 
     def test_rate_usd_gbp(self):
         self.assertEqual(
@@ -226,18 +225,14 @@ class BalanceTestCase(CacheTestCase):
 
         self.assertEqual(self.balance_1 == +self.balance_1, True)
         self.assertEqual(self.balance_1 == self.balance_2, False)
+        self.assertEqual(Balance([Money(100, "USD")]) == Balance([Money(100, "USD")]), True)
         self.assertEqual(
-            Balance([Money(100, "USD")]) == Balance([Money(100, "USD")]), True
-        )
-        self.assertEqual(
-            Balance([Money(100, "USD"), Money(0, "EUR")])
-            == Balance([Money(100, "USD")]),
+            Balance([Money(100, "USD"), Money(0, "EUR")]) == Balance([Money(100, "USD")]),
             True,
         )
 
         self.assertEqual(
-            Balance([Money(100, "USD"), Money(10, "EUR")])
-            == Balance([Money(100, "USD")]),
+            Balance([Money(100, "USD"), Money(10, "EUR")]) == Balance([Money(100, "USD")]),
             False,
         )
 
@@ -252,18 +247,14 @@ class BalanceTestCase(CacheTestCase):
 
         self.assertEqual(self.balance_1 != +self.balance_1, False)
         self.assertEqual(self.balance_1 != self.balance_2, True)
+        self.assertEqual(Balance([Money(100, "USD")]) != Balance([Money(100, "USD")]), False)
         self.assertEqual(
-            Balance([Money(100, "USD")]) != Balance([Money(100, "USD")]), False
-        )
-        self.assertEqual(
-            Balance([Money(100, "USD"), Money(0, "EUR")])
-            != Balance([Money(100, "USD")]),
+            Balance([Money(100, "USD"), Money(0, "EUR")]) != Balance([Money(100, "USD")]),
             False,
         )
 
         self.assertEqual(
-            Balance([Money(100, "USD"), Money(10, "EUR")])
-            != Balance([Money(100, "USD")]),
+            Balance([Money(100, "USD"), Money(10, "EUR")]) != Balance([Money(100, "USD")]),
             True,
         )
 
@@ -273,9 +264,7 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(Balance() < Balance([Money(1, "USD")]), True)
         self.assertEqual(Balance([Money(1, "USD")]) < Balance(), False)
         self.assertEqual(Balance([Money(-1, "USD")]) < Balance([Money(1, "USD")]), True)
-        self.assertEqual(
-            Balance([Money(1, "USD")]) < Balance([Money(-1, "USD")]), False
-        )
+        self.assertEqual(Balance([Money(1, "USD")]) < Balance([Money(-1, "USD")]), False)
         self.assertEqual(Balance([Money(1, "USD")]) < Balance([Money(10, "EUR")]), True)
         self.assertEqual(Balance([Money(-1, "USD")]) < 0, True)
 
@@ -288,13 +277,9 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(self.balance_1 > self.balance_1, False)
         self.assertEqual(Balance() > Balance([Money(1, "USD")]), False)
         self.assertEqual(Balance([Money(1, "USD")]) > Balance(), True)
-        self.assertEqual(
-            Balance([Money(-1, "USD")]) > Balance([Money(1, "USD")]), False
-        )
+        self.assertEqual(Balance([Money(-1, "USD")]) > Balance([Money(1, "USD")]), False)
         self.assertEqual(Balance([Money(1, "USD")]) > Balance([Money(-1, "USD")]), True)
-        self.assertEqual(
-            Balance([Money(1, "USD")]) > Balance([Money(10, "EUR")]), False
-        )
+        self.assertEqual(Balance([Money(1, "USD")]) > Balance([Money(10, "EUR")]), False)
         self.assertEqual(Balance([Money(1, "USD")]) > 0, True)
 
     def test_lte(self):
@@ -309,9 +294,7 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(self.balance_1 >= self.balance_1, True)
         self.assertEqual(Balance() >= Balance([Money(1, "USD")]), False)
         self.assertEqual(Balance([Money(1, "USD")]) >= Balance(), True)
-        self.assertEqual(
-            Balance([Money(1, "USD")]) >= Balance([Money(1, "EUR")]), False
-        )
+        self.assertEqual(Balance([Money(1, "USD")]) >= Balance([Money(1, "EUR")]), False)
 
     def test_normalise(self):
         self.assertEqual(self.balance_1.normalise("EUR"), Balance([Money(105, "EUR")]))
@@ -322,6 +305,16 @@ class BalanceTestCase(CacheTestCase):
 
 
 class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
+    def setUp(self):
+        # Catch warnings at the class level
+        self._catch_warnings = warnings.catch_warnings()
+        self._catch_warnings.__enter__()
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
+    def tearDown(self):
+        # Clean up the warnings filter
+        self._catch_warnings.__exit__(None, None, None)
+
     def test_peter_selinger_tutorial_table_4_4(self):
         """Test the example given by Peter Selinger in his muticurrency accounting tutorial. Table 4.4"""
         cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
@@ -336,9 +329,7 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(cad_cash.balance(), Balance(200, "CAD"))
 
         # Exchange CAD 120 to USD 100 (1 USD = 1.20 CAD)
-        currency_exchange(
-            cad_cash, Money(120, "CAD"), usd_cash, Money(100, "USD"), trading
-        )
+        currency_exchange(cad_cash, Money(120, "CAD"), usd_cash, Money(100, "USD"), trading)
         self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
         self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
         self.assertEqual(trading.balance(), Balance(100, "USD", -120, "CAD"))
@@ -350,9 +341,7 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(trading.balance(), Balance(60, "USD", -68, "CAD"))
 
         # Exchange all USD back to CAD (1 USD = 1.25 CAD)
-        currency_exchange(
-            usd_cash, Money(60, "USD"), cad_cash, Money(75, "CAD"), trading
-        )
+        currency_exchange(usd_cash, Money(60, "USD"), cad_cash, Money(75, "CAD"), trading)
         self.assertEqual(cad_cash.balance(), Balance(155, "CAD"))
         self.assertEqual(usd_cash.balance(), Balance(0, "USD"))
         self.assertEqual(trading.balance(), Balance(0, "USD", 7, "CAD"))

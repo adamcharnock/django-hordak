@@ -1,5 +1,6 @@
 from decimal import Decimal
 from unittest.mock import patch
+import warnings
 
 from django.test import TestCase
 from django.urls import reverse
@@ -16,9 +17,7 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         self.login()
 
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
-        self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
-        )
+        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
 
     def test_get(self):
         response = self.client.get(self.view_url)
@@ -58,6 +57,11 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
 
 class TransactionDeleteViewTestCase(DataProvider, TestCase):
     def setUp(self):
+        # Catch warnings at the class level
+        self._catch_warnings = warnings.catch_warnings()
+        self._catch_warnings.__enter__()
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
         self.login()
 
         self.bank_account = self.account(
@@ -66,13 +70,13 @@ class TransactionDeleteViewTestCase(DataProvider, TestCase):
         self.income_account = self.account(
             is_bank_account=False, type=Account.TYPES.income, currencies=["GBP"]
         )
-        self.transaction = self.bank_account.transfer_to(
-            self.income_account, Money(100, "GBP")
-        )
+        self.transaction = self.bank_account.transfer_to(self.income_account, Money(100, "GBP"))
 
-        self.view_url = reverse(
-            "hordak:transactions_delete", args=[self.transaction.uuid]
-        )
+        self.view_url = reverse("hordak:transactions_delete", args=[self.transaction.uuid])
+
+    def tearDown(self):
+        # Clean up the warnings filter
+        self._catch_warnings.__exit__(None, None, None)
 
     def test_get(self):
         response = self.client.get(self.view_url)
@@ -89,15 +93,9 @@ class CurrencyTradeView(DataProvider, TestCase):
         self.view_url = reverse("hordak:currency_trade")
         self.login()
 
-        self.account_gbp = self.account(
-            name="GBP", type=Account.TYPES.asset, currencies=["GBP"]
-        )
-        self.account_eur = self.account(
-            name="EUR", type=Account.TYPES.asset, currencies=["EUR"]
-        )
-        self.account_usd = self.account(
-            name="USD", type=Account.TYPES.asset, currencies=["USD"]
-        )
+        self.account_gbp = self.account(name="GBP", type=Account.TYPES.asset, currencies=["GBP"])
+        self.account_eur = self.account(name="EUR", type=Account.TYPES.asset, currencies=["EUR"])
+        self.account_usd = self.account(name="USD", type=Account.TYPES.asset, currencies=["USD"])
 
         self.trading_gbp_eur = self.account(
             name="GBP, EUR", type=Account.TYPES.trading, currencies=["GBP", "EUR"]
@@ -132,9 +130,7 @@ class CurrencyTradeView(DataProvider, TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.account_gbp.balance(), Balance("-100", "GBP"))
-        self.assertEqual(
-            self.trading_gbp_eur.balance(), Balance("-100", "GBP", "110", "EUR")
-        )
+        self.assertEqual(self.trading_gbp_eur.balance(), Balance("-100", "GBP", "110", "EUR"))
         self.assertEqual(self.account_eur.balance(), Balance("110", "EUR"))
 
 
@@ -144,9 +140,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.login()
 
     def create_statement_import(self, **kwargs):
-        self.bank_account = self.account(
-            is_bank_account=True, type=Account.TYPES.asset, **kwargs
-        )
+        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset, **kwargs)
         self.income_account = self.account(
             is_bank_account=False, type=Account.TYPES.income, **kwargs
         )
@@ -233,9 +227,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(transaction.legs.filter(account=self.bank_account).count(), 1)
-        self.assertEqual(
-            transaction.legs.filter(account=self.income_account).count(), 1
-        )
+        self.assertEqual(transaction.legs.filter(account=self.income_account).count(), 1)
 
         leg_in = transaction.legs.get(account=self.bank_account)
         leg_out = transaction.legs.get(account=self.income_account)
@@ -276,9 +268,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         transaction = Transaction.objects.get()
 
         self.assertEqual(transaction.legs.filter(account=self.bank_account).count(), 1)
-        self.assertEqual(
-            transaction.legs.filter(account=self.income_account).count(), 1
-        )
+        self.assertEqual(transaction.legs.filter(account=self.income_account).count(), 1)
 
         leg_in = transaction.legs.get(account=self.bank_account)
         leg_out = transaction.legs.get(account=self.income_account)
@@ -333,9 +323,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.assertEqual(Transaction.objects.count(), 0)
 
         leg_formset = response.context["leg_formset"]
-        self.assertEqual(
-            leg_formset.non_form_errors(), ["Amounts must add up to 100.16"]
-        )
+        self.assertEqual(leg_formset.non_form_errors(), ["Amounts must add up to 100.16"])
         self.assertIn("Amounts must add up to 100.16", response.content.decode("utf8"))
 
     def test_post_reconcile_negative_amount(self):
@@ -357,9 +345,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.assertEqual(Transaction.objects.count(), 0)
 
         leg_formset = response.context["leg_formset"]
-        self.assertEqual(
-            leg_formset.errors[0]["amount"], ["Amount must be greater than zero"]
-        )
+        self.assertEqual(leg_formset.errors[0]["amount"], ["Amount must be greater than zero"])
 
     def test_post_reconcile_zero_amount(self):
         self.create_statement_import()
@@ -380,9 +366,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.assertEqual(Transaction.objects.count(), 0)
 
         leg_formset = response.context["leg_formset"]
-        self.assertEqual(
-            leg_formset.errors[0]["amount"], ["Amount must be greater than zero"]
-        )
+        self.assertEqual(leg_formset.errors[0]["amount"], ["Amount must be greater than zero"])
 
     def test_post_reconcile_negative(self):
         """Check that that positive amounts will be correctly used to reconcile negative amounts"""
@@ -413,9 +397,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 class UnreconcileTransactionsViewTestCase(DataProvider, TestCase):
     def setUp(self):
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
-        self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
-        )
+        self.income_account = self.account(is_bank_account=False, type=Account.TYPES.income)
 
         statement_import = StatementImport.objects.create(
             bank_account=self.bank_account, source="csv"
@@ -431,9 +413,7 @@ class UnreconcileTransactionsViewTestCase(DataProvider, TestCase):
         self.transaction = self.line1.create_transaction(self.income_account)
 
         self.login()
-        self.view_url = reverse(
-            "hordak:transactions_unreconcile", args=[self.line1.uuid]
-        )
+        self.view_url = reverse("hordak:transactions_unreconcile", args=[self.line1.uuid])
 
     def test_post(self):
         self.assertEqual(StatementLine.objects.get().transaction, self.transaction)

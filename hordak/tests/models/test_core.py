@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
+import warnings
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
@@ -22,6 +23,16 @@ from hordak.utilities.currency import Balance
 
 
 class AccountTestCase(DataProvider, DbTransactionTestCase):
+    def setUp(self):
+        # Catch warnings at the class level
+        self._catch_warnings = warnings.catch_warnings()
+        self._catch_warnings.__enter__()
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
+    def tearDown(self):
+        # Clean up the warnings filter
+        self._catch_warnings.__exit__(None, None, None)
+
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
@@ -52,9 +63,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with patch("babel.numbers.format_currency", return_value="FORMATTED"):
             # NOTE: We don't want to test the currency formatting. In part because
             # we assume babel has the covered, but also because it will vary with system locale
-            self.assertEqual(
-                str(account2).replace("\xa0", ""), "51 Account 2 [FORMATTED]"
-            )
+            self.assertEqual(str(account2).replace("\xa0", ""), "51 Account 2 [FORMATTED]")
 
     def test_str_currency(self):
         account = self.account(currencies=["EUR", "GBP"])
@@ -142,12 +151,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction, account=account1, amount=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-100, "EUR")
-            )
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-100, "EUR"))
 
         self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
         self.assertEqual(account2.simple_balance(), Balance(-100, "EUR"))
@@ -159,15 +164,9 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction, account=account1, amount=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-40, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account3, amount=Money(-60, "EUR")
-            )
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-40, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account3, amount=Money(-60, "EUR"))
 
         self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
         self.assertEqual(account2.simple_balance(), Balance(-40, "EUR"))
@@ -179,20 +178,12 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-06-01")
-            Leg.objects.create(
-                transaction=transaction, account=account1, amount=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-100, "EUR")
-            )
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(100, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-100, "EUR"))
 
             transaction = Transaction.objects.create(date="2016-06-15")
-            Leg.objects.create(
-                transaction=transaction, account=account1, amount=Money(50, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-50, "EUR")
-            )
+            Leg.objects.create(transaction=transaction, account=account1, amount=Money(50, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-50, "EUR"))
 
         self.assertEqual(
             account1.simple_balance(as_of="2016-01-01"), Balance(0, "EUR")
@@ -250,9 +241,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
                 amount_currency="EUR",
             )
 
-        self.assertEqual(
-            account1.balance(transaction__date__gte="2016-06-15"), Balance(50, "EUR")
-        )
+        self.assertEqual(account1.balance(transaction__date__gte="2016-06-15"), Balance(50, "EUR"))
 
     def test_balance(self):
         account1 = self.account(type=Account.TYPES.income)
@@ -463,6 +452,16 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
+    def setUp(self):
+        # Catch warnings at the class level
+        self._catch_warnings = warnings.catch_warnings()
+        self._catch_warnings.__enter__()
+        warnings.simplefilter("ignore", category=DeprecationWarning)
+
+    def tearDown(self):
+        # Clean up the warnings filter
+        self._catch_warnings.__exit__(None, None, None)
+
     def test_manager(self):
         account1 = self.account(currencies=["USD"])
         account2 = self.account(currencies=["USD"])
@@ -480,12 +479,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             )
 
         self.assertEqual(Leg.objects.sum_to_balance(), Balance())
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("100.12", "USD")])
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")])
-        )
+        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money("100.12", "USD")]))
+        self.assertEqual(account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")]))
 
     def test_natural_key(self):
         account1 = self.account(currencies=["USD"])
@@ -496,9 +491,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             leg = Leg.objects.create(
                 transaction=transaction, account=account1, amount=Money(100, "USD")
             )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-100, "USD")
-            )
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-100, "USD"))
         self.assertEqual(leg.natural_key(), (leg.uuid,))
 
     def test_get_by_natural_key(self):
@@ -510,9 +503,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             leg = Leg.objects.create(
                 transaction=transaction, account=account1, amount=Money(100, "USD")
             )
-            Leg.objects.create(
-                transaction=transaction, account=account2, amount=Money(-100, "USD")
-            )
+            Leg.objects.create(transaction=transaction, account=account2, amount=Money(-100, "USD"))
         self.assertEqual(Leg.objects.get_by_natural_key(*leg.natural_key()), leg)
 
     def test_postgres_trigger_sum_zero(self):
@@ -532,12 +523,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
         with self.assertRaises(DatabaseError), db_transaction.atomic():
             # Also ensure we distinguish between currencies
-            Leg.objects.create(
-                transaction=transaction, account=account, amount=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account, amount=Money(-100, "GBP")
-            )
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(100, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, "GBP"))
 
     def test_postgres_trigger_currency(self):
         """Check the database enforces that leg currencies must be supported by the leg's account"""
@@ -545,12 +532,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         transaction = Transaction.objects.create()
 
         with self.assertRaises(DatabaseError):
-            Leg.objects.create(
-                transaction=transaction, account=account, amount=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account, amount=Money(-100, "EUR")
-            )
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(100, "EUR"))
+            Leg.objects.create(transaction=transaction, account=account, amount=Money(-100, "EUR"))
 
     def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
         """Check the database enforces that only asset accounts can be bank accounts"""
@@ -564,12 +547,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            leg1 = Leg.objects.create(
-                transaction=transaction, account=account1, amount=100
-            )
-            leg2 = Leg.objects.create(
-                transaction=transaction, account=account2, amount=-100
-            )
+            leg1 = Leg.objects.create(transaction=transaction, account=account1, amount=100)
+            leg2 = Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
         self.assertEqual(leg1.type, CREDIT)
         self.assertEqual(leg1.is_credit(), True)
@@ -605,9 +584,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            leg1 = Leg.objects.create(
-                transaction=transaction, account=account1, amount=100
-            )
+            leg1 = Leg.objects.create(transaction=transaction, account=account1, amount=100)
             Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
         with self.assertRaises(IntegrityError):
@@ -705,19 +682,13 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
 
     def test_get_by_natural_key(self):
         transaction = Transaction.objects.create(date="2000-01-01")
-        self.assertEqual(
-            Transaction.objects.get_by_natural_key(transaction.uuid), transaction
-        )
+        self.assertEqual(Transaction.objects.get_by_natural_key(transaction.uuid), transaction)
 
     def test_balance(self):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction, account=self.account1, amount=100
-            )
-            Leg.objects.create(
-                transaction=transaction, account=self.account2, amount=-100
-            )
+            Leg.objects.create(transaction=transaction, account=self.account1, amount=100)
+            Leg.objects.create(transaction=transaction, account=self.account2, amount=-100)
 
         self.assertEqual(transaction.balance(), 0)
 
@@ -728,19 +699,13 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
 
 class StatementLineTestCase(DataProvider, DbTransactionTestCase):
     def setUp(self):
-        self.bank = self.account(
-            name="Bank", type=Account.TYPES.asset, currencies=["EUR"]
-        )
-        self.sales = self.account(
-            name="Sales", type=Account.TYPES.income, currencies=["EUR"]
-        )
+        self.bank = self.account(name="Bank", type=Account.TYPES.asset, currencies=["EUR"])
+        self.sales = self.account(name="Sales", type=Account.TYPES.income, currencies=["EUR"])
         self.expenses = self.account(
             name="Expenses", type=Account.TYPES.expense, currencies=["EUR"]
         )
 
-        self.statement_import = StatementImport.objects.create(
-            bank_account=self.bank, source="csv"
-        )
+        self.statement_import = StatementImport.objects.create(bank_account=self.bank, source="csv")
 
     def test_natural_key(self):
         statement_line = StatementLine.objects.create(
@@ -764,9 +729,7 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         )
 
     def test_statement_import_natural_key(self):
-        self.assertEqual(
-            self.statement_import.natural_key(), (self.statement_import.uuid,)
-        )
+        self.assertEqual(self.statement_import.natural_key(), (self.statement_import.uuid,))
 
     def test_statement_import_get_by_natural_key(self):
         self.assertEqual(
