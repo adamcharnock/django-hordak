@@ -58,12 +58,14 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def test_str_currency(self):
         account = self.account(currencies=["EUR", "GBP"])
-        self.assertEqual(str(account), "0 Account 1 [€\xa00.00, £\xa00.00]")
+        # NOTE: Removing babel's unicode space which differs on platforms
+        self.assertEqual(str(account).replace("\xa0", ""), "0 Account 1 [€0.00, £0.00]")
 
     def test_str_currency_no_full_code(self):
         account = self.account(currencies=["EUR", "GBP"])
         account.full_code = None
-        self.assertEqual(str(account), "Account 1 [€\xa00.00, £\xa00.00]")
+        # NOTE: Removing babel's unicode space which differs on platforms
+        self.assertEqual(str(account).replace("\xa0", ""), "Account 1 [€0.00, £0.00]")
 
     def test_str_non_existent_currency(self):
         """__str__ should not fail even if the currency doesn't exist"""
