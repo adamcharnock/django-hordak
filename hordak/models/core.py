@@ -37,6 +37,7 @@ from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from hordak import defaults, exceptions
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 from hordak.utilities.currency import Balance
+from hordak.utilities.dreprecation import deprecated
 
 
 #: Debit
@@ -292,6 +293,10 @@ class Account(MPTTModel):
         """Get a balance for this account with all currencies set to zero"""
         return Balance([Money("0", currency) for currency in self.currencies])
 
+    @deprecated(
+        "transfer_to() has been deprecated. This method does not adhere to expected transfers based on the "
+        "accounting equation, see notes. Use .accounting_transfer_to() instead. This method will be removed in v2.0.0."
+    )
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
         """Create a transaction which transfers amount to to_account
@@ -352,10 +357,11 @@ class Account(MPTTModel):
     def accounting_transfer_to(self, to_account, amount, **transaction_kwargs):
         """Create a transaction which transfers amount to to_account using double entry accounting rules
 
+        See https://en.wikipedia.org/wiki/Double-entry_bookkeeping.
+
         This is a shortcut utility method which simplifies the process of
         transferring where `self` is Cr and `to_account` is Dr.
 
-        This method attempts to perform the transaction in an intuitive manner.
         For example:
 
           * Transferring income -> income will result in the former increasing and the latter decreasing
