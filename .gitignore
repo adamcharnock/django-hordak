@@ -15,3 +15,5 @@ pyproject.toml
 poetry.lock
 .vscode
 pytest.ini
+
+.coverage

@@ -1,10 +1,7 @@
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from moneyed.classes import Money
 
-from hordak.models import (
-    Account,
-    Leg,
-)
+from hordak.models import Account, Leg
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 

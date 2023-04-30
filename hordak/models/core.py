@@ -99,7 +99,9 @@ class Account(MPTTModel):
         ("EQ", "equity", "Equity"),  # Eg. Money from shares
         ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     name = models.CharField(max_length=50, verbose_name=_("name"))
     parent = TreeForeignKey(
         "self",
@@ -121,7 +123,9 @@ class Account(MPTTModel):
     )
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
-    type = models.CharField(max_length=2, choices=TYPES, blank=True, verbose_name=_("type"))
+    type = models.CharField(
+        max_length=2, choices=TYPES, blank=True, verbose_name=_("type")
+    )
     is_bank_account = models.BooleanField(
         default=False,
         blank=True,
@@ -186,10 +190,14 @@ class Account(MPTTModel):
     @classmethod
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
-        balances = [account.balance(raw=True) for account in Account.objects.root_nodes()]
+        balances = [
+            account.balance(raw=True) for account in Account.objects.root_nodes()
+        ]
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
-                "Account balances do not sum to zero. They sum to {}".format(sum(balances))
+                "Account balances do not sum to zero. They sum to {}".format(
+                    sum(balances)
+                )
             )
 
     def __str__(self):
@@ -327,7 +335,9 @@ class Account(MPTTModel):
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
             direction = -1
-        elif self.type == self.TYPES.liability and to_account.type == self.TYPES.expense:
+        elif (
+            self.type == self.TYPES.liability and to_account.type == self.TYPES.expense
+        ):
             # Transfers from liability -> asset accounts should reduce both.
             # For example, moving money from Rent Payable (liability) to your Rent (expense) account
             # should use the funds you've built up in the liability account to pay off the expense account.
@@ -336,8 +346,12 @@ class Account(MPTTModel):
             direction = 1
 
         transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount * direction)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount * direction)
+        Leg.objects.create(
+            transaction=transaction, account=self, amount=+amount * direction
+        )
+        Leg.objects.create(
+            transaction=transaction, account=to_account, amount=-amount * direction
+        )
         return transaction
 
     @db_transaction.atomic()
@@ -375,7 +389,11 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
-        if self.sign == 1 and to_account.sign == 1 and to_account.type != self.TYPES.trading:
+        if (
+            self.sign == 1
+            and to_account.sign == 1
+            and to_account.type != self.TYPES.trading
+        ):
             # Using Left hand side (LHS) and Right hand side (RHS):
             #
             #    LHS             RHS
@@ -399,8 +417,12 @@ class Account(MPTTModel):
             direction = 1
 
         transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount * direction)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount * direction)
+        Leg.objects.create(
+            transaction=transaction, account=self, amount=+amount * direction
+        )
+        Leg.objects.create(
+            transaction=transaction, account=to_account, amount=-amount * direction
+        )
         return transaction
 
 
@@ -447,7 +469,9 @@ class Transaction(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(
         default=timezone.now,
         help_text="The creation date of this transaction object",
@@ -458,7 +482,9 @@ class Transaction(models.Model):
         help_text="The date on which this transaction occurred",
         verbose_name=_("date"),
     )
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
 
     objects = TransactionManager()
 
@@ -513,7 +539,9 @@ class Leg(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     transaction = models.ForeignKey(
         Transaction,
         related_name="legs",
@@ -533,7 +561,9 @@ class Leg(models.Model):
         default_currency=defaults.INTERNAL_CURRENCY,
         verbose_name=_("amount"),
     )
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
 
     objects = CustomLegManager()
 
@@ -613,7 +643,9 @@ class StatementImport(models.Model):
 
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
     bank_account = models.ForeignKey(
@@ -630,7 +662,8 @@ class StatementImport(models.Model):
     )
     extra = JSONField(
         default=json_default,
-        help_text="Any extra data relating to the import, probably specific " "to the data source.",
+        help_text="Any extra data relating to the import, probably specific "
+        "to the data source.",
         verbose_name=_("extra"),
     )
 
@@ -670,7 +703,9 @@ class StatementLine(models.Model):
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
     """
 
-    uuid = SmallUUIDField(default=uuid_default(), editable=False, verbose_name=_("uuid"))
+    uuid = SmallUUIDField(
+        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     date = models.DateField(verbose_name=_("date"))
     statement_import = models.ForeignKey(
@@ -682,7 +717,9 @@ class StatementLine(models.Model):
     amount = models.DecimalField(
         max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES, verbose_name=_("amount")
     )
-    description = models.TextField(default="", blank=True, verbose_name=_("description"))
+    description = models.TextField(
+        default="", blank=True, verbose_name=_("description")
+    )
     type = models.CharField(max_length=50, default="", verbose_name=_("type"))
     # TODO: Add constraint to ensure transaction amount = statement line amount
     # TODO: Add constraint to ensure one statement line per transaction
@@ -737,7 +774,9 @@ class StatementLine(models.Model):
         Leg.objects.create(
             transaction=transaction, account=from_account, amount=+(self.amount * -1)
         )
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-(self.amount * -1))
+        Leg.objects.create(
+            transaction=transaction, account=to_account, amount=-(self.amount * -1)
+        )
 
         transaction.date = self.date
         transaction.save()
