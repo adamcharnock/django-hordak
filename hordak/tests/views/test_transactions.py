@@ -1,6 +1,7 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.forms.renderers import BaseRenderer
 from django.test import TestCase
 from django.urls import reverse
 from moneyed import Money
@@ -8,6 +9,10 @@ from moneyed import Money
 from hordak.models import Account, StatementImport, StatementLine, Transaction
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
+
+
+# TODO: remove when https://code.djangoproject.com/ticket/34531 is fixed
+BaseRenderer.form_template_name = "django/forms/div.html"  # type: ignore
 
 
 class TransactionCreateViewTestCase(DataProvider, TestCase):
