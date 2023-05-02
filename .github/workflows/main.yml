@@ -66,8 +66,7 @@ jobs:
         run: |
            python setup.py develop
            pip install -e .
-           pip install requests-mock mock pytest coveralls django-coverage-plugin
-           pip install psycopg2==2.8.6
+           pip install -r requirements_test.txt
            pip install Django==${{ matrix.DJANGO_VERSION }}
            pip install codecov
 
