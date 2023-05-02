@@ -27,7 +27,6 @@ class CreateChartOfAccountsTestCase(TestCase):
 @override_settings(ADMINS=[("Admin", "foo@bar.cz")])
 class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
     def test_simple(self):
-
         account1 = self.account()
         account2 = self.account()
         with db_transaction.atomic():
