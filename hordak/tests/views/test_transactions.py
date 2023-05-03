@@ -46,8 +46,8 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         response = self.client.post(
             self.view_url,
             data=dict(
-                from_account=self.income_account.uuid,
-                to_account=self.bank_account.uuid,
+                from_account=self.bank_account.uuid,
+                to_account=self.income_account.uuid,
                 amount_0="123.45",
                 amount_1="EUR",
                 date="2000-06-15",
