@@ -1,9 +1,9 @@
 import logging
+from datetime import date
 from decimal import Decimal
 
 import tablib
 from django.test import TestCase
-from django.utils.datetime_safe import date
 
 from hordak.models import Account, StatementImport, StatementLine
 from hordak.resources import StatementLineResource

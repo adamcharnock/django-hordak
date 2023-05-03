@@ -1,0 +1,6 @@
+requests-mock
+mock
+pytest
+coveralls
+django-coverage-plugin
+psycopg2

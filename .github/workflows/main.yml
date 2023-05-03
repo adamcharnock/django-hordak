@@ -22,13 +22,19 @@ jobs:
         
     strategy:
       matrix:
-        DJANGO_VERSION: [ '3.2.*', '4.0.*', '4.1.*']
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        DJANGO_VERSION: [ '3.2.*', '4.0.*', '4.1.*', '4.2.*']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
         exclude:
+          - DJANGO_VERSION: '4.2.*'
+            python-version: '3.7'
           - DJANGO_VERSION: '4.1.*'
             python-version: '3.7'
           - DJANGO_VERSION: '4.0.*'
             python-version: '3.7'
+          - DJANGO_VERSION: '4.0.*'
+            python-version: '3.11'
+          - DJANGO_VERSION: '3.2.*'
+            python-version: '3.11'
       fail-fast: false
 
     services:
@@ -60,8 +66,7 @@ jobs:
         run: |
            python setup.py develop
            pip install -e .
-           pip install requests-mock mock pytest coveralls django-coverage-plugin
-           pip install psycopg2==2.8.6
+           pip install -r requirements_test.txt
            pip install Django==${{ matrix.DJANGO_VERSION }}
            pip install codecov
 
@@ -69,17 +74,9 @@ jobs:
         run: |
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
-          case "${{ matrix.DJANGO_VERSION }}" in "4.0.*")  # Django 4.0 throws deprecation warning because of django-extensions
-              PYTHONPATH=`pwd` coverage run ./manage.py test hordak
-              pip install -e .[subqueries]
-              PYTHONPATH=`pwd` coverage run --append ./manage.py test hordak  # Test with subquery
-              ;;
-            *)
-              PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
-              pip install -e .[subqueries]
-              PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
-              ;;
-          esac
+          PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
+          pip install -e .[subqueries]
+          PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
           coverage xml && codecov
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost/postgres"
