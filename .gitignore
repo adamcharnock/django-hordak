@@ -10,3 +10,10 @@ static/
 /build
 /dist
 /transaction_imports
+
+pyproject.toml
+poetry.lock
+.vscode
+pytest.ini
+
+.coverage
