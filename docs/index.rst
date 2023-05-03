@@ -62,4 +62,3 @@ Indices and tables
 
 .. _swiftwind: https://github.com/adamcharnock/swiftwind
 .. _battlecat: https://github.com/adamcharnock/battlecat
-.. _tested against: https://travis-ci.org/adamcharnock/django-hordak
