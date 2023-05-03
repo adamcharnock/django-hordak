@@ -18,7 +18,11 @@ Django: 3.2, 4.0, 4.1
 
 .. image:: https://coveralls.io/repos/github/adamcharnock/django-hordak/badge.svg?branch=master
     :target: https://coveralls.io/github/adamcharnock/django-hordak?branch=master
-
+    
+.. image:: https://readthedocs.org/projects/django-hordak/badge/?version=latest
+    :target: https://django-hordak.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+    
 Documentation
 -------------
 
