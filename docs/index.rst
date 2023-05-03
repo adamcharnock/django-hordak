@@ -19,7 +19,7 @@ Interfaces which build on Hordak include:
 Requirements
 ------------
 
-Hordak is `tested against`_:
+Hordak is ``tested against``:
 
  * Django >= 2.2, <= 4.0
  * Python >= 3.6
