@@ -73,17 +73,17 @@
                                     {% block reconcile_form_content %}
                                         <table>
                                             {% block reconcile_form_content_transaction_form %}
-                                                {{ transaction_form }}
+                                                {{ transaction_form.as_div }}
                                             {% endblock %}
                                         </table>
-                                        {{ leg_formset.management_form }}
+                                        {{ leg_formset.management_form.as_div }}
                                         <table class="table table-striped">
                                             {% for form in leg_formset %}
                                                 {% block leg_formset %}
                                                     <tr>
-                                                        <td>{{ form.amount }}</td>
-                                                        <td>{{ form.description }}</td>
-                                                        <td>{{ form.account }}</td>
+                                                        <td>{{ form.amount.as_div }}</td>
+                                                        <td>{{ form.description.as_div }}</td>
+                                                        <td>{{ form.account.as_div }}</td>
                                                     </tr>
                                                 {% endblock %}
                                             {% endfor %}
