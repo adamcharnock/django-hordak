@@ -1,3 +1,8 @@
+Version 1.14.0,
+===============================
+
+* Now using Django's locale to `Balance.__str__`'s `format_money` allowing better formatting and specs.
+
 Version 1.13.0, Fri 17 Feb 2023
 ===============================
 
@@ -351,5 +356,3 @@ Version 1.0.1, Fri 16 Sep 2016
 
 Version 1.0.0 (first version), Tue 13 Sep 2016
 ===============================================
-
-

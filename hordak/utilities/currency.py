@@ -55,6 +55,7 @@ import babel.numbers
 import requests
 from django.core.cache import cache
 from django.db import transaction as db_transaction
+from django.utils.translation import get_language, to_locale
 from moneyed import Money
 
 from hordak import defaults
@@ -428,8 +429,6 @@ class Balance(object):
 
     def __str__(self):
         def fmt(money):
-            from django.utils.translation import get_language, to_locale
-
             locale = to_locale(get_language())
 
             return babel.numbers.format_currency(
