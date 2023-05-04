@@ -428,8 +428,12 @@ class Balance(object):
 
     def __str__(self):
         def fmt(money):
+            from django.utils.translation import get_language, to_locale
+
+            locale = to_locale(get_language())
+
             return babel.numbers.format_currency(
-                money.amount, currency=money.currency.code
+                money.amount, currency=money.currency.code, locale=locale
             )
 
         return ", ".join(map(fmt, self._money_obs)) or "No values"

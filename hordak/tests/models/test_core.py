@@ -57,8 +57,11 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             )
 
     def test_str_currency(self):
+        from django.utils.translation import activate
+
+        activate("en-SG")
         account = self.account(currencies=["EUR", "GBP"])
-        self.assertEqual(str(account).replace("\xa0", ""), "0 Account 1 [€0.00, £0.00]")
+        self.assertEqual(str(account), "0 Account 1 [€0.00, £0.00]")
 
     def test_str_currency_no_full_code(self):
         account = self.account(currencies=["EUR", "GBP"])
