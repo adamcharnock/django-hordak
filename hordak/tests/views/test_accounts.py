@@ -29,7 +29,10 @@ class AccountTransactionsViewTestCase(DataProvider, TestCase):
         response = self.client.get(self.view_url)
         # Tests needs to be run with LANG="US" environment variable
         self.assertContains(response, "<td>€10.00</td>", html=True)
-        self.assertContains(response, "<h5>Balance: €&nbsp;10.00</h5>", html=True)
+        self.assertRegex(
+            str(response.content.decode("utf-8")).replace("\xa0", ""),
+            r"<h5>Balance: €10.00</h5>",
+        )
 
 
 class AccountListViewTestCase(DataProvider, TestCase):
