@@ -2,7 +2,6 @@ import warnings
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.forms.renderers import BaseRenderer
 from django.test import TestCase
 from django.urls import reverse
 from moneyed import Money
@@ -13,9 +12,6 @@ from hordak.utilities.currency import Balance
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
-
-# TODO: remove when https://code.djangoproject.com/ticket/34531 is fixed
-BaseRenderer.form_template_name = "django/forms/div.html"  # type: ignore
 
 
 class TransactionCreateViewTestCase(DataProvider, TestCase):
