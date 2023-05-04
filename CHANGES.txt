@@ -1,6 +1,6 @@
-----
 Version 1.13.0, Fri 17 Feb 2023
 ===============================
+
 * CURRENCIES can be also defined as HORDAK_CURRENCIES to allow to
   get rid of Django warning and to avoid name collision with django-money.
   The value can be function.
@@ -20,7 +20,6 @@ Version 1.11.0, Fri 16 Sep 2022
 
 * Quicker admin listings (especially when installed with ``pip install hordak[subqueries]``
 * More informations and filters in admin views
-1.13.0 (unreleased)
 * Test also in Django 4.1
 
 Version 1.10.2, Tue 15 Mar 2022
@@ -37,317 +36,317 @@ Version 1.10.1, Mon 21 Feb 2022
 Version 1.10.0, Tue 21 Apr 2020
 ================================
 
-97cacf78f1	Adding note to readme (Adam Charnock)
-90f9ad6375	Testing against python 3.7 & 3.8 (Adam Charnock)
-912ce3b46c	Dropping python 3.5 support (Adam Charnock)
-567a554639	CI fixes (Adam Charnock)
-23ce58dbb6	make update_full_account_codes trigger more effective on large number of accounts with null codes (Petr Dlouhý)
-cea092bbb9	Fix typo (Ali Parvizi)
-92423c930d	added/fixed tests for ratio_split() (Damien Drix)
-e00a82a31d	use the largest remainder method for distributing change in ratio_split() (Damien Drix)
+* 97cacf78f1	Adding note to readme (Adam Charnock)
+* 90f9ad6375	Testing against python 3.7 & 3.8 (Adam Charnock)
+* 912ce3b46c	Dropping python 3.5 support (Adam Charnock)
+* 567a554639	CI fixes (Adam Charnock)
+* 23ce58dbb6	make update_full_account_codes trigger more effective on large number of accounts with null codes (Petr Dlouhý)
+* cea092bbb9	Fix typo (Ali Parvizi)
+* 92423c930d	added/fixed tests for ratio_split() (Damien Drix)
+* e00a82a31d	use the largest remainder method for distributing change in ratio_split() (Damien Drix)
 
 
 Version 1.9.0, Tue 23 Jul 2019
 ===============================
 
-e8dc979e9d	re-enable migration check and update migrations after mptt update (Petr Dlouhý)
-c3753a4f01	update .travis.yml Django versions; drop Python 3.4 testing (Petr Dlouhý)
-e142f22d61	Applying black formatting (Adam Charnock)
-f6b9401d7a	Adding comment to explain Django 1.2 fix (Adam Charnock)
-01b1ba3806	Doh! forgot the save call! (p-baum)
-111927a60f	Fix for #19 (p-baum)
-2e86cb8f0e	AccountAdmin: add search fields (Petr Dlouhý)
-a5e556d346	few performance fixes for admin (Petr Dlouhý)
-82b5df568d	Complete trigger documentation (coler-j)
-968d636780	Docs RST (coler-j)
-ef85e74324	Adds docs for triggers and constraints (coler-j)
-61b05faf80	Fixing requirement for python 3.4 (Adam Charnock)
-0509f5aee9	Fixes for travis CI (Adam Charnock)
-c4b2c1135e	Using patch to bypass locale-dependent formatting (Adam Charnock)
-2ad1865dc9	Applying back command to perform code formatting (Adam Charnock)
-22328061eb	Fix #29 (p-baum)
+* e8dc979e9d	re-enable migration check and update migrations after mptt update (Petr Dlouhý)
+* c3753a4f01	update .travis.yml Django versions; drop Python 3.4 testing (Petr Dlouhý)
+* e142f22d61	Applying black formatting (Adam Charnock)
+* f6b9401d7a	Adding comment to explain Django 1.2 fix (Adam Charnock)
+* 01b1ba3806	Doh! forgot the save call! (p-baum)
+* 111927a60f	Fix for #19 (p-baum)
+* 2e86cb8f0e	AccountAdmin: add search fields (Petr Dlouhý)
+* a5e556d346	few performance fixes for admin (Petr Dlouhý)
+* 82b5df568d	Complete trigger documentation (coler-j)
+* 968d636780	Docs RST (coler-j)
+* ef85e74324	Adds docs for triggers and constraints (coler-j)
+* 61b05faf80	Fixing requirement for python 3.4 (Adam Charnock)
+* 0509f5aee9	Fixes for travis CI (Adam Charnock)
+* c4b2c1135e	Using patch to bypass locale-dependent formatting (Adam Charnock)
+* 2ad1865dc9	Applying back command to perform code formatting (Adam Charnock)
+* 22328061eb	Fix #29 (p-baum)
 
 
 Version 1.8.3, Sat 08 Dec 2018
 ===============================
 
-42d56996f1	Striping whitespace from fields on import (fixes issue with duplicates) (Adam Charnock)
+* 42d56996f1	Striping whitespace from fields on import (fixes issue with duplicates) (Adam Charnock)
 
 
 Version 1.8.2, Wed 24 Oct 2018
 ===============================
 
-ac0d280e8a	Fixing account creation when intermediate accounts are missing (Adam Charnock)
-45760fe7e6	add more information to LegAdmin list_display (Petr Dlouhý)
+* ac0d280e8a	Fixing account creation when intermediate accounts are missing (Adam Charnock)
+* 45760fe7e6	add more information to LegAdmin list_display (Petr Dlouhý)
 
 
 Version 1.8.1, Fri 31 Aug 2018
 ===============================
 
-3106397098	Adding note on MIGRATION_MODULES to docs, #21 (Adam Charnock)
-4058656896	Running the black code formatter across the codebase (Adam Charnock)
-50076e26ca	Adding pre-commit hook to run the black code formatter (Adam Charnock)
-8a71d0a02a	Tweaking docs wording around the new HORDAK_MAX_DIGITS/HORDAK_DECIMAL_PLACES settings (Adam Charnock)
-7c39b49947	Moving settings to hordak.defaults. This way we set all our defaults in one place. (Adam Charnock)
-18ed6f0843	allow set number of decimal_places in settings (Petr Dlouhý)
+* 3106397098	Adding note on MIGRATION_MODULES to docs, #21 (Adam Charnock)
+* 4058656896	Running the black code formatter across the codebase (Adam Charnock)
+* 50076e26ca	Adding pre-commit hook to run the black code formatter (Adam Charnock)
+* 8a71d0a02a	Tweaking docs wording around the new HORDAK_MAX_DIGITS/HORDAK_DECIMAL_PLACES settings (Adam Charnock)
+* 7c39b49947	Moving settings to hordak.defaults. This way we set all our defaults in one place. (Adam Charnock)
+* 18ed6f0843	allow set number of decimal_places in settings (Petr Dlouhý)
 
 
 Version 1.8.0, Tue 28 Aug 2018
 ===============================
 
-ba632bccfb	Adding settings page to docs (Adam Charnock)
-3a0215bd8e	fixing docstring sphinx errors (Adam Charnock)
-cbc31a3e34	Potential fix for migration checking in travis (Adam Charnock)
-a4abc75174	Check for missed migrations (Pavel Sutyrin)
-8e73ae707e	Adding tests for account creation/updating views when no account code is specified (Adam Charnock)
-edb34f4e8b	Updating update_full_account_codes to handle null account codes (Adam Charnock)
-1efd39deca	Better handling of potential lack of Account.full_code (Adam Charnock)
-195bb27c7e	make account code unrequired (Petr Dlouhý)
+* ba632bccfb	Adding settings page to docs (Adam Charnock)
+* 3a0215bd8e	fixing docstring sphinx errors (Adam Charnock)
+* cbc31a3e34	Potential fix for migration checking in travis (Adam Charnock)
+* a4abc75174	Check for missed migrations (Pavel Sutyrin)
+* 8e73ae707e	Adding tests for account creation/updating views when no account code is specified (Adam Charnock)
+* edb34f4e8b	Updating update_full_account_codes to handle null account codes (Adam Charnock)
+* 1efd39deca	Better handling of potential lack of Account.full_code (Adam Charnock)
+* 195bb27c7e	make account code unrequired (Petr Dlouhý)
 
 
 Version 1.7.0, Sat 25 Aug 2018
 ===============================
 
-c08f7c940e	Removing support for django 2.1 because there seems to be a strange bug with django-mptt (Adam Charnock)
-8167b178a4	Fixing how django gets installed so as to not trip django 2's checks (Adam Charnock)
-f51fc9041e	psycopg2 -> psycopg2-binary (Adam Charnock)
-76207b74ba	Fixing warning regarding immutable default values (Adam Charnock)
-0553403d60	Adding missing migration (Adam Charnock)
-09cf48d1c6	Excluding django2 from testing on python 3.4 (Adam Charnock)
-ced1cec03c	Dropping django 1.10 support, it has reached EOL and django-money no longer supports it (Adam Charnock)
-95498a7c03	Excluding django2 from testing on python 3.4 (Adam Charnock)
-b2511d3116	Removing restriction on Django < 2. Testing on Django 2.1. (Adam Charnock)
+* c08f7c940e	Removing support for django 2.1 because there seems to be a strange bug with django-mptt (Adam Charnock)
+* 8167b178a4	Fixing how django gets installed so as to not trip django 2's checks (Adam Charnock)
+* f51fc9041e	psycopg2 -> psycopg2-binary (Adam Charnock)
+* 76207b74ba	Fixing warning regarding immutable default values (Adam Charnock)
+* 0553403d60	Adding missing migration (Adam Charnock)
+* 09cf48d1c6	Excluding django2 from testing on python 3.4 (Adam Charnock)
+* ced1cec03c	Dropping django 1.10 support, it has reached EOL and django-money no longer supports it (Adam Charnock)
+* 95498a7c03	Excluding django2 from testing on python 3.4 (Adam Charnock)
+* b2511d3116	Removing restriction on Django < 2. Testing on Django 2.1. (Adam Charnock)
 
 
 Version 1.6.1, Thu 29 Mar 2018
 ===============================
 
-f095f32e86	auto-migrations (Pavel Sutyrin)
-188314fc73	Minor improvement to reconcile UI (Adam Charnock)
-34e1efdc62	Disabling builds for python 3.7 until travis sorts itself out (Adam Charnock)
-ecf693c21a	Fixing links in 'Current limitations' section of docs (Adam Charnock)
-403afa5d32	Fixing building of docs for AccountTransactionView (was renamed to AccountTransactionsView) (Adam Charnock)
-40437cb59c	Adding 'Current limitations' to docs (Adam Charnock)
-be734095d0	Updates to leg table rendering (thanks to @al1p-R) (Adam Charnock)
-20830785d6	Minor tweaks to ordering in Leg view (thanks to @al1p-R) (Adam Charnock)
-7c7df45818	Whitespace fixes (Adam Charnock)
-e15aeaa5ca	Updates to transaction table rendering (thanks to @al1p-R) (Adam Charnock)
-b4f823997c	Putting whitespace back (Adam Charnock)
-52f72d23b4	Remove protected white space in Balance string. (Jonas Hagen)
-92c6246227	Make string comparison in test more robust. (Jonas Hagen)
-df410bab5c	Fix switched description string. (Jonas Hagen)
-e531fb5cb1	Extend split amount test with negative amount. (Jonas Hagen)
-85a3cdaaef	Adapt currency string in testcase to babel format. (Jonas Hagen)
-1c142d937f	test file for CSV bank account import (al1p-R)
-424d6a1b2a	fix comment error (al1p-R)
-5fbb1d04ab	Adding list of transactions and list of legs
-    Moving footer to base.html (al1p-R)
+* f095f32e86	auto-migrations (Pavel Sutyrin)
+* 188314fc73	Minor improvement to reconcile UI (Adam Charnock)
+* 34e1efdc62	Disabling builds for python 3.7 until travis sorts itself out (Adam Charnock)
+* ecf693c21a	Fixing links in 'Current limitations' section of docs (Adam Charnock)
+* 403afa5d32	Fixing building of docs for AccountTransactionView (was renamed to AccountTransactionsView) (Adam Charnock)
+* 40437cb59c	Adding 'Current limitations' to docs (Adam Charnock)
+* be734095d0	Updates to leg table rendering (thanks to @al1p-R) (Adam Charnock)
+* 20830785d6	Minor tweaks to ordering in Leg view (thanks to @al1p-R) (Adam Charnock)
+* 7c7df45818	Whitespace fixes (Adam Charnock)
+* e15aeaa5ca	Updates to transaction table rendering (thanks to @al1p-R) (Adam Charnock)
+* b4f823997c	Putting whitespace back (Adam Charnock)
+* 52f72d23b4	Remove protected white space in Balance string. (Jonas Hagen)
+* 92c6246227	Make string comparison in test more robust. (Jonas Hagen)
+* df410bab5c	Fix switched description string. (Jonas Hagen)
+* e531fb5cb1	Extend split amount test with negative amount. (Jonas Hagen)
+* 85a3cdaaef	Adapt currency string in testcase to babel format. (Jonas Hagen)
+* 1c142d937f	test file for CSV bank account import (al1p-R)
+* 424d6a1b2a	fix comment error (al1p-R)
+* 5fbb1d04ab	Adding list of transactions and list of legs
+* Moving footer to base.html (al1p-R)
 
 
 Version 1.6.0, Thu 04 Jan 2018
 ===============================
 
-e39b8d2d1e	Adding Django 2.0 support to readme (Adam Charnock)
-9a85b030dd	Dropping support for django 1.9 (Adam Charnock)
-daccc6559d	Fixes to travis setup (Adam Charnock)
-ff7bd716ca	adding link to parent transaction (al1p-R)
-e2948047bb	fixing missing on_delete=models.CASCADE (al1p-R)
-5dc7acda83	Dropping python 2.7 support (Adam Charnock)
-eec3eefa8a	Now testing on postgres 9.5 (Adam Charnock)
-21162302b1	Adding 'unreconcile' feature (Adam Charnock)
-3eb26939e2	Minor templating/html fix (Adam Charnock)
-40a5b80395	Changing how accounts are rendered to strings to make it a bit more useful and friendly (Adam Charnock)
-bcc70141b6	Showing sensible currency selection options on transaction creation form (Adam Charnock)
-8350443003	Can now delete transactions (Adam Charnock)
-20cadc8e00	Using babel for currency formatting instead of built-in locales (Adam Charnock)
-c7cd03dc6d	Adding math template tags (Adam Charnock)
-b440a930e4	Currency comparison optimisation (Adam Charnock)
-0769b5b267	Fixing Leg.account_balance_after() / Leg.account_balance_before() assuming sequential IDs (Adam Charnock)
-b355fc0d4f	Reconcilliation now respects statement line date. Fixing tests (Adam Charnock)
-a32e009bed	Transaction form now allows date entry (Adam Charnock)
-b32c9089cc	Adding since() parameter to teller.io import (Adam Charnock)
-5a56dc6d14	Adding StatementLine.type (Adam Charnock)
-9bfe4b800f	Work on tellio data import (Adam Charnock)
-00905a45d8	Adding source field to StatementImport (Adam Charnock)
-62d9a2a8ac	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
-50c7f84c00	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
-0084a31191	Adding missing transaction (Adam Charnock)
-f2dca804c2	Adding get_latest_by to Transaction model meta data (Adam Charnock)
-3c1b2ce5a9	Adding inv() template tag, fixes to color_currency() template tag (Adam Charnock)
-075862bcf2	Balance objects can now handle comparisons against zero-valued non-balance objects (Adam Charnock)
-86b02d336f	Adding rule to Account.transfer_to() (Adam Charnock)
-f1de7a1fef	Fixing create chart of accounts tests (Adam Charnock)
-3040518038	Fixing django requirement version to exclude 2.0rc1 (Adam Charnock)
-0c474c2447	Changing default database username to 'postgres' (as this is common when using docker) (Adam Charnock)
-0c69054bd8	Fixing 'create_chart_of_accounts' bug where the incorrect account types were being created (Adam Charnock)
-48564e6fbb	Testing utils: Adding DataProvider.user() and sanity check to assertBalanceEqual() (Adam Charnock)
-a501c68e5e	Fixing error when reconcilling in in-default currency (Adam Charnock)
-5de8c3e6f8	Improving currency rendering formatting (Adam Charnock)
-8eb21f8cb5	Change bank account name to matched that expected (Adam Charnock)
-42f0576a08	Zero balances now show zero in the relevent currency(s) (Adam Charnock)
-1d0aa08525	Setting postgres version to test against (Adam Charnock)
+* e39b8d2d1e	Adding Django 2.0 support to readme (Adam Charnock)
+* 9a85b030dd	Dropping support for django 1.9 (Adam Charnock)
+* daccc6559d	Fixes to travis setup (Adam Charnock)
+* ff7bd716ca	adding link to parent transaction (al1p-R)
+* e2948047bb	fixing missing on_delete=models.CASCADE (al1p-R)
+* 5dc7acda83	Dropping python 2.7 support (Adam Charnock)
+* eec3eefa8a	Now testing on postgres 9.5 (Adam Charnock)
+* 21162302b1	Adding 'unreconcile' feature (Adam Charnock)
+* 3eb26939e2	Minor templating/html fix (Adam Charnock)
+* 40a5b80395	Changing how accounts are rendered to strings to make it a bit more useful and friendly (Adam Charnock)
+* bcc70141b6	Showing sensible currency selection options on transaction creation form (Adam Charnock)
+* 8350443003	Can now delete transactions (Adam Charnock)
+* 20cadc8e00	Using babel for currency formatting instead of built-in locales (Adam Charnock)
+* c7cd03dc6d	Adding math template tags (Adam Charnock)
+* b440a930e4	Currency comparison optimisation (Adam Charnock)
+* 0769b5b267	Fixing Leg.account_balance_after() / Leg.account_balance_before() assuming sequential IDs (Adam Charnock)
+* b355fc0d4f	Reconcilliation now respects statement line date. Fixing tests (Adam Charnock)
+* a32e009bed	Transaction form now allows date entry (Adam Charnock)
+* b32c9089cc	Adding since() parameter to teller.io import (Adam Charnock)
+* 5a56dc6d14	Adding StatementLine.type (Adam Charnock)
+* 9bfe4b800f	Work on tellio data import (Adam Charnock)
+* 00905a45d8	Adding source field to StatementImport (Adam Charnock)
+* 62d9a2a8ac	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
+* 50c7f84c00	TransactionImport-related names renamed to TransactionCsvImport (in prep for api-based import) (Adam Charnock)
+* 0084a31191	Adding missing transaction (Adam Charnock)
+* f2dca804c2	Adding get_latest_by to Transaction model meta data (Adam Charnock)
+* 3c1b2ce5a9	Adding inv() template tag, fixes to color_currency() template tag (Adam Charnock)
+* 075862bcf2	Balance objects can now handle comparisons against zero-valued non-balance objects (Adam Charnock)
+* 86b02d336f	Adding rule to Account.transfer_to() (Adam Charnock)
+* f1de7a1fef	Fixing create chart of accounts tests (Adam Charnock)
+* 3040518038	Fixing django requirement version to exclude 2.0rc1 (Adam Charnock)
+* 0c474c2447	Changing default database username to 'postgres' (as this is common when using docker) (Adam Charnock)
+* 0c69054bd8	Fixing 'create_chart_of_accounts' bug where the incorrect account types were being created (Adam Charnock)
+* 48564e6fbb	Testing utils: Adding DataProvider.user() and sanity check to assertBalanceEqual() (Adam Charnock)
+* a501c68e5e	Fixing error when reconcilling in in-default currency (Adam Charnock)
+* 5de8c3e6f8	Improving currency rendering formatting (Adam Charnock)
+* 8eb21f8cb5	Change bank account name to matched that expected (Adam Charnock)
+* 42f0576a08	Zero balances now show zero in the relevent currency(s) (Adam Charnock)
+* 1d0aa08525	Setting postgres version to test against (Adam Charnock)
 
 
 Version 1.5.0, Thu 02 Mar 2017
 ===============================
 
-77d97f7fbf	Previous commit fixes #4. Adding test to prove it. (Adam Charnock)
-83c369520f	Denormalising Account.type field using db trigger. Relates to #4 (Adam Charnock)
-f4f43ac349	Denormalised account code now generated by postgres trigger (Adam Charnock)
+* 77d97f7fbf	Previous commit fixes #4. Adding test to prove it. (Adam Charnock)
+* 83c369520f	Denormalising Account.type field using db trigger. Relates to #4 (Adam Charnock)
+* f4f43ac349	Denormalised account code now generated by postgres trigger (Adam Charnock)
 
 
 Version 1.4.0, Tue 28 Feb 2017
 ===============================
 
-94cf1ca8f2	Adding auth views to allow login (Adam Charnock)
-f442f4440c	Adding login_required decorator to views (Adam Charnock)
-7e1802cf43	Adding blocks to currency trade template (Adam Charnock)
-92a57ce2d9	Updating currency exchange link text (Adam Charnock)
-3f788018b4	Setting currency exchange page title (Adam Charnock)
-bc3a9e4d5b	Adding currency trading view (Adam Charnock)
-13588772fc	Adding test and support for simple currency account transfers (Adam Charnock)
-28aa6a012e	Fixing typos (Adam Charnock)
-25e1125d46	Now building on django 1.11 (Adam Charnock)
-10fc111140	Bumping django-smalluuid version requirement (Adam Charnock)
-73ed75ec25	Fixing travis error (Adam Charnock)
-78c390eb58	Increasing django version requirement to 1.9 (Adam Charnock)
-7ccdf8c539	Adding classes to transation creation form buttons (Adam Charnock)
-f76755dcb5	Work on template modularity (Adam Charnock)
-081ed75abc	Fixing missing import (Adam Charnock)
-1efcb32aaa	Fixing HTML error (Adam Charnock)
-f794cf68f6	Removing stray chars (Adam Charnock)
-2cac0282ca	Tweak to docs (Adam Charnock)
-d0650bef6d	Adding statement import to interface (Adam Charnock)
-70c0bf5a7e	Pulling statement import code into Hordak from Swiftwind (Adam Charnock)
-dbc2251e50	Splitting up models.py in prep for pulling in functionality from swiftwind (Adam Charnock)
+* 94cf1ca8f2	Adding auth views to allow login (Adam Charnock)
+* f442f4440c	Adding login_required decorator to views (Adam Charnock)
+* 7e1802cf43	Adding blocks to currency trade template (Adam Charnock)
+* 92a57ce2d9	Updating currency exchange link text (Adam Charnock)
+* 3f788018b4	Setting currency exchange page title (Adam Charnock)
+* bc3a9e4d5b	Adding currency trading view (Adam Charnock)
+* 13588772fc	Adding test and support for simple currency account transfers (Adam Charnock)
+* 28aa6a012e	Fixing typos (Adam Charnock)
+* 25e1125d46	Now building on django 1.11 (Adam Charnock)
+* 10fc111140	Bumping django-smalluuid version requirement (Adam Charnock)
+* 73ed75ec25	Fixing travis error (Adam Charnock)
+* 78c390eb58	Increasing django version requirement to 1.9 (Adam Charnock)
+* 7ccdf8c539	Adding classes to transation creation form buttons (Adam Charnock)
+* f76755dcb5	Work on template modularity (Adam Charnock)
+* 081ed75abc	Fixing missing import (Adam Charnock)
+* 1efcb32aaa	Fixing HTML error (Adam Charnock)
+* f794cf68f6	Removing stray chars (Adam Charnock)
+* 2cac0282ca	Tweak to docs (Adam Charnock)
+* d0650bef6d	Adding statement import to interface (Adam Charnock)
+* 70c0bf5a7e	Pulling statement import code into Hordak from Swiftwind (Adam Charnock)
+* dbc2251e50	Splitting up models.py in prep for pulling in functionality from swiftwind (Adam Charnock)
 
 
 Version 1.3.0, Sat 25 Feb 2017
 ===============================
 
-f2bbcf121e	Removing unused docs page (Adam Charnock)
-9d410cdbbb	Removing django-bootstrap requirement (Adam Charnock)
-a1cf5bf26f	Adding app_name to urls.py (Adam Charnock)
-4f9ae70a95	Adding extra blocks to base template (Adam Charnock)
-fc2abb59b5	Colspan update (Adam Charnock)
-19fb6dad6d	Adding currencies column (Adam Charnock)
-0dc0f50e87	Updating docs on extending views (Adam Charnock)
-d8f140121e	Tweaks to account page header (Adam Charnock)
-150ca1c281	Work on docs (Adam Charnock)
-8122dbea9c	Wrapping skeleton css in block (to make removing it easier) (Adam Charnock)
-e934739e68	Now showing balance on transaction listing page (Adam Charnock)
-5663e31829	Fixing account edit view bug (Adam Charnock)
-f1e8be2b9d	Account transaction ui improvements (Adam Charnock)
-7f0b5a8e30	Only showing 'transactions' links for leaf accounts (until we sort out multiple-account transaction listing) (Adam Charnock)
-b4166df277	Work on transaction listing (Adam Charnock)
-868897f596	Adding icon to child accounts (Adam Charnock)
-cbfeb8ef3b	Adding some super-simple styling (pulling skeleton css from CDN) (Adam Charnock)
-676ceea881	Adding simple navigation (Adam Charnock)
-4764093b44	Adding basic navigation (Adam Charnock)
-e9ced4244f	Further work on urls and testing account creation view (Adam Charnock)
-50dcc4941b	Namespacing urls (Adam Charnock)
-8359d15a11	Correcting page name (Adam Charnock)
-96c9b5417a	Updating docs for new views (Adam Charnock)
-bcaadbbef7	Adding basic CRUD views (Adam Charnock)
-9d47807457	Adding template files to manifest (Adam Charnock)
+* f2bbcf121e	Removing unused docs page (Adam Charnock)
+* 9d410cdbbb	Removing django-bootstrap requirement (Adam Charnock)
+* a1cf5bf26f	Adding app_name to urls.py (Adam Charnock)
+* 4f9ae70a95	Adding extra blocks to base template (Adam Charnock)
+* fc2abb59b5	Colspan update (Adam Charnock)
+* 19fb6dad6d	Adding currencies column (Adam Charnock)
+* 0dc0f50e87	Updating docs on extending views (Adam Charnock)
+* d8f140121e	Tweaks to account page header (Adam Charnock)
+* 150ca1c281	Work on docs (Adam Charnock)
+* 8122dbea9c	Wrapping skeleton css in block (to make removing it easier) (Adam Charnock)
+* e934739e68	Now showing balance on transaction listing page (Adam Charnock)
+* 5663e31829	Fixing account edit view bug (Adam Charnock)
+* f1e8be2b9d	Account transaction ui improvements (Adam Charnock)
+* 7f0b5a8e30	Only showing 'transactions' links for leaf accounts (until we sort out multiple-account transaction listing) (Adam Charnock)
+* b4166df277	Work on transaction listing (Adam Charnock)
+* 868897f596	Adding icon to child accounts (Adam Charnock)
+* cbfeb8ef3b	Adding some super-simple styling (pulling skeleton css from CDN) (Adam Charnock)
+* 676ceea881	Adding simple navigation (Adam Charnock)
+* 4764093b44	Adding basic navigation (Adam Charnock)
+* e9ced4244f	Further work on urls and testing account creation view (Adam Charnock)
+* 50dcc4941b	Namespacing urls (Adam Charnock)
+* 8359d15a11	Correcting page name (Adam Charnock)
+* 96c9b5417a	Updating docs for new views (Adam Charnock)
+* bcaadbbef7	Adding basic CRUD views (Adam Charnock)
+* 9d47807457	Adding template files to manifest (Adam Charnock)
 
 
 Version 1.2.0, Sun 18 Dec 2016
 ===============================
 
-d62b271e3c	Python 2 fix (Adam Charnock)
-ae84161285	Adding missing __init__.py file (Adam Charnock)
-11a1b2357e	Mopping up some remaining errors. Adding transaction_create.html (Adam Charnock)
-4e08b669f0	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
-da9fd9e75c	Adding docs for forms (Adam Charnock)
-3824d1624d	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
-335756b10c	Moving ReconcileTransactionsView from Swiftwind -> Hordak (Adam Charnock)
-bd23268e86	Moving CreateTransactionView from Swiftwind -> Hordak (Adam Charnock)
-541434b864	Moving transaction forms from Swiftwind -> Hordak (Adam Charnock)
-7bd594c7ce	Expanding on model docs (esp Account.transfer_to()) (Adam Charnock)
+* d62b271e3c	Python 2 fix (Adam Charnock)
+* ae84161285	Adding missing __init__.py file (Adam Charnock)
+* 11a1b2357e	Mopping up some remaining errors. Adding transaction_create.html (Adam Charnock)
+* 4e08b669f0	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
+* da9fd9e75c	Adding docs for forms (Adam Charnock)
+* 3824d1624d	Moving ratio_split() from Swiftwind -> Hordak (Adam Charnock)
+* 335756b10c	Moving ReconcileTransactionsView from Swiftwind -> Hordak (Adam Charnock)
+* bd23268e86	Moving CreateTransactionView from Swiftwind -> Hordak (Adam Charnock)
+* 541434b864	Moving transaction forms from Swiftwind -> Hordak (Adam Charnock)
+* 7bd594c7ce	Expanding on model docs (esp Account.transfer_to()) (Adam Charnock)
 
 
 Version 1.1.2, Fri 16 Dec 2016
 ===============================
 
-4dba6719eb	setting include_package_data=True in setup.py to ensure static files are included (Adam Charnock)
-4ad1576aa9	Add missing migration for account model (Kevin Dice)
-652c1a372e	Adding settings to MANIFEST (Adam Charnock)
+* 4dba6719eb	setting include_package_data=True in setup.py to ensure static files are included (Adam Charnock)
+* 4ad1576aa9	Add missing migration for account model (Kevin Dice)
+* 652c1a372e	Adding settings to MANIFEST (Adam Charnock)
 
 
 Version 1.1.1, Mon 12 Dec 2016
 ===============================
 
-725c86126f	Expanding on docs change in pull request #6 (Adam Charnock)
-a0695c52c8	Adding `debits()` and `credits()` back to LegManager (Adam Charnock)
-2fae0ef542	Add mptt to installation docs (Kevin Dice)
+* 725c86126f	Expanding on docs change in pull request #6 (Adam Charnock)
+* a0695c52c8	Adding `debits()` and `credits()` back to LegManager (Adam Charnock)
+* 2fae0ef542	Add mptt to installation docs (Kevin Dice)
 
 
 Version 1.1.0, Sat 10 Dec 2016
 ===============================
 
-ff1a0e07c8	Adding changelog (Adam Charnock)
-8b95087434	Tweaks as a result of work on swiftwind (Adam Charnock)
-383895fe11	Fixing old URLS (Adam Charnock)
-4cc2e7146a	Python 2 fixes (Adam Charnock)
-43ea6a33f9	Specifying encoding for python 2.7 (Adam Charnock)
-6512d572e1	Adding currency_exchange() method & docs (Adam Charnock)
-87da427e47	Adding trading account and postgres check to ensure bank accounts are asset accounts (Adam Charnock)
-d82b424f69	Moving footnotes (Adam Charnock)
-5397290d89	Work on docs (Adam Charnock)
-4cbd28b7b0	Fixing tests for multicurrency work (Adam Charnock)
-c19861133d	Doc updates (Adam Charnock)
-a27aa44053	Updates to docs (Adam Charnock)
-68a9b047f6	Work on currency conversion utilities. Adding Balance class. (Adam Charnock)
-c03db337ef	whitespace fix (Adam Charnock)
-c7308df66e	Fixing transaction test (Adam Charnock)
-8f3ce5c74c	Renaming has_statements -> is_bank_account (Adam Charnock)
-17bdd3cacd	Work on currency constraints (Adam Charnock)
-aed8897ed3	Asserting that all legs sum to zero for each currency (Adam Charnock)
-2b4638b7f7	Adding Peter Selinger tutorial (for posterity, in case the site vanishes) (Adam Charnock)
-e6cb485f5a	Link updates (Adam Charnock)
-54a0b9cd18	Adding docs (Adam Charnock)
-41d4bdd42e	Adding comment, correcting todo (Adam Charnock)
-794ae143d3	Adding todo (Adam Charnock)
-4ec34d29d6	Now using MoneyField for transaction leg amount, thanks to django-money (Adam Charnock)
-1aae3404e7	Adding tests for auto_convert flag (Adam Charnock)
-ee95757eba	Integration with py-moneyed, supporting calculations and auto conversion (Adam Charnock)
-10cf0ca3bd	Python 2.7 fixes (Adam Charnock)
-234a931ca6	Currency conversion fixes. Adding skippable test to test against fixer api (Adam Charnock)
-80fad3e2fc	Work on currency converting system (Adam Charnock)
+* ff1a0e07c8	Adding changelog (Adam Charnock)
+* 8b95087434	Tweaks as a result of work on swiftwind (Adam Charnock)
+* 383895fe11	Fixing old URLS (Adam Charnock)
+* 4cc2e7146a	Python 2 fixes (Adam Charnock)
+* 43ea6a33f9	Specifying encoding for python 2.7 (Adam Charnock)
+* 6512d572e1	Adding currency_exchange() method & docs (Adam Charnock)
+* 87da427e47	Adding trading account and postgres check to ensure bank accounts are asset accounts (Adam Charnock)
+* d82b424f69	Moving footnotes (Adam Charnock)
+* 5397290d89	Work on docs (Adam Charnock)
+* 4cbd28b7b0	Fixing tests for multicurrency work (Adam Charnock)
+* c19861133d	Doc updates (Adam Charnock)
+* a27aa44053	Updates to docs (Adam Charnock)
+* 68a9b047f6	Work on currency conversion utilities. Adding Balance class. (Adam Charnock)
+* c03db337ef	whitespace fix (Adam Charnock)
+* c7308df66e	Fixing transaction test (Adam Charnock)
+* 8f3ce5c74c	Renaming has_statements -> is_bank_account (Adam Charnock)
+* 17bdd3cacd	Work on currency constraints (Adam Charnock)
+* aed8897ed3	Asserting that all legs sum to zero for each currency (Adam Charnock)
+* 2b4638b7f7	Adding Peter Selinger tutorial (for posterity, in case the site vanishes) (Adam Charnock)
+* e6cb485f5a	Link updates (Adam Charnock)
+* 54a0b9cd18	Adding docs (Adam Charnock)
+* 41d4bdd42e	Adding comment, correcting todo (Adam Charnock)
+* 794ae143d3	Adding todo (Adam Charnock)
+* 4ec34d29d6	Now using MoneyField for transaction leg amount, thanks to django-money (Adam Charnock)
+* 1aae3404e7	Adding tests for auto_convert flag (Adam Charnock)
+* ee95757eba	Integration with py-moneyed, supporting calculations and auto conversion (Adam Charnock)
+* 10cf0ca3bd	Python 2.7 fixes (Adam Charnock)
+* 234a931ca6	Currency conversion fixes. Adding skippable test to test against fixer api (Adam Charnock)
+* 80fad3e2fc	Work on currency converting system (Adam Charnock)
 
 
 Version 1.0.3, Sun 09 Oct 2016
 ===============================
 
-3cb75d6ce8	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
+* 3cb75d6ce8	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
 
 
 Version 1.0.2, Sun 09 Oct 2016
 ===============================
 
-542bc60a45	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
-1b81dd8d27	Whitespace (Adam Charnock)
-3809a46919	Removing downloads badge (Adam Charnock)
+* 542bc60a45	Adding  parameter to Account.simple_balance() and Account.balance() (Adam Charnock)
+* 1b81dd8d27	Whitespace (Adam Charnock)
+* 3809a46919	Removing downloads badge (Adam Charnock)
 
 
 Version 1.0.1, Fri 16 Sep 2016
 ===============================
 
-3e45ccd3d1	Removing swiftwind fixture (Adam Charnock)
-66e0326e85	Whitespace (Adam Charnock)
-b3e39ba039	Work on transfer_to() logic (should be more sane now) (Adam Charnock)
-905f538761	Minor rst fix (Adam Charnock)
-5446460f3e	Trying to figure out github rst (Adam Charnock)
-730e238e9c	Trying to figure out github rst (Adam Charnock)
-4e7e6b2783	Adding examples to README (Adam Charnock)
-bcbf6d3ad5	Adding examples to README (Adam Charnock)
-ecb47c7a4b	Adding examples to README (Adam Charnock)
-fcedbefc09	Addition to README - Explanation: Double Entry for Software Developers (Adam Charnock)
-66069c405a	transfer_to() now accepts **transaction_kwargs (Adam Charnock)
-e02a753656	Adding net_balance() to account query manager (Adam Charnock)
-28ccdaf31f	Ignoring build dirs (Adam Charnock)
-9bc5ad3704	Updating README description (Adam Charnock)
+* 3e45ccd3d1	Removing swiftwind fixture (Adam Charnock)
+* 66e0326e85	Whitespace (Adam Charnock)
+* b3e39ba039	Work on transfer_to() logic (should be more sane now) (Adam Charnock)
+* 905f538761	Minor rst fix (Adam Charnock)
+* 5446460f3e	Trying to figure out github rst (Adam Charnock)
+* 730e238e9c	Trying to figure out github rst (Adam Charnock)
+* 4e7e6b2783	Adding examples to README (Adam Charnock)
+* bcbf6d3ad5	Adding examples to README (Adam Charnock)
+* ecb47c7a4b	Adding examples to README (Adam Charnock)
+* fcedbefc09	Addition to README - Explanation: Double Entry for Software Developers (Adam Charnock)
+* 66069c405a	`transfer_to()` now accepts `**transaction_kwargs` (Adam Charnock)
+* e02a753656	Adding net_balance() to account query manager (Adam Charnock)
+* 28ccdaf31f	Ignoring build dirs (Adam Charnock)
+* 9bc5ad3704	Updating README description (Adam Charnock)
 
 
 Version 1.0.0 (first version), Tue 13 Sep 2016

@@ -19,7 +19,7 @@ Interfaces which build on Hordak include:
 Requirements
 ------------
 
-Hordak is `tested against`_:
+Hordak is ``tested against``:
 
  * Django >= 2.2, <= 4.0
  * Python >= 3.6
@@ -62,4 +62,3 @@ Indices and tables
 
 .. _swiftwind: https://github.com/adamcharnock/swiftwind
 .. _battlecat: https://github.com/adamcharnock/battlecat
-.. _tested against: https://travis-ci.org/adamcharnock/django-hordak

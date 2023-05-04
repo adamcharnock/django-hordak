@@ -2,7 +2,6 @@ import warnings
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.forms.renderers import BaseRenderer
 from django.test import TestCase
 from django.urls import reverse
 from moneyed import Money
