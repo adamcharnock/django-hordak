@@ -295,12 +295,14 @@ class Account(MPTTModel):
 
     @deprecated(
         "transfer_to() has been deprecated. This method does not adhere to expected transfers based on the "
-        "accounting equation, see notes. Use .accounting_transfer_to() instead. This method will be removed "
-        "in v2.0.0."
+        "accounting equation, see notes. Use .accounting_transfer_to() instead. "
+        "This method will raise an error in v2.0.0."
     )
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
-        """Create a transaction which transfers amount to to_account
+        """**Deprecated** Please use `.accounting_transfer_to()` instead. Will raise an error in Hordak 2.x.
+
+        Create a transaction which transfers amount to to_account
 
         This is a shortcut utility method which simplifies the process of
         transferring between accounts.
