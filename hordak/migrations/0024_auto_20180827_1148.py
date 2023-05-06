@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
             BEGIN
                 -- Set empty string codes to be NULL
                 UPDATE hordak_account SET code = NULL where code = '';
-    
+
                 -- Set full code to the combination of the parent account's codes
                 UPDATE
                     hordak_account AS a
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                         FROM hordak_account AS a2
                         WHERE a2.lft <= a.lft AND a2.rght >= a.rght AND a.tree_id = a2.tree_id
                     );
-    
+
                 -- Set full codes to NULL where a parent account includes a NULL code
                 UPDATE
                     hordak_account AS a

@@ -4,7 +4,6 @@ from django.test import TestCase
 
 from hordak.utilities.money import ratio_split
 
-
 # Note: these tests assume that sorting is stable across all Python versions.
 
 
