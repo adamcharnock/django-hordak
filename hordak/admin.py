@@ -6,6 +6,7 @@ from hordak.models import TransactionCsvImport, TransactionCsvImportColumn
 
 from . import models
 
+
 try:  # SubquerySum is quicker, but django-sql-utils can remain as optional dependency.
     from sql_util.utils import SubquerySum as Sum
 
