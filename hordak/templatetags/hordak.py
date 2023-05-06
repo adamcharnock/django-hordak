@@ -10,7 +10,6 @@ from moneyed import Money
 
 from hordak.utilities.currency import Balance
 
-
 register = template.Library()
 logger = logging.getLogger(__name__)
 

@@ -38,7 +38,6 @@ from hordak import defaults, exceptions
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 from hordak.utilities.currency import Balance
 
-
 #: Debit
 DEBIT = "debit"
 #: Credit
