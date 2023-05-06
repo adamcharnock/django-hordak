@@ -2,6 +2,7 @@ from django.urls import path
 
 from hordak.views import accounts, statement_csv_import, transactions
 
+
 app_name = "hordak"
 
 urlpatterns = [

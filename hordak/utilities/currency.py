@@ -67,6 +67,7 @@ from hordak.exceptions import (
     TradingAccountRequiredError,
 )
 
+
 logger = logging.getLogger(__name__)
 
 
