@@ -6,6 +6,7 @@ from decimal import Decimal
 import babel.numbers
 from django import template
 from django.utils.safestring import mark_safe
+from django.utils.translation import get_language, to_locale
 from moneyed import Money
 
 from hordak.utilities.currency import Balance
@@ -29,6 +30,8 @@ def inv(value):
 
 @register.filter()
 def currency(value):
+    locale = to_locale(get_language())
+
     if value is None:
         return None
 
@@ -36,14 +39,14 @@ def currency(value):
         locale_values = []
         for money in value.monies():
             locale_value = babel.numbers.format_currency(
-                abs(money.amount), currency=money.currency.code
+                abs(money.amount), currency=money.currency.code, locale=locale
             )
             locale_value = (
                 locale_value if money.amount >= 0 else "({})".format(locale_value)
             )
             locale_values.append(locale_value)
     else:
-        locale_value = babel.numbers.format_decimal(abs(value))
+        locale_value = babel.numbers.format_decimal(abs(value), locale=locale)
         locale_value = locale_value if value >= 0 else "({})".format(locale_value)
         locale_values = [locale_value]
 
