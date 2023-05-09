@@ -26,7 +26,7 @@ import sys
 hordak_dir = os.path.abspath("..")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.settings")
 sys.path.insert(0, hordak_dir)
-import django
+import django  # noqa E402
 
 
 django.setup()
@@ -92,7 +92,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import sphinx_rtd_theme
+import sphinx_rtd_theme  # noqa E402
 
 
 html_theme = "sphinx_rtd_theme"

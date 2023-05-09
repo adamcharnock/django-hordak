@@ -1,11 +1,11 @@
 import warnings
 from datetime import date
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
+from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
 
 from hordak import exceptions
@@ -26,6 +26,13 @@ warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
 class AccountTestCase(DataProvider, DbTransactionTestCase):
+    def setUp(self):
+        self.orig_locale = to_locale(get_language())
+        activate("en-US")
+
+    def tearDown(self):
+        activate(self.orig_locale)
+
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts
@@ -53,21 +60,16 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2 = self.account(parent=account1, name="Account 2", code="1")
         account2.refresh_from_db()
 
-        with patch("babel.numbers.format_currency", return_value="FORMATTED"):
-            # NOTE: We don't want to test the currency formatting. In part because
-            # we assume babel has the covered, but also because it will vary with system locale
-            self.assertEqual(
-                str(account2).replace("\xa0", ""), "51 Account 2 [FORMATTED]"
-            )
+        self.assertEqual(str(account2), "51 Account 2 [€0.00]")
 
     def test_str_currency(self):
         account = self.account(currencies=["EUR", "GBP"])
-        self.assertEqual(str(account), "0 Account 1 [€\xa00.00, £\xa00.00]")
+        self.assertEqual(str(account), "0 Account 1 [€0.00, £0.00]")
 
     def test_str_currency_no_full_code(self):
         account = self.account(currencies=["EUR", "GBP"])
         account.full_code = None
-        self.assertEqual(str(account), "Account 1 [€\xa00.00, £\xa00.00]")
+        self.assertEqual(str(account), "Account 1 [€0.00, £0.00]")
 
     def test_str_non_existent_currency(self):
         """__str__ should not fail even if the currency doesn't exist"""

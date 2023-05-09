@@ -12,4 +12,3 @@ API Documentation
     utilities_money
     utilities_currency
     exceptions
-

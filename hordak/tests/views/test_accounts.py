@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.translation import activate, get_language, to_locale
 
 from hordak.forms.accounts import AccountForm
 from hordak.models import Account, Leg, Transaction
@@ -25,11 +26,16 @@ class AccountTransactionsViewTestCase(DataProvider, TestCase):
         )
         self.login()
 
+        self.orig_locale = to_locale(get_language())
+        activate("en-US")
+
+    def tearDown(self):
+        activate(self.orig_locale)
+
     def test_get(self):
         response = self.client.get(self.view_url)
-        # Tests needs to be run with LANG="US" environment variable
         self.assertContains(response, "<td>€10.00</td>", html=True)
-        self.assertContains(response, "<h5>Balance: €&nbsp;10.00</h5>", html=True)
+        self.assertContains(response, "<h5>Balance: €10.00</h5>", html=True)
 
 
 class AccountListViewTestCase(DataProvider, TestCase):
