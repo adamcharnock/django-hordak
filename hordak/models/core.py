@@ -20,9 +20,10 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
+import json
 
 from django.contrib.postgres.fields.array import ArrayField
-from django.db import models
+from django.db import models, connection
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
 from django.utils import timezone
@@ -47,6 +48,80 @@ CREDIT = "credit"
 
 def json_default():
     return {}
+
+
+#  example currencies = ArrayField(
+#         models.CharField(max_length=3, choices=CURRENCY_CHOICES),
+#         db_index=True,
+#         default=defaults.CURRENCIES,
+#         verbose_name=_("currencies"),
+#     )
+
+class HordakMysqlArrayField(models.fields.Field):
+    def __init__(self, base_field, size=None, **kwargs):
+        self.base_field = base_field
+        self.size = size
+        super().__init__(**kwargs)
+
+    def db_type(self, connection):
+        return 'TEXT'
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        # TODO:  implement list of values
+
+    def to_python(self, value):
+        return json.loads(value)
+
+    def get_prep_value(self, value):
+        if isinstance(value, (list, tuple)):
+            # vals = [
+            #     self.base_field.get_db_prep_value(i, connection, prepared=False)
+            #     for i in value
+            # ]
+            vals = [
+                str(i)
+                for i in value
+            ]
+        else:
+            vals = [str(value)]
+        print("json:", json.dumps(vals))
+        return json.dumps(vals)
+
+
+# def HordakArrayField(base_field, size=None, **kwargs):
+#     from django.db import connections
+#     vendor = connections['default'].vendor
+#     if vendor == 'postgresql':
+#         ArrayField(base_field, size=size, **kwargs)
+#     elif vendor == 'mysql':
+#         return HordakMysqlArrayField(base_field, size=size, **kwargs)
+#     else:
+#         raise NotImplementedError('ArrayField not implemented for vendor: {}'.format(vendor))
+
+class HordakArrayField:
+    def __new__(cls, *args, **kwargs):
+        size = None
+        try:
+            size = kwargs.pop("size")
+        except KeyError:
+            pass
+
+        try:
+            base_field = kwargs.pop("base_field")
+        except KeyError:
+            base_field = args[0]
+
+        from django.db import connections
+        vendor = connections['default'].vendor
+        if vendor == 'postgresql':
+            ArrayField(base_field, size=size, **kwargs)
+        elif vendor == 'mysql':
+            print("field", base_field, size, kwargs)
+            return HordakMysqlArrayField(base_field, size=size, **kwargs)
+        else:
+            raise NotImplementedError('ArrayField not implemented for vendor: {}'.format(vendor))
 
 
 class AccountQuerySet(models.QuerySet):
@@ -132,7 +207,13 @@ class Account(MPTTModel):
         "statements into it and that it only supports a single currency",
         verbose_name=_("is bank account"),
     )
-    currencies = ArrayField(
+    # currencies = ArrayField(
+    #     models.CharField(max_length=3, choices=CURRENCY_CHOICES),
+    #     db_index=True,
+    #     default=defaults.CURRENCIES,
+    #     verbose_name=_("currencies"),
+    # )
+    currencies = HordakArrayField(
         models.CharField(max_length=3, choices=CURRENCY_CHOICES),
         db_index=True,
         default=defaults.CURRENCIES,
