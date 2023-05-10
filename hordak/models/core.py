@@ -21,9 +21,11 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.db import models
+from django.db import models, connection, transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField
+from django.db.models import JSONField, Sum
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -530,6 +532,13 @@ class LegManager(models.Manager):
 
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
 
+def _enforce_leg(transaction_id: int):
+    with connection.cursor() as curs:
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers
+        # so we have to do it by calling a procedure here instead
+        if connection.vendor == 'mysql':
+            curs.callproc("check_leg", [transaction_id])
+
 
 class Leg(models.Model):
     """The leg of a transaction
@@ -579,7 +588,10 @@ class Leg(models.Model):
     def save(self, *args, **kwargs):
         if self.amount.amount == 0:
             raise exceptions.ZeroAmountError()
-        return super(Leg, self).save(*args, **kwargs)
+
+        leg = super(Leg, self).save(*args, **kwargs)
+        transaction.on_commit(lambda: _enforce_leg(transaction_id=self.transaction_id))
+        return leg
 
     def natural_key(self):
         return (self.uuid,)
@@ -633,6 +645,12 @@ class Leg(models.Model):
 
     class Meta:
         verbose_name = _("Leg")
+
+
+@receiver(post_save, sender=Leg)
+def _leg_post_save(sender, instance, created, **kwargs):
+    """Update the account balance when a Leg is saved"""
+    print("others", instance.transaction_id, instance.transaction.legs.count())
 
 
 class StatementImportManager(models.Manager):
