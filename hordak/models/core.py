@@ -50,13 +50,6 @@ def json_default():
     return {}
 
 
-#  example currencies = ArrayField(
-#         models.CharField(max_length=3, choices=CURRENCY_CHOICES),
-#         db_index=True,
-#         default=defaults.CURRENCIES,
-#         verbose_name=_("currencies"),
-#     )
-
 class HordakMysqlArrayField(models.fields.Field):
     def __init__(self, base_field, size=None, **kwargs):
         self.base_field = base_field
@@ -66,39 +59,34 @@ class HordakMysqlArrayField(models.fields.Field):
     def db_type(self, connection):
         return 'TEXT'
 
+    def cast_db_type(self, connection):
+        return "%s" % (self.base_field.cast_db_type(connection))
+
     def from_db_value(self, value, expression, connection):
         if value is None:
             return value
-        # TODO:  implement list of values
+        return json.loads(value)
 
     def to_python(self, value):
         return json.loads(value)
 
     def get_prep_value(self, value):
         if isinstance(value, (list, tuple)):
-            # vals = [
-            #     self.base_field.get_db_prep_value(i, connection, prepared=False)
-            #     for i in value
-            # ]
-            vals = [
-                str(i)
-                for i in value
-            ]
+            vals = [str(i) for i in value]
         else:
             vals = [str(value)]
-        print("json:", json.dumps(vals))
         return json.dumps(vals)
 
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.update(
+            {
+                "base_field": self.base_field.clone(),
+                "size": self.size,
+            }
+        )
+        return name, path, args, kwargs
 
-# def HordakArrayField(base_field, size=None, **kwargs):
-#     from django.db import connections
-#     vendor = connections['default'].vendor
-#     if vendor == 'postgresql':
-#         ArrayField(base_field, size=size, **kwargs)
-#     elif vendor == 'mysql':
-#         return HordakMysqlArrayField(base_field, size=size, **kwargs)
-#     else:
-#         raise NotImplementedError('ArrayField not implemented for vendor: {}'.format(vendor))
 
 class HordakArrayField:
     def __new__(cls, *args, **kwargs):
