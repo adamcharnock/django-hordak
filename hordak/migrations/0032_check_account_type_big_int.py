@@ -18,12 +18,6 @@ def create_trigger(apps, schema_editor):
             $$
             LANGUAGE plpgsql;
         """)
-        schema_editor.execute("""
-            CREATE CONSTRAINT TRIGGER check_leg_trigger
-            AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
-            DEFERRABLE INITIALLY DEFERRED
-            FOR EACH ROW EXECUTE PROCEDURE check_leg();
-        """)
 
     elif schema_editor.connection.vendor == 'mysql':
         # we have to call this procedure in Leg.on_commit, because MySQL does not support deferred triggers
