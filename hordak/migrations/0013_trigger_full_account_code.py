@@ -5,12 +5,9 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 
-class Migration(migrations.Migration):
-    dependencies = [("hordak", "0012_account_full_code")]
-
-    operations = [
-        migrations.RunSQL(
-            """
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -27,16 +24,32 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """,
-            "DROP FUNCTION update_full_account_codes()",
-        ),
-        migrations.RunSQL(
-            """
+        """)
+        schema_editor.execute("""
             CREATE TRIGGER update_full_account_codes_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_account
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE update_full_account_codes();
-            """,
-            "DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account;",
-        ),
+        """)
+    elif schema_editor.connection.vendor == 'mysql':
+        pass  # we don't care about MySQL here since support is added in xxxx
+    else:
+        raise NotImplementedError("Don't know how to create trigger for %s" % schema_editor.connection.vendor)
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute("DROP FUNCTION update_full_account_codes()")
+        schema_editor.execute("DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account")
+    elif schema_editor.connection.vendor == 'mysql':
+        pass  # we don't care about MySQL here since support is added in xxxx
+    else:
+        raise NotImplementedError("Don't know how to drop trigger for %s" % schema_editor.connection.vendor)
+
+
+class Migration(migrations.Migration):
+    dependencies = [("hordak", "0012_account_full_code")]
+
+    operations = [
+        migrations.RunPython(create_trigger, reverse_code=drop_trigger),
     ]
