@@ -36,19 +36,7 @@ def create_trigger(apps, schema_editor):
         """)
 
     elif schema_editor.connection.vendor == 'mysql':
-        # we have to call this procedure in Leg.on_commit, because MySQL does not support deferred triggers
-        schema_editor.execute("""
-            CREATE OR REPLACE PROCEDURE check_leg(_transaction_id INT)
-            BEGIN
-            DECLARE transaction_sum DECIMAL(13, 2);
-            SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = _transaction_id;
-                IF transaction_sum != 0 THEN
-                    SET @msg= CONCAT('Sum of transaction amounts must be 0, got ', transaction_sum);
-                    SIGNAL SQLSTATE '45000' SET
-                    MESSAGE_TEXT = @msg;
-                END IF;
-            END
-        """)
+        pass  # we don't care about MySQL here since support is added in 0006
     else:
         raise NotImplementedError("Database vendor %s not supported" % schema_editor.connection.vendor)
 
@@ -58,7 +46,7 @@ def drop_trigger(apps, schema_editor):
         schema_editor.execute("DROP FUNCTION check_leg()")
         schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg")
     elif schema_editor.connection.vendor == 'mysql':
-        schema_editor.execute("DROP PROCEDURE IF EXISTS check_leg")
+        pass
     else:
         raise NotImplementedError("Database vendor %s not supported" % schema_editor.connection.vendor)
 
