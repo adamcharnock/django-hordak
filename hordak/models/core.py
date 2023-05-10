@@ -104,7 +104,7 @@ class HordakArrayField:
         from django.db import connections
         vendor = connections['default'].vendor
         if vendor == 'postgresql':
-            ArrayField(base_field, size=size, **kwargs)
+            return ArrayField(base_field, size=size, **kwargs)
         elif vendor == 'mysql':
             print("field", base_field, size, kwargs)
             return HordakMysqlArrayField(base_field, size=size, **kwargs)
