@@ -42,7 +42,7 @@ def drop_trigger(apps, schema_editor):
         schema_editor.execute("DROP FUNCTION update_full_account_codes()")
         schema_editor.execute("DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account")
     elif schema_editor.connection.vendor == 'mysql':
-        pass  # we don't care about MySQL here since support is added in xxxx
+        pass  # we don't care about MySQL here since support is added in 0027
     else:
         raise NotImplementedError("Don't know how to drop trigger for %s" % schema_editor.connection.vendor)
 
