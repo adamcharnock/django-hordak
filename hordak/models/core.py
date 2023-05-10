@@ -63,16 +63,20 @@ class HordakMysqlArrayField(models.fields.Field):
         return "%s" % (self.base_field.cast_db_type(connection))
 
     def from_db_value(self, value, expression, connection):
+        print("from_db_value", value)
         if value is None:
             return value
         return json.loads(value)
 
-    def to_python(self, value):
-        return json.loads(value)
-
     def get_prep_value(self, value):
+        print("get_prep_value", value)
+        if value is None:
+            return None
+
         if isinstance(value, (list, tuple)):
             vals = [str(i) for i in value]
+        elif isinstance(value, str):
+            vals = value.split(',')
         else:
             vals = [str(value)]
         return json.dumps(vals)
