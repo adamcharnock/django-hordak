@@ -4,6 +4,8 @@ import django.contrib.postgres.fields
 import djmoney.models.fields
 from django.db import migrations, models
 
+import hordak.models
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -14,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="account",
             name="currencies",
-            field=django.contrib.postgres.fields.ArrayField(
+            field=hordak.models.HordakArrayField(
                 base_field=models.CharField(
                     choices=[
                         ("XUA", "ADB Unit of Account"),

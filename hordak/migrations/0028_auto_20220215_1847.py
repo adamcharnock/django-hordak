@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="account",
             name="currencies",
-            field=django.contrib.postgres.fields.ArrayField(
+            field=hordak.models.core.HordakArrayField(
                 base_field=models.CharField(max_length=3),
                 db_index=True,
                 size=None,
