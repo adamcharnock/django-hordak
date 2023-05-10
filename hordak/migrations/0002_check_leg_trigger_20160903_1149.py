@@ -36,6 +36,7 @@ def create_trigger(apps, schema_editor):
         """)
 
     elif schema_editor.connection.vendor == 'mysql':
+        # we have to call this procedure in Leg.on_commit, because MySQL does not support deferred triggers
         schema_editor.execute("""
             CREATE OR REPLACE PROCEDURE check_leg(_transaction_id INT)
             BEGIN
@@ -48,30 +49,6 @@ def create_trigger(apps, schema_editor):
                 END IF;
             END
         """)
-        schema_editor.execute("""
-            CREATE TRIGGER check_leg_insert_trigger
-            AFTER INSERT ON hordak_leg
-            FOR EACH ROW
-            BEGIN
-                CALL check_leg(NEW.transaction_id);
-            END
-        """)
-        schema_editor.execute("""
-            CREATE TRIGGER check_leg_update_trigger
-            AFTER UPDATE ON hordak_leg
-            FOR EACH ROW
-            BEGIN
-                CALL check_leg(NEW.transaction_id);
-            END
-        """)
-        schema_editor.execute("""
-            CREATE TRIGGER check_leg_delete_trigger
-            AFTER DELETE ON hordak_leg
-            FOR EACH ROW
-            BEGIN
-                CALL check_leg(OLD.transaction_id);
-            END
-        """)
     else:
         raise NotImplementedError("Database vendor %s not supported" % schema_editor.connection.vendor)
 
@@ -82,7 +59,6 @@ def drop_trigger(apps, schema_editor):
         schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg")
     elif schema_editor.connection.vendor == 'mysql':
         schema_editor.execute("DROP PROCEDURE IF EXISTS check_leg")
-        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_trigger")
     else:
         raise NotImplementedError("Database vendor %s not supported" % schema_editor.connection.vendor)
 
