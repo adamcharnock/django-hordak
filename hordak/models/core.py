@@ -54,6 +54,12 @@ def json_default():
 
 
 class HordakMysqlArrayField(models.fields.Field):
+    empty_strings_allowed = False
+    default_error_messages = {
+        "item_invalid": _("Item %(nth)s in the array did not validate:"),
+        "nested_array_mismatch": _("Nested arrays must have the same length."),
+    }
+
     def __init__(self, base_field, size=None, **kwargs):
         self.base_field = base_field
         self.size = size
@@ -93,6 +99,24 @@ class HordakMysqlArrayField(models.fields.Field):
             }
         )
         return name, path, args, kwargs
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = [self.base_field.to_python(val) for val in value.split(",")]
+        return value
+
+    def validate(self, value, model_instance):
+        super().validate(value, model_instance)
+
+        for index, part in enumerate(value):
+            self.base_field.validate(part, model_instance)
+
+        if isinstance(self.base_field, ArrayField):
+            if len({len(i) for i in value}) > 1:
+                raise exceptions.ValidationError(
+                    self.error_messages["nested_array_mismatch"],
+                    code="nested_array_mismatch",
+                )
 
 
 class HordakArrayField:
