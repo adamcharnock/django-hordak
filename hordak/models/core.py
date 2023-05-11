@@ -131,8 +131,10 @@ class AccountManager(TreeManager):
 
 def _enforce_account():
     with connection.cursor() as curs:
-        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers,
+        # and does not support triggers updating the table they are triggered from
         # so we have to do it by calling a procedure here instead
+        # (https://stackoverflow.com/a/15300941/1908381)
         if connection.vendor == 'mysql':
             curs.callproc("update_full_account_codes")
 
