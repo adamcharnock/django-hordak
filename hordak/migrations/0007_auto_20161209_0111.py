@@ -5,43 +5,87 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute("""
+            CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
+                RETURNS trigger AS
+            $$
+            DECLARE
+
+            BEGIN
+
+                IF (TG_OP = 'DELETE') THEN
+                    RETURN OLD;
+                END IF;
+
+                PERFORM * FROM hordak_account WHERE id = NEW.account_id AND NEW.amount_currency = ANY(currencies);
+
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'Destination account does not support currency %', NEW.amount_currency;
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$
+            LANGUAGE plpgsql
+        """)
+        schema_editor.execute("""
+            CREATE CONSTRAINT TRIGGER check_leg_and_account_currency_match_trigger
+            AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
+            DEFERRABLE INITIALLY DEFERRED
+            FOR EACH ROW EXECUTE PROCEDURE check_leg_and_account_currency_match()
+        """)
+    elif schema_editor.connection.vendor == 'mysql':
+        schema_editor.execute("""
+            CREATE PROCEDURE check_leg_and_account_currency_match(_account_id INT, _amount_currency VARCHAR(3))
+            BEGIN
+            DECLARE ncurrencies INT;
+            SELECT COUNT(0) INTO ncurrencies FROM hordak_account WHERE id = _account_id AND JSON_CONTAINS(currencies, JSON_QUOTE(_amount_currency));
+            IF ncurrencies = 0 THEN
+                SET @msg= CONCAT('Destination account does not support currency ', _amount_currency);
+                SIGNAL SQLSTATE '45000' SET
+                MESSAGE_TEXT = @msg;
+            END IF;
+            END;
+        """)
+        schema_editor.execute("""
+            CREATE TRIGGER check_leg_and_account_currency_match_on_insert
+            AFTER INSERT ON hordak_leg
+            FOR EACH ROW
+            BEGIN
+                CALL check_leg_and_account_currency_match(NEW.account_id, NEW.amount_currency);
+            END;
+        """)
+        schema_editor.execute("""
+            CREATE TRIGGER check_leg_and_account_currency_match_on_update
+            AFTER UPDATE ON hordak_leg
+            FOR EACH ROW
+            BEGIN
+                CALL check_leg_and_account_currency_match(NEW.account_id, NEW.amount_currency);
+            END;
+        """)
+        # DELETE trigger seems unnecessary here - there isn't any point validating the thing we've just deleted
+    else:
+        raise Exception("Unsupported database vendor: %s" % schema_editor.connection.vendor)
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg")
+        schema_editor.execute("DROP FUNCTION check_leg_and_account_currency_match()")
+    elif schema_editor.connection.vendor == 'mysql':
+        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_insert")
+        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_update")
+        schema_editor.execute("DROP PROCEDURE IF EXISTS check_leg_and_account_currency_match")
+    else:
+        raise Exception("Unsupported database vendor: %s" % schema_editor.connection.vendor)
+
+
 class Migration(migrations.Migration):
     dependencies = [("hordak", "0006_auto_20161209_0108")]
+    atomic = False
 
     operations = [
-        migrations.RunSQL(
-            """
-                CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
-                    RETURNS trigger AS
-                $$
-                DECLARE
-
-                BEGIN
-
-                    IF (TG_OP = 'DELETE') THEN
-                        RETURN OLD;
-                    END IF;
-
-                    PERFORM * FROM hordak_account WHERE id = NEW.account_id AND NEW.amount_currency = ANY(currencies);
-
-                    IF NOT FOUND THEN
-                        RAISE EXCEPTION 'Destination account does not support currency %', NEW.amount_currency;
-                    END IF;
-
-                    RETURN NEW;
-                END;
-                $$
-                LANGUAGE plpgsql
-            """,
-            "DROP FUNCTION check_leg_and_account_currency_match()",
-        ),
-        migrations.RunSQL(
-            """
-                CREATE CONSTRAINT TRIGGER check_leg_and_account_currency_match_trigger
-                AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
-                DEFERRABLE INITIALLY DEFERRED
-                FOR EACH ROW EXECUTE PROCEDURE check_leg_and_account_currency_match()
-            """,
-            "DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg",
-        ),
+        migrations.RunPython(create_trigger, reverse_code=drop_trigger),
     ]
