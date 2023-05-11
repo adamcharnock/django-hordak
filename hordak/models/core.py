@@ -70,6 +70,14 @@ class AccountManager(TreeManager):
         return self.get(uuid=uuid)
 
 
+def _enforce_account():
+    with connection.cursor() as curs:
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers
+        # so we have to do it by calling a procedure here instead
+        if connection.vendor == 'mysql':
+            curs.callproc("update_full_account_codes")
+
+
 class Account(MPTTModel):
     """Represents an account
 
@@ -180,6 +188,7 @@ class Account(MPTTModel):
                 "currencies",
             ]
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
+        transaction.on_commit(_enforce_account)
 
         do_refresh = False
 
