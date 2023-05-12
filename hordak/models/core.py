@@ -84,13 +84,11 @@ class HordakMysqlArrayField(CheckFieldDefaultMixin, models.fields.Field):
         return "%s" % (self.base_field.cast_db_type(connection))
 
     def from_db_value(self, value, expression, connection):
-        print("from_db_value", value)
         if value is None:
             return value
         return json.loads(value)
 
     def get_prep_value(self, value):
-        print("get_prep_value", value)
         if value is None:
             return None
 
@@ -191,7 +189,6 @@ class HordakArrayField:
         if vendor == 'postgresql':
             return ArrayField(base_field, size=size, **kwargs)
         elif vendor == 'mysql':
-            print("field", base_field, size, kwargs)
             return HordakMysqlArrayField(base_field, size=size, **kwargs)
         else:
             raise NotImplementedError('ArrayField not implemented for vendor: {}'.format(vendor))
@@ -724,10 +721,6 @@ class Leg(models.Model):
         verbose_name = _("Leg")
 
 
-@receiver(post_save, sender=Leg)
-def _leg_post_save(sender, instance, created, **kwargs):
-    """Update the account balance when a Leg is saved"""
-    print("others", instance.transaction_id, instance.transaction.legs.count())
 
 
 class StatementImportManager(models.Manager):
