@@ -23,7 +23,8 @@ Additionally, there are models which related to the import of external bank stat
 import json
 
 from django.contrib.postgres.fields.array import ArrayField
-from django.core.exceptions import ValidationError
+from django.contrib.postgres.forms import SimpleArrayField
+from django.core import exceptions as django_exceptions
 from django.db import models, connection, transaction
 from django.db import transaction as db_transaction
 from django.db.models import JSONField, Sum
@@ -42,6 +43,10 @@ from hordak import defaults, exceptions
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 from hordak.utilities.currency import Balance
 
+from django.contrib.postgres.utils import prefix_validation_error
+from django.contrib.postgres.validators import ArrayMaxLengthValidator
+from django.db.models.fields.mixins import CheckFieldDefaultMixin
+
 
 #: Debit
 DEBIT = "debit"
@@ -53,16 +58,23 @@ def json_default():
     return {}
 
 
-class HordakMysqlArrayField(models.fields.Field):
+class HordakMysqlArrayField(CheckFieldDefaultMixin, models.fields.Field):
     empty_strings_allowed = False
     default_error_messages = {
         "item_invalid": _("Item %(nth)s in the array did not validate:"),
         "nested_array_mismatch": _("Nested arrays must have the same length."),
     }
+    _default_hint = ("list", "[]")
 
     def __init__(self, base_field, size=None, **kwargs):
         self.base_field = base_field
         self.size = size
+
+        if self.size:
+            self.default_validators = [
+                *self.default_validators,
+                ArrayMaxLengthValidator(self.size),
+            ]
         super().__init__(**kwargs)
 
     def db_type(self, connection):
@@ -107,17 +119,59 @@ class HordakMysqlArrayField(models.fields.Field):
 
     def validate(self, value, model_instance):
         super().validate(value, model_instance)
-
         for index, part in enumerate(value):
-            self.base_field.validate(part, model_instance)
-
+            try:
+                self.base_field.validate(part, model_instance)
+            except django_exceptions.ValidationError as error:
+                raise prefix_validation_error(
+                    error,
+                    prefix=self.error_messages["item_invalid"],
+                    code="item_invalid",
+                    params={"nth": index + 1},
+                )
         if isinstance(self.base_field, ArrayField):
             if len({len(i) for i in value}) > 1:
-                raise exceptions.ValidationError(
+                raise django_exceptions.ValidationError(
                     self.error_messages["nested_array_mismatch"],
                     code="nested_array_mismatch",
                 )
 
+    def run_validators(self, value):
+        super().run_validators(value)
+        for index, part in enumerate(value):
+            try:
+                self.base_field.run_validators(part)
+            except exceptions.ValidationError as error:
+                raise prefix_validation_error(
+                    error,
+                    prefix=self.error_messages["item_invalid"],
+                    code="item_invalid",
+                    params={"nth": index + 1},
+                )
+
+    @property
+    def model(self):
+        try:
+            return self.__dict__["model"]
+        except KeyError:
+            raise AttributeError(
+                "'%s' object has no attribute 'model'" % self.__class__.__name__
+            )
+
+    @model.setter
+    def model(self, model):
+        self.__dict__["model"] = model
+        self.base_field.model = model
+
+    def formfield(self, **kwargs):
+        return super().formfield(
+            **{
+                "form_class": SimpleArrayField,
+                "base_field": self.base_field.formfield(),
+                "max_length": self.size,
+                **kwargs,
+            }
+        )
 
 class HordakArrayField:
     def __new__(cls, *args, **kwargs):
