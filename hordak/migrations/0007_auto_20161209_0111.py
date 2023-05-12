@@ -22,7 +22,7 @@ def create_trigger(apps, schema_editor):
                 PERFORM * FROM hordak_account WHERE id = NEW.account_id AND NEW.amount_currency = ANY(currencies);
 
                 IF NOT FOUND THEN
-                    RAISE EXCEPTION 'Destination account does not support currency %', NEW.amount_currency;
+                    RAISE EXCEPTION 'Destination account does not support currency %%', NEW.amount_currency;
                 END IF;
 
                 RETURN NEW;
