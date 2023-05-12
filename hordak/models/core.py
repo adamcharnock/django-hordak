@@ -658,10 +658,6 @@ class Leg(models.Model):
         verbose_name = _("Leg")
 
 
-@receiver(post_save, sender=Leg)
-def _leg_post_save(sender, instance, created, **kwargs):
-    """Update the account balance when a Leg is saved"""
-    print("others", instance.transaction_id, instance.transaction.legs.count())
 
 
 class StatementImportManager(models.Manager):
