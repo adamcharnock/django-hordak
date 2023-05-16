@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
+from django.test import TestCase
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
@@ -815,3 +816,19 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()
+
+
+class TestQueryAccount(DataProvider, TestCase):
+    def test_contains_currency(self):
+        account1 = self.account(name="Account 1", currencies=["EUR", "USD"])
+        account2 = self.account(name="Account 2", currencies=["SGD", "USD"])
+        account3 = self.account(name="Account 3", currencies=["SGD", "MYR"])
+
+        self.assertIn(account1, Account.objects.filter(currencies__contains=["USD"]))
+        self.assertIn(account2, Account.objects.filter(currencies__contains=["USD"]))
+
+        self.assertIn(account2, Account.objects.filter(currencies__contains=["SGD"]))
+        self.assertIn(account3, Account.objects.filter(currencies__contains=["SGD"]))
+
+        self.assertIn(account1, Account.objects.filter(currencies__contains=["EUR"]))
+        self.assertIn(account3, Account.objects.filter(currencies__contains=["MYR"]))

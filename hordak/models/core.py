@@ -21,7 +21,6 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.contrib.postgres.fields.array import ArrayField
 from django.db import models
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
@@ -29,7 +28,6 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
-from djmoney.settings import CURRENCY_CHOICES
 from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
@@ -47,6 +45,10 @@ CREDIT = "credit"
 
 def json_default():
     return {}
+
+
+def default_currencies():
+    return defaults.CURRENCIES
 
 
 class AccountQuerySet(models.QuerySet):
@@ -132,10 +134,9 @@ class Account(MPTTModel):
         "statements into it and that it only supports a single currency",
         verbose_name=_("is bank account"),
     )
-    currencies = ArrayField(
-        models.CharField(max_length=3, choices=CURRENCY_CHOICES),
+    currencies = JSONField(
         db_index=True,
-        default=defaults.CURRENCIES,
+        default=default_currencies,
         verbose_name=_("currencies"),
     )
 

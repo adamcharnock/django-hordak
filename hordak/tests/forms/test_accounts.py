@@ -9,7 +9,7 @@ class SimpleTransactionFormTestCase(TestCase):
         form = AccountForm(
             {
                 "name": "Foo account",
-                "currencies": "USD,EUR",
+                "currencies": ["USD", "EUR"],
             }
         )
         self.assertTrue(form.is_valid())
@@ -24,7 +24,7 @@ class SimpleTransactionFormTestCase(TestCase):
         form = AccountForm(
             {
                 "name": "Foo account",
-                "currencies": "USD,EUR",
+                "currencies": ["USD", "EUR"],
                 "code": "foo",
             }
         )
@@ -41,16 +41,14 @@ class SimpleTransactionFormTestCase(TestCase):
         form = AccountForm(
             {
                 "name": "Foo account",
-                "currencies": "FOO",
+                "currencies": ["FOO"],
             }
         )
         self.assertEqual(
             form.errors,
             {
                 "currencies": [
-                    "Item 1 in the array did not validate: "
-                    "Select a valid choice. "
-                    "FOO is not one of the available choices."
+                    "Select a valid choice. " "FOO is not one of the available choices."
                 ]
             },
         )

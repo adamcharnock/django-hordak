@@ -1,4 +1,5 @@
 from django import forms
+from djmoney.settings import CURRENCY_CHOICES
 
 from hordak.models import Account
 
@@ -15,6 +16,12 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
         exclude = ["full_code"]
+
+    currencies = forms.MultipleChoiceField(
+        choices=CURRENCY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+    )
 
     def __init__(self, *args, **kwargs):
         self.is_updating = bool(kwargs.get("instance")) and kwargs["instance"].pk

@@ -73,7 +73,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="01",
                 type="IN",
                 is_bank_account="",
-                currencies="EUR,GBP",
+                currencies=["EUR", "GBP"],
             ),
         )
         if response.context:
@@ -109,7 +109,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="01",
                 type="AS",
                 is_bank_account="yes",
-                currencies="EUR,GBP",
+                currencies=["EUR", "GBP"],
             )
         )
         self.assertFalse(form.is_valid())
@@ -125,7 +125,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="IN",
                 is_bank_account="",
-                currencies="EUR,GBP",
+                currencies=["EUR", "GBP"],
             ),
         )
         if response.context:
@@ -142,15 +142,14 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="IN",
                 is_bank_account="",
-                currencies="FOO",
+                currencies=["FOO"],
             ),
         )
         self.assertEqual(
             response.context["form"].errors,
             {
                 "currencies": [
-                    "Item 1 in the array did not validate: Select a valid choice. "
-                    "FOO is not one of the available choices."
+                    "Select a valid choice. " "FOO is not one of the available choices."
                 ]
             },
         )
