@@ -23,9 +23,7 @@ Additionally, there are models which related to the import of external bank stat
 
 from django.db import models, connection, transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField, Sum
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.db.models import JSONField
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -72,8 +70,8 @@ class AccountManager(TreeManager):
 
 def _enforce_account():
     with connection.cursor() as curs:
-        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers,
-        # and does not support triggers updating the table they are triggered from
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
+        # triggers, and does not support triggers updating the table they are triggered from
         # so we have to do it by calling a procedure here instead
         # (https://stackoverflow.com/a/15300941/1908381)
         if connection.vendor == 'mysql':
@@ -543,10 +541,11 @@ class LegManager(models.Manager):
 
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
 
+
 def _enforce_leg(transaction_id: int):
     with connection.cursor() as curs:
-        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint triggers
-        # so we have to do it by calling a procedure here instead
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
+        # triggers so we have to do it by calling a procedure here instead
         if connection.vendor == 'mysql':
             curs.callproc("check_leg", [transaction_id])
 
@@ -656,8 +655,6 @@ class Leg(models.Model):
 
     class Meta:
         verbose_name = _("Leg")
-
-
 
 
 class StatementImportManager(models.Manager):
