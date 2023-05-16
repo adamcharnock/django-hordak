@@ -49,6 +49,14 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      mariadb:
+        image: mariadb
+        env:
+          MARIADB_DATABASE: mariadb
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        ports:
+          - 3306:3306
 
     steps:
       - uses: actions/checkout@v2
@@ -64,6 +72,8 @@ jobs:
 
       - name: Install
         run: |
+           sudo apt-get update
+           sudo apt-get install -y mariadb-client-10.6
            python setup.py develop
            pip install -e .
            pip install -r requirements_test.txt
@@ -77,7 +87,7 @@ jobs:
           pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
-      - name: Testing
+      - name: Testing (PostgreSQL)
         run: |
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
           pip install -e .[subqueries]
@@ -85,6 +95,16 @@ jobs:
           coverage xml && codecov
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost/postgres"
+      - name: Testing (MariaDB)
+        run: |
+          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
+
+          PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
+          pip install -e .[subqueries]
+          PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
+          coverage xml && codecov
+        env:
+          DATABASE_URL: "mysql://root@127.0.0.1:3306/mariadb"
 
   lint:
     runs-on: ubuntu-latest
