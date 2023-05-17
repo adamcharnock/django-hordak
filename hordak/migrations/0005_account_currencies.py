@@ -15,11 +15,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="account",
             name="currencies",
-            field=hordak.models.core.HordakArrayField(
-                base_field=models.CharField(max_length=3),
-                db_index=True,
+            field=models.JSONField(
                 default=["EUR"],
-                size=None,
             ),
             preserve_default=False,
         )

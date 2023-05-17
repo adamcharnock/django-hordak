@@ -56,10 +56,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="account",
             name="currencies",
-            field=hordak.models.core.HordakArrayField(
-                base_field=models.CharField(max_length=3),
-                db_index=True,
-                size=None,
+            field=models.JSONField(
                 verbose_name="currencies",
             ),
         ),
