@@ -21,7 +21,8 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.db import models, connection, transaction
+from django.db import connection, models
+from django.db import transaction
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
 from django.utils import timezone
@@ -74,7 +75,7 @@ def _enforce_account():
         # triggers, and does not support triggers updating the table they are triggered from
         # so we have to do it by calling a procedure here instead
         # (https://stackoverflow.com/a/15300941/1908381)
-        if connection.vendor == 'mysql':
+        if connection.vendor == "mysql":
             curs.callproc("update_full_account_codes")
 
 
@@ -546,7 +547,7 @@ def _enforce_leg(transaction_id: int):
     with connection.cursor() as curs:
         # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
         # triggers so we have to do it by calling a procedure here instead
-        if connection.vendor == 'mysql':
+        if connection.vendor == "mysql":
             curs.callproc("check_leg", [transaction_id])
 
 

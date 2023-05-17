@@ -6,8 +6,9 @@ from django.db import migrations
 
 
 def create_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute("""
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
             CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
                 RETURNS trigger AS
             $$
@@ -29,15 +30,19 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql
-        """)
-        schema_editor.execute("""
+        """
+        )
+        schema_editor.execute(
+            """
             CREATE CONSTRAINT TRIGGER check_leg_and_account_currency_match_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
             DEFERRABLE INITIALLY DEFERRED
             FOR EACH ROW EXECUTE PROCEDURE check_leg_and_account_currency_match()
-        """)
-    elif schema_editor.connection.vendor == 'mysql':
-        schema_editor.execute("""
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            """
             CREATE PROCEDURE check_leg_and_account_currency_match(_account_id INT, _amount_currency VARCHAR(3))
             BEGIN
             DECLARE ncurrencies INT;
@@ -48,38 +53,55 @@ def create_trigger(apps, schema_editor):
                 MESSAGE_TEXT = @msg;
             END IF;
             END;
-        """)
-        schema_editor.execute("""
+        """
+        )
+        schema_editor.execute(
+            """
             CREATE TRIGGER check_leg_and_account_currency_match_on_insert
             AFTER INSERT ON hordak_leg
             FOR EACH ROW
             BEGIN
                 CALL check_leg_and_account_currency_match(NEW.account_id, NEW.amount_currency);
             END;
-        """)
-        schema_editor.execute("""
+        """
+        )
+        schema_editor.execute(
+            """
             CREATE TRIGGER check_leg_and_account_currency_match_on_update
             AFTER UPDATE ON hordak_leg
             FOR EACH ROW
             BEGIN
                 CALL check_leg_and_account_currency_match(NEW.account_id, NEW.amount_currency);
             END;
-        """)
+        """
+        )
         # DELETE trigger seems unnecessary here - there isn't any point validating the thing we've just deleted
     else:
-        raise Exception("Unsupported database vendor: %s" % schema_editor.connection.vendor)
+        raise Exception(
+            "Unsupported database vendor: %s" % schema_editor.connection.vendor
+        )
 
 
 def drop_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg")
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            "DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_trigger ON hordak_leg"
+        )
         schema_editor.execute("DROP FUNCTION check_leg_and_account_currency_match()")
-    elif schema_editor.connection.vendor == 'mysql':
-        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_insert")
-        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_update")
-        schema_editor.execute("DROP PROCEDURE IF EXISTS check_leg_and_account_currency_match")
+    elif schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            "DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_insert"
+        )
+        schema_editor.execute(
+            "DROP TRIGGER IF EXISTS check_leg_and_account_currency_match_on_update"
+        )
+        schema_editor.execute(
+            "DROP PROCEDURE IF EXISTS check_leg_and_account_currency_match"
+        )
     else:
-        raise Exception("Unsupported database vendor: %s" % schema_editor.connection.vendor)
+        raise Exception(
+            "Unsupported database vendor: %s" % schema_editor.connection.vendor
+        )
 
 
 class Migration(migrations.Migration):
