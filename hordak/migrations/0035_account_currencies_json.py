@@ -13,6 +13,8 @@ def copy_currencies_data(apps, schema_editor):
         )  # replace 'myapp' and 'MyModel' with your actual app and model names
         table_name = MyModel._meta.db_table
         with schema_editor.connection.cursor() as cursor:
+            # only run this if there is data in the table (in which case we're an ARRAY to migrate);
+            # disregard if migrations are being run on a fresh database
             if MyModel.objects.count() > 0:
                 cursor.execute(
                     f"""
