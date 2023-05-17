@@ -2,9 +2,11 @@
 
 from django.db import migrations
 
+
 def create_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute("""
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -40,15 +42,17 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """)
+        """
+        )
 
-    elif schema_editor.connection.vendor == 'mysql':
-        schema_editor.execute("""
+    elif schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            """
             CREATE PROCEDURE update_full_account_codes()
             BEGIN
                 -- Set empty string codes to be NULL
                 UPDATE hordak_account SET code = NULL where code = '';
-                
+
                 UPDATE
                     hordak_account AS a
                 SET
@@ -73,20 +77,25 @@ def create_trigger(apps, schema_editor):
                     ) > 0
                     AND full_code IS NOT NULL;  -- search only account trees without null codes
             END
-        """)
+        """
+        )
 
     else:
-        raise NotImplementedError("Don't know how to create trigger for %s" % schema_editor.connection.vendor)
+        raise NotImplementedError(
+            "Don't know how to create trigger for %s" % schema_editor.connection.vendor
+        )
 
 
 def drop_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
+    if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("DROP FUNCTION update_full_account_codes()")
-    elif schema_editor.connection.vendor == 'mysql':
+    elif schema_editor.connection.vendor == "mysql":
         # the triggers will have to be called within django again...
         schema_editor.execute("DROP PROCEDURE update_full_account_codes")
     else:
-        raise NotImplementedError("Don't know how to drop trigger for %s" % schema_editor.connection.vendor)
+        raise NotImplementedError(
+            "Don't know how to drop trigger for %s" % schema_editor.connection.vendor
+        )
 
 
 class Migration(migrations.Migration):

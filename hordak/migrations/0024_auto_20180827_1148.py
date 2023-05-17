@@ -4,8 +4,9 @@ from django.db import migrations, models
 
 
 def create_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
-        schema_editor.execute("""
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -38,20 +39,25 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """)
-    elif schema_editor.connection.vendor == 'mysql':
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
         pass  # we don't care about MySQL here since support is added in 0027
     else:
-        raise NotImplementedError("Don't know how to create trigger for %s" % schema_editor.connection.vendor)
+        raise NotImplementedError(
+            "Don't know how to create trigger for %s" % schema_editor.connection.vendor
+        )
 
 
 def drop_trigger(apps, schema_editor):
-    if schema_editor.connection.vendor == 'postgresql':
+    if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("DROP FUNCTION update_full_account_codes()")
-    elif schema_editor.connection.vendor == 'mysql':
+    elif schema_editor.connection.vendor == "mysql":
         pass
     else:
-        raise NotImplementedError("Don't know how to drop trigger for %s" % schema_editor.connection.vendor)
+        raise NotImplementedError(
+            "Don't know how to drop trigger for %s" % schema_editor.connection.vendor
+        )
 
 
 class Migration(migrations.Migration):

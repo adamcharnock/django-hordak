@@ -24,10 +24,14 @@ import json
 
 from django.contrib.postgres.fields.array import ArrayField
 from django.contrib.postgres.forms import SimpleArrayField
+from django.contrib.postgres.utils import prefix_validation_error
+from django.contrib.postgres.validators import ArrayMaxLengthValidator
 from django.core import exceptions as django_exceptions
-from django.db import models, connection, transaction
+from django.db import connection, models
+from django.db import transaction
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
+from django.db.models.fields.mixins import CheckFieldDefaultMixin
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -40,10 +44,6 @@ from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from hordak import defaults, exceptions
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 from hordak.utilities.currency import Balance
-
-from django.contrib.postgres.utils import prefix_validation_error
-from django.contrib.postgres.validators import ArrayMaxLengthValidator
-from django.db.models.fields.mixins import CheckFieldDefaultMixin
 
 
 #: Debit
@@ -76,7 +76,7 @@ class HordakMysqlArrayField(CheckFieldDefaultMixin, models.fields.Field):
         super().__init__(**kwargs)
 
     def db_type(self, connection):
-        return 'TEXT'
+        return "TEXT"
 
     def cast_db_type(self, connection):
         return "%s" % (self.base_field.cast_db_type(connection))
@@ -93,7 +93,7 @@ class HordakMysqlArrayField(CheckFieldDefaultMixin, models.fields.Field):
         if isinstance(value, (list, tuple)):
             vals = [str(i) for i in value]
         elif isinstance(value, str):
-            vals = value.split(',')
+            vals = value.split(",")
         else:
             vals = [str(value)]
         return json.dumps(vals)
@@ -184,13 +184,16 @@ class HordakArrayField:
             base_field = args[0]
 
         from django.db import connections
-        vendor = connections['default'].vendor
-        if vendor == 'postgresql':
+
+        vendor = connections["default"].vendor
+        if vendor == "postgresql":
             return ArrayField(base_field, size=size, **kwargs)
-        elif vendor == 'mysql':
+        elif vendor == "mysql":
             return HordakMysqlArrayField(base_field, size=size, **kwargs)
         else:
-            raise NotImplementedError('ArrayField not implemented for vendor: {}'.format(vendor))
+            raise NotImplementedError(
+                "ArrayField not implemented for vendor: {}".format(vendor)
+            )
 
 
 class AccountQuerySet(models.QuerySet):
@@ -209,7 +212,7 @@ def _enforce_account():
         # triggers, and does not support triggers updating the table they are triggered from
         # so we have to do it by calling a procedure here instead
         # (https://stackoverflow.com/a/15300941/1908381)
-        if connection.vendor == 'mysql':
+        if connection.vendor == "mysql":
             curs.callproc("update_full_account_codes")
 
 
@@ -610,7 +613,7 @@ def _enforce_leg(transaction_id: int):
     with connection.cursor() as curs:
         # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
         # triggers so we have to do it by calling a procedure here instead
-        if connection.vendor == 'mysql':
+        if connection.vendor == "mysql":
             curs.callproc("check_leg", [transaction_id])
 
 
