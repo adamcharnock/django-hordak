@@ -1,3 +1,5 @@
+import warnings
+
 from django.db import transaction as db_transaction
 from django.test import TestCase
 from moneyed import Money
@@ -5,6 +7,9 @@ from moneyed import Money
 from hordak.models import Account, Leg, StatementImport, StatementLine, Transaction
 from hordak.tests.utils import BalanceUtils, DataProvider
 from hordak.utilities.currency import Balance
+
+
+warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
 class InitialEquityTestCase(DataProvider, TestCase):

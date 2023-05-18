@@ -1,3 +1,4 @@
+import warnings
 from datetime import date
 from decimal import Decimal
 
@@ -19,6 +20,9 @@ from hordak.models import (
 )
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
+
+
+warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
 class AccountTestCase(DataProvider, DbTransactionTestCase):
@@ -815,3 +819,14 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()
+
+
+class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
+    def test_transfer_to_deprecation(self):
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.asset)
+
+        with self.assertWarns(DeprecationWarning) as warning_cm:
+            src.transfer_to(dst, Money(100, "EUR"))
+
+        self.assertIn("transfer_to() has been deprecated.", str(warning_cm.warning))

@@ -1,6 +1,10 @@
 Version 1.14.0,
 ===============================
+* `transfer_to()` on `Account` is now deprecated and raises a warning
+  in favor of `accounting_transfer_to()`.  It performed transfers differently
+  than expected when comparing it to Dr/Cr double entry accounting, see function notes.
 
+  This function will raise an error in Hordak 2.0.
 * Now using Django's locale to `Balance.__str__`'s `format_money` allowing better formatting and specs.
 
 Version 1.13.0, Fri 17 Feb 2023

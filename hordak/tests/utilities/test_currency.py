@@ -1,5 +1,6 @@
 from __future__ import division
 
+import warnings
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
@@ -24,6 +25,8 @@ from hordak.utilities.currency import (
 
 
 DUMMY_CACHE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
 class TestBackend(BaseBackend):
