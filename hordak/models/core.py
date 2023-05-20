@@ -48,7 +48,12 @@ def json_default():
 
 
 def default_currencies():
-    return defaults.CURRENCIES
+    default_currs = defaults.CURRENCIES
+
+    if callable(default_currs):
+        return default_currs()
+
+    return default_currs
 
 
 class AccountQuerySet(models.QuerySet):
