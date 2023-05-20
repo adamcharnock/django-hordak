@@ -1,14 +1,16 @@
+import importlib
 import warnings
 from datetime import date
 from decimal import Decimal
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
 
+import hordak.defaults
 from hordak import exceptions
 from hordak.models import (
     CREDIT,
@@ -19,6 +21,7 @@ from hordak.models import (
     StatementLine,
     Transaction,
 )
+from hordak.models.core import default_currencies
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
@@ -847,3 +850,23 @@ class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
             src.transfer_to(dst, Money(100, "EUR"))
 
         self.assertIn("transfer_to() has been deprecated.", str(warning_cm.warning))
+
+
+class TestCoreDefaultCurrenciesAsArr(TestCase):
+    @override_settings(CURRENCIES=["EUR", "USD"])
+    def test_default_currencies(self):
+        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
+
+        self.assertEquals(default_currencies(), ["EUR", "USD"])
+
+
+def default_currencies_func():
+    return ["SGD", "MYR"]
+
+
+class TestCoreDefaultCurrenciesAsFunc(TestCase):
+    @override_settings(CURRENCIES=default_currencies_func)
+    def test_default_currencies(self):
+        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
+
+        self.assertEquals(default_currencies(), ["SGD", "MYR"])
