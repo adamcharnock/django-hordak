@@ -8,6 +8,7 @@ import django_smalluuid.models
 import djmoney.models.fields
 import mptt.fields
 from django.db import migrations, models
+from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
 
 import hordak.models.core
 
@@ -142,10 +143,10 @@ class Migration(migrations.Migration):
             model_name="leg",
             name="amount",
             field=djmoney.models.fields.MoneyField(
-                decimal_places=2,
+                decimal_places=DECIMAL_PLACES,
                 default_currency="EUR",
                 help_text="Record debits as positive, credits as negative",
-                max_digits=13,
+                max_digits=MAX_DIGITS,
                 verbose_name="amount",
             ),
         ),
@@ -223,7 +224,9 @@ class Migration(migrations.Migration):
             model_name="statementline",
             name="amount",
             field=models.DecimalField(
-                decimal_places=2, max_digits=13, verbose_name="amount"
+                decimal_places=DECIMAL_PLACES,
+                max_digits=MAX_DIGITS,
+                verbose_name="amount",
             ),
         ),
         migrations.AlterField(
