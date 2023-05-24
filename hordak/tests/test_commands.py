@@ -7,7 +7,7 @@ from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from moneyed.classes import Money
 
 from hordak.models import Account, Leg, RunningTotal, Transaction
-from hordak.tests.utils import DataProvider
+from hordak.tests.utils import DataProvider, TestLocaleMixin
 
 
 class CreateChartOfAccountsTestCase(TestCase):
@@ -25,7 +25,9 @@ class CreateChartOfAccountsTestCase(TestCase):
 
 
 @override_settings(ADMINS=[("Admin", "foo@bar.cz")])
-class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
+class RecalculateRunningTotalsTestCase(
+    TestLocaleMixin, DataProvider, DbTransactionTestCase
+):
     def test_simple(self):
         account1 = self.account()
         account2 = self.account()
@@ -112,7 +114,7 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(
             ret_val,
             "Running totals are INCORRECT: \n\n"
-            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
+            "Account Account 1 has faulty running total for EUR (should be €100.00, is €200.00)\n",
         )
 
     def test_mail_admins(self):
@@ -141,7 +143,7 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(
             ret_val,
             "Running totals are INCORRECT: \n\n"
-            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
+            "Account Account 1 has faulty running total for EUR (should be €100.00, is €200.00)\n",
         )
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(
@@ -150,5 +152,5 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(
             mail.outbox[0].body,
             "Running totals are incorrect for some accounts\n\n"
-            "Account Account 1 has faulty running total for EUR (should be € 100.00, is €200.00)\n",
+            "Account Account 1 has faulty running total for EUR (should be €100.00, is €200.00)\n",
         )

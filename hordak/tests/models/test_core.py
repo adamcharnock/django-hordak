@@ -5,7 +5,6 @@ from decimal import Decimal
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
-from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
 
 from hordak import exceptions
@@ -19,21 +18,14 @@ from hordak.models import (
     StatementLine,
     Transaction,
 )
-from hordak.tests.utils import DataProvider
+from hordak.tests.utils import DataProvider, TestLocaleMixin
 from hordak.utilities.currency import Balance
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
-class AccountTestCase(DataProvider, DbTransactionTestCase):
-    def setUp(self):
-        self.orig_locale = to_locale(get_language())
-        activate("en-US")
-
-    def tearDown(self):
-        activate(self.orig_locale)
-
+class AccountTestCase(TestLocaleMixin, DataProvider, DbTransactionTestCase):
     def test_str_root(self):
         # Account code should not be rendered as we should not
         # associate transaction legs with non-leaf accounts

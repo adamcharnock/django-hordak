@@ -1,13 +1,12 @@
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.translation import activate, get_language, to_locale
 
 from hordak.forms.accounts import AccountForm
 from hordak.models import Account, Leg, Transaction
-from hordak.tests.utils import DataProvider
+from hordak.tests.utils import DataProvider, TestLocaleMixin
 
 
-class AccountTransactionsViewTestCase(DataProvider, TestCase):
+class AccountTransactionsViewTestCase(TestLocaleMixin, DataProvider, TestCase):
     def setUp(self):
         self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
         self.income_account = self.account(
@@ -26,11 +25,7 @@ class AccountTransactionsViewTestCase(DataProvider, TestCase):
         )
         self.login()
 
-        self.orig_locale = to_locale(get_language())
-        activate("en-US")
-
-    def tearDown(self):
-        activate(self.orig_locale)
+        super().setUp()
 
     def test_get(self):
         response = self.client.get(self.view_url)

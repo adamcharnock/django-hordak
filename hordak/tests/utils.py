@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from django.utils.translation import activate, get_language, to_locale
 
 from hordak.models import Account, StatementImport
 from hordak.utilities.currency import Balance
@@ -96,3 +97,16 @@ class BalanceUtils(object):
         ), "Can only compare balances which contain a single currency"
         balance_amount = balance.monies()[0].amount
         assert balance_amount == value, "Balance {} != {}".format(balance_amount, value)
+
+
+class TestLocaleMixin:
+    def setUp(self):
+        self.orig_locale = to_locale(get_language())
+        activate("en-US")
+
+        super().setUp()
+
+    def tearDown(self):
+        activate(self.orig_locale)
+
+        super().tearDown()
