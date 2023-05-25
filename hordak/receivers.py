@@ -1,3 +1,5 @@
+from time import sleep
+
 from django.db import connection
 from django.db.models import F
 from django.db.models.signals import post_delete, pre_save
@@ -23,6 +25,8 @@ def update_running_totals(sender, instance, **kwargs):
     amount_change = instance.account.sign * amount_change
     with connection.cursor() as cursor:
         cursor.execute("LOCK TABLE %s IN EXCLUSIVE MODE" % RunningTotal._meta.db_table)
+
+        sleep(2)
 
         running_total, created = RunningTotal.objects.get_or_create(
             account=instance.account,

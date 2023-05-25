@@ -1,5 +1,7 @@
+import babel
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand
+from django.utils.translation import get_language, to_locale
 
 from hordak.models import Account, Leg
 
@@ -24,6 +26,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        locale = to_locale(get_language())
+
         print(
             f"{'Checking' if options['check'] else 'Recalculating'} running totals for all accounts"
         )
@@ -39,8 +43,15 @@ class Command(BaseCommand):
             faulty_values = account.update_running_totals(check_only=options["check"])
             if faulty_values:
                 for currency, rt_value, correct_value in faulty_values:
+                    correct_value_str = babel.numbers.format_currency(
+                        correct_value.amount,
+                        currency=correct_value.currency.code,
+                        locale=locale,
+                    )
                     output_string += f"Account {account.name} has faulty running total for {currency}"
-                    output_string += f" (should be {correct_value}, is {rt_value})\n"
+                    output_string += (
+                        f" (should be {correct_value_str}, is {rt_value})\n"
+                    )
 
         if options["mail_admins"] and output_string:
             mail_admins(
