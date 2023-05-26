@@ -498,6 +498,43 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")])
         )
 
+    def test_bulk_create(self):
+        account1 = self.account(currencies=["USD"])
+        account2 = self.account(currencies=["USD"])
+        account3 = self.account(currencies=["USD"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.bulk_create(
+                [
+                    Leg(
+                        transaction=transaction,
+                        account=account1,
+                        amount=Money(0.000002, "USD"),
+                    ),
+                    Leg(
+                        transaction=transaction,
+                        account=account2,
+                        amount=Money(-0.000001, "USD"),
+                    ),
+                    Leg(
+                        transaction=transaction,
+                        account=account3,
+                        amount=Money(-0.000001, "USD"),
+                    ),
+                ]
+            )
+
+        self.assertEqual(
+            account1.legs.sum_to_balance(), Balance([Money("0.000002", "USD")])
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+        )
+        self.assertEqual(
+            account3.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+        )
+
     def test_natural_key(self):
         account1 = self.account(currencies=["USD"])
         account2 = self.account(currencies=["USD"])
@@ -624,6 +661,10 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
             Leg.objects.filter(pk=leg1.pk).update(amount=Money(0, "EUR"))
+
+        with self.assertRaises(IntegrityError):
+            # Use update() to bypass the check in Leg.save()
+            Leg.objects.filter(pk=leg1.pk).update(amount=Money(0.0000001, "EUR"))
 
     def test_debits(self):
         src = self.account(type=Account.TYPES.asset)
