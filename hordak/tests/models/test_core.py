@@ -1,10 +1,11 @@
 import importlib
+import json
 import warnings
 from datetime import date
 from decimal import Decimal
 
 from django.db import transaction as db_transaction
-from django.db.utils import DatabaseError, IntegrityError
+from django.db.utils import DatabaseError, IntegrityError, InternalError
 from django.test import TestCase, override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
@@ -870,3 +871,16 @@ class TestCoreDefaultCurrenciesAsFunc(TestCase):
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
         self.assertEquals(default_currencies(), ["SGD", "MYR"])
+
+
+class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
+    def test_non_matching(self):
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.asset)
+
+        currency_arr_str = json.dumps(["EUR"])
+        error_str = f"Destination Account#{src.id} does not support currency MYR. "
+        error_str += f"Account currencies: {currency_arr_str}"
+
+        with self.assertRaisesMessage(InternalError, error_str):
+            src.transfer_to(dst, Money(100, "MYR"))

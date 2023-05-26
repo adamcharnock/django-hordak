@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 RETURNS trigger AS
             $$
             DECLARE
-
+                account RECORD;
             BEGIN
 
                 IF (TG_OP = 'DELETE') THEN
@@ -28,7 +28,9 @@ class Migration(migrations.Migration):
                 PERFORM * FROM hordak_account WHERE id = NEW.account_id AND currencies::jsonb @> to_jsonb(ARRAY[NEW.amount_currency]::text[]);
 
                 IF NOT FOUND THEN
-                    RAISE EXCEPTION 'Destination account does not support currency %', NEW.amount_currency;
+                    SELECT * INTO account FROM hordak_account WHERE id = NEW.account_id;
+
+                    RAISE EXCEPTION 'Destination Account#% does not support currency %. Account currencies: %', account.id, NEW.amount_currency, account.currencies;
                 END IF;
 
                 RETURN NEW;
