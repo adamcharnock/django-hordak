@@ -37,7 +37,9 @@ class TestAdmin(DataProvider, TestCase):
             f'<a href="/admin/hordak/account/{self.bank_account.id}/change/">Bank account</a>',
             html=True,
         )
-        self.assertContains(res, '<td class="field-balance_sum">10.00</td>', html=True)
+        self.assertContains(
+            res, '<td class="field-balance_sum">10.000000</td>', html=True
+        )
         self.assertContains(res, '<td class="field-balance_sum">-</td>', html=True)
         self.assertContains(res, '<td class="field-type_">-</td>', html=True)
         self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
