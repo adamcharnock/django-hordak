@@ -1,13 +1,16 @@
 from decimal import Decimal
 
 from django.test import TestCase
+from mock import patch
 
+import hordak.utilities.money
 from hordak.utilities.money import ratio_split
 
 
 # Note: these tests assume that sorting is stable across all Python versions.
 
 
+@patch.object(hordak.utilities.money, "DECIMAL_PLACES", 2)
 class RatioSplitTestCase(TestCase):
     def test_extra_penny(self):
         values = ratio_split(Decimal("10"), [Decimal("3"), Decimal("3"), Decimal("3")])

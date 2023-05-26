@@ -94,7 +94,7 @@ jobs:
 
       - name: Install
         run: |
-          pip install flake8 isort black mypy django-stubs dj_database_url types-six types-requests
+          pip install flake8 isort black mypy django-stubs dj_database_url types-six types-requests types-mock
           pip install "django-stubs<1.13.0"  # Remove this line once https://github.com/typeddjango/django-stubs/issues/1227 is fixed
           python setup.py develop
           pip install -e .
