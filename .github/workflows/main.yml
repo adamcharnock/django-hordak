@@ -72,6 +72,9 @@ jobs:
 
       - name: Testing
         run: |
+          pip install "py-moneyed<3" --upgrade
+          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
+          pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
