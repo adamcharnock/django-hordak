@@ -144,7 +144,7 @@ class Migration(migrations.Migration):
             name="amount",
             field=djmoney.models.fields.MoneyField(
                 decimal_places=DECIMAL_PLACES,
-                default_currency="EUR",
+                default_currency=hordak.models.core.get_internal_currency,
                 help_text="Record debits as positive, credits as negative",
                 max_digits=MAX_DIGITS,
                 verbose_name="amount",

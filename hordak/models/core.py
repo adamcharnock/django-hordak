@@ -34,8 +34,13 @@ from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 
-from hordak import defaults, exceptions
-from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS
+from hordak import exceptions
+from hordak.defaults import (
+    DECIMAL_PLACES,
+    MAX_DIGITS,
+    default_currencies,
+    get_internal_currency,
+)
 from hordak.utilities.currency import Balance
 from hordak.utilities.dreprecation import deprecated
 
@@ -48,6 +53,10 @@ CREDIT = "credit"
 
 def json_default():
     return {}
+
+
+def get_currency_choices():
+    return CURRENCY_CHOICES
 
 
 class AccountQuerySet(models.QuerySet):
@@ -134,9 +143,9 @@ class Account(MPTTModel):
         verbose_name=_("is bank account"),
     )
     currencies = ArrayField(
-        models.CharField(max_length=3, choices=CURRENCY_CHOICES),
+        models.CharField(max_length=3, choices=get_currency_choices()),
         db_index=True,
-        default=defaults.CURRENCIES,
+        default=default_currencies,
         verbose_name=_("currencies"),
     )
 
@@ -560,7 +569,7 @@ class Leg(models.Model):
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Record debits as positive, credits as negative",
-        default_currency=defaults.INTERNAL_CURRENCY,
+        default_currency=get_internal_currency,
         verbose_name=_("amount"),
     )
     description = models.TextField(
