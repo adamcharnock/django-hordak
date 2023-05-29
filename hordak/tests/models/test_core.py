@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError
+from django.test import override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
@@ -85,6 +86,13 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account1 = Account()
         account2 = Account(parent=account1)
         self.assertEqual(str(account2), "Unnamed Account")
+
+    @override_settings(
+        HORDAK_CURRENCIES=lambda: ["EUR", "GBP"],
+    )
+    def test_function_hordak_currencies(self):
+        account = Account()
+        self.assertEqual(account.currencies, ["EUR", "GBP"])
 
     def test_type_root(self):
         """Check we can set the type on a root account"""

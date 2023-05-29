@@ -127,6 +127,7 @@ LOGIN_URL = "/auth/login/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-
 HORDAK_MAX_DIGITS = 20
 HORDAK_DECIMAL_PLACES = 6
+
+HORDAK_DEFAULT_CURRENCY = "GBP"
