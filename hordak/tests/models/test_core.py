@@ -91,6 +91,13 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2 = Account(parent=account1)
         self.assertEqual(str(account2), "Unnamed Account")
 
+    @override_settings(
+        HORDAK_CURRENCIES=lambda: ["EUR", "GBP"],
+    )
+    def test_function_hordak_currencies(self):
+        account = Account()
+        self.assertEqual(account.currencies, ["EUR", "GBP"])
+
     def test_type_root(self):
         """Check we can set the type on a root account"""
         account1 = self.account(type=Account.TYPES.asset)
