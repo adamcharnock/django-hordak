@@ -52,3 +52,17 @@ class SimpleTransactionFormTestCase(TestCase):
                 ]
             },
         )
+
+    def test_currencies_old_format(self):
+        """Non-existent currency doesn't validate"""
+        form = AccountForm(
+            {
+                "name": "Foo account",
+                "currencies": "USD, EUR",
+            }
+        )
+        self.assertIn(
+            'Currencies needs to be valid JSON (i.e. ["USD", "EUR"]'
+            ' or ["USD"]) - USD, EUR is not valid JSON.',
+            form.errors["currencies"],
+        )

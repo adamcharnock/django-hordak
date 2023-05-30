@@ -73,7 +73,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="01",
                 type="IN",
                 is_bank_account="",
-                currencies=["EUR", "GBP"],
+                currencies='["EUR", "GBP"]',
             ),
         )
         if response.context:
@@ -125,7 +125,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="IN",
                 is_bank_account="",
-                currencies=["EUR", "GBP"],
+                currencies='["EUR", "GBP"]',
             ),
         )
         if response.context:
@@ -142,7 +142,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="IN",
                 is_bank_account="",
-                currencies=["FOO"],
+                currencies='["FOO"]',
             ),
         )
         self.assertEqual(
@@ -153,6 +153,22 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
                 ]
             },
         )
+
+    def test_post_invalid_old_str(self):
+        response = self.client.post(
+            self.view_url,
+            data=dict(
+                name="My Account",
+                code="",
+                type="LI",
+                is_bank_account="",
+                currencies="EUR, GBP",
+            ),
+        )
+        if response.context:
+            self.assertTrue(response.context["form"].errors["currencies"])
+
+        self.assertEquals(Account.objects.count(), 0)
 
 
 class AccountUpdateViewTestCase(DataProvider, TestCase):
@@ -180,7 +196,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
                 code="04",
                 type="LI",
                 is_bank_account="yes",
-                currencies="EUR, GBP",
+                currencies='["EUR", "GBP"]',
             ),
         )
         if response.context:
@@ -207,7 +223,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
                 code="",
                 type="LI",
                 is_bank_account="yes",
-                currencies="EUR, GBP",
+                currencies='["EUR", "GBP"]',
             ),
         )
         if response.context:

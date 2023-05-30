@@ -11,6 +11,7 @@ Version 1.14.0,
     * `Account.currencies` input must be valid JSON now.
     * This is mostly important in `Forms`, but also if you performed a `", ".join(currencies_str_arr)`.
     * Previous: `EUR, USD` => `["EUR", "USD"]`
+    * Form complains if it is not valid JSON and returns an explanation.
 
 Version 1.13.0, Fri 17 Feb 2023
 ===============================
