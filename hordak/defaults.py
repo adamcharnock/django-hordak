@@ -3,9 +3,7 @@ from django.conf import settings
 
 INTERNAL_CURRENCY = getattr(settings, "HORDAK_INTERNAL_CURRENCY", "EUR")
 
-
-def get_internal_currency():
-    return INTERNAL_CURRENCY
+get_internal_currency = INTERNAL_CURRENCY
 
 
 DEFAULT_CURRENCY = getattr(settings, "DEFAULT_CURRENCY", "EUR")

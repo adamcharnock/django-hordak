@@ -70,6 +70,12 @@ jobs:
            pip install Django==${{ matrix.DJANGO_VERSION }}
            pip install codecov
 
+      - name: What are you making?
+        run: |
+          pip install "py-moneyed>=3" --upgrade
+          PYTHONPATH=`pwd` ./manage.py makemigrations
+          ls -lp ./hordak/migrations | grep -v / | tail -n 2 | head -n 1 | awk '{print $9}' | xargs -I {} cat ./hordak/migrations/{}
+
       - name: Testing
         run: |
           pip install "py-moneyed<3" --upgrade

@@ -28,6 +28,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
+from djmoney.settings import CURRENCY_CHOICES
 from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
@@ -51,6 +52,10 @@ CREDIT = "credit"
 
 def json_default():
     return {}
+
+
+def get_currency_choices():
+    return CURRENCY_CHOICES
 
 
 class AccountQuerySet(models.QuerySet):
