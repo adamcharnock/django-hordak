@@ -45,10 +45,14 @@ def create_trigger(apps, schema_editor):
             """
             CREATE PROCEDURE check_leg_and_account_currency_match(_account_id INT, _amount_currency VARCHAR(3))
             BEGIN
-            DECLARE ncurrencies INT;
-            SELECT COUNT(0) INTO ncurrencies FROM hordak_account WHERE id = _account_id AND JSON_CONTAINS(currencies, JSON_QUOTE(_amount_currency));
-            IF ncurrencies = 0 THEN
-                SET @msg= CONCAT('Destination account does not support currency ', _amount_currency);
+
+            SELECT id, currencies INTO @accountId, @accountCurrencies FROM hordak_account WHERE id = _account_id;
+            IF @accountId IS NULL THEN
+                SET @msg= CONCAT('Destination Account#', _account_id, ' does not exist.');
+                SIGNAL SQLSTATE '45000' SET
+                MESSAGE_TEXT = @msg;
+            ELSEIF NOT JSON_CONTAINS(@accountCurrencies, JSON_QUOTE(_amount_currency)) THEN
+                SET @msg= CONCAT('Destination Account#', _account_id, ' does not support currency ', _amount_currency, '. Account currencies: ', @accountCurrencies);
                 SIGNAL SQLSTATE '45000' SET
                 MESSAGE_TEXT = @msg;
             END IF;
