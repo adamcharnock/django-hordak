@@ -4,6 +4,7 @@ import warnings
 from datetime import date
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError, InternalError
 from django.test import TestCase, override_settings
@@ -906,6 +907,8 @@ class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
 class TestCoreDefaultCurrenciesAsArr(TestCase):
     @override_settings(CURRENCIES=["EUR", "USD"])
     def test_project_currencies(self):
+        del settings.HORDAK_CURRENCIES
+
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
         self.assertEquals(project_currencies(), ["EUR", "USD"])
@@ -918,6 +921,8 @@ def project_currencies_func():
 class TestCoreDefaultCurrenciesAsFunc(TestCase):
     @override_settings(CURRENCIES=project_currencies_func)
     def test_project_currencies(self):
+        del settings.HORDAK_CURRENCIES
+
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
         self.assertEquals(project_currencies(), ["SGD", "MYR"])
