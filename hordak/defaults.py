@@ -18,14 +18,12 @@ CURRENCIES = getattr(settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIE
 
 # Expected to be an array of currencies ["EUR", "USD", "GBP"]
 def project_currencies() -> list:
-    default_currs = getattr(
-        settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIES", [])
-    )
+    project_currs = CURRENCIES
 
-    if callable(default_currs):
-        return default_currs()
+    if callable(project_currs):
+        return project_currs()
 
-    return default_currs
+    return project_currs
 
 
 DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)

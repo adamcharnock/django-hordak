@@ -70,19 +70,15 @@ jobs:
            pip install Django==${{ matrix.DJANGO_VERSION }}
            pip install codecov
 
-      - name: What are you making?
-        run: |
-          pip install "py-moneyed>=3" --upgrade
-          PYTHONPATH=`pwd` ./manage.py makemigrations
-          ls -lp ./hordak/migrations | grep -v / | tail -n 2 | head -n 1 | awk '{print $9}' | xargs -I {} cat ./hordak/migrations/{}
-
-      - name: Testing
+      - name: Check Migrations
         run: |
           pip install "py-moneyed<3" --upgrade
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
           pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
+      - name: Testing
+        run: |
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
           pip install -e .[subqueries]
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
