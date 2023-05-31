@@ -95,6 +95,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         HORDAK_CURRENCIES=lambda: ["EUR", "GBP"],
     )
     def test_function_hordak_currencies(self):
+        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
+
         account = Account()
         self.assertEqual(account.currencies, ["EUR", "GBP"])
 
