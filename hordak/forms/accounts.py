@@ -1,4 +1,7 @@
+import json
+
 from django import forms
+from djmoney.settings import CURRENCY_CHOICES
 
 from hordak.models import Account
 
@@ -15,6 +18,8 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
         exclude = ["full_code"]
+
+    currencies = forms.JSONField()
 
     def __init__(self, *args, **kwargs):
         self.is_updating = bool(kwargs.get("instance")) and kwargs["instance"].pk
@@ -33,10 +38,39 @@ class AccountForm(forms.ModelForm):
 
         super(AccountForm, self).__init__(*args, **kwargs)
 
+        try:
+            self.tmp_currencies = args[0].get("currencies")
+        except IndexError:
+            self.tmp_currencies = kwargs.get("data", {}).get("currencies")
+
         if self.is_updating:
             del self.fields["type"]
             del self.fields["currencies"]
             del self.fields["is_bank_account"]
+
+    def _check_currencies_json(self):
+        currencies = self.tmp_currencies
+
+        if isinstance(self.tmp_currencies, str):
+            try:
+                currencies = json.loads(self.tmp_currencies)
+            except json.JSONDecodeError:
+                if "currencies" in self.fields:
+                    self.add_error(
+                        "currencies",
+                        'Currencies needs to be valid JSON (i.e. ["USD", "EUR"] or ["USD"])'
+                        + f" - {self.tmp_currencies} is not valid JSON.",
+                    )
+
+                return
+
+        for currency in currencies:
+            if currency not in [choice[0] for choice in CURRENCY_CHOICES]:
+                if "currencies" in self.fields:
+                    self.add_error(
+                        "currencies",
+                        f"Select a valid choice. {currency} is not one of the available choices.",
+                    )
 
     def clean(self):
         cleaned_data = super(AccountForm, self).clean()
@@ -59,5 +93,7 @@ class AccountForm(forms.ModelForm):
             and len(cleaned_data["currencies"]) > 1
         ):
             raise forms.ValidationError("Bank accounts may only have one currency.")
+
+        self._check_currencies_json()
 
         return cleaned_data

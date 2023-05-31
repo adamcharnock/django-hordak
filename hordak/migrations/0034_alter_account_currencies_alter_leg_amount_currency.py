@@ -4,6 +4,7 @@ import django.contrib.postgres.fields
 import djmoney.models.fields
 from django.db import migrations, models
 import hordak.models.core
+import hordak.defaults
 
 
 class Migration(migrations.Migration):
@@ -21,7 +22,7 @@ class Migration(migrations.Migration):
                     max_length=3,
                 ),
                 db_index=True,
-                default=hordak.models.core.default_currencies,
+                default=hordak.defaults.DEFAULT_CURRENCY,
                 size=None,
                 verbose_name="currencies",
             ),
@@ -31,7 +32,7 @@ class Migration(migrations.Migration):
             name="amount_currency",
             field=djmoney.models.fields.CurrencyField(
                 choices=hordak.models.core.get_currency_choices(),
-                default=hordak.models.core.get_internal_currency,
+                default=hordak.defaults.get_internal_currency,
                 editable=False,
                 max_length=3,
             ),

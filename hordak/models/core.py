@@ -21,7 +21,6 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.contrib.postgres.fields.array import ArrayField
 from django.db import models
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
@@ -38,8 +37,8 @@ from hordak import exceptions
 from hordak.defaults import (
     DECIMAL_PLACES,
     MAX_DIGITS,
-    default_currencies,
     get_internal_currency,
+    project_currencies,
 )
 from hordak.utilities.currency import Balance
 from hordak.utilities.dreprecation import deprecated
@@ -142,10 +141,9 @@ class Account(MPTTModel):
         "statements into it and that it only supports a single currency",
         verbose_name=_("is bank account"),
     )
-    currencies = ArrayField(
-        models.CharField(max_length=3, choices=get_currency_choices()),
+    currencies = JSONField(
         db_index=True,
-        default=default_currencies,
+        default=project_currencies,
         verbose_name=_("currencies"),
     )
 
