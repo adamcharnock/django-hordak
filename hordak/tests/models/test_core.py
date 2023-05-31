@@ -22,7 +22,7 @@ from hordak.models import (
     StatementLine,
     Transaction,
 )
-from hordak.models.core import default_currencies
+from hordak.models.core import project_currencies
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
@@ -903,22 +903,22 @@ class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
 
 class TestCoreDefaultCurrenciesAsArr(TestCase):
     @override_settings(CURRENCIES=["EUR", "USD"])
-    def test_default_currencies(self):
+    def test_project_currencies(self):
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
-        self.assertEquals(default_currencies(), ["EUR", "USD"])
+        self.assertEquals(project_currencies(), ["EUR", "USD"])
 
 
-def default_currencies_func():
+def project_currencies_func():
     return ["SGD", "MYR"]
 
 
 class TestCoreDefaultCurrenciesAsFunc(TestCase):
-    @override_settings(CURRENCIES=default_currencies_func)
-    def test_default_currencies(self):
+    @override_settings(CURRENCIES=project_currencies_func)
+    def test_project_currencies(self):
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
-        self.assertEquals(default_currencies(), ["SGD", "MYR"])
+        self.assertEquals(project_currencies(), ["SGD", "MYR"])
 
 
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):

@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
             name="currencies",
             field=models.JSONField(
                 db_index=True,
-                default=hordak.models.core.default_currencies,
+                default=hordak.models.core.project_currencies,
                 verbose_name="currencies",
             ),
         ),

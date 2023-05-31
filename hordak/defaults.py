@@ -10,10 +10,16 @@ def get_internal_currency():
 
 DEFAULT_CURRENCY = getattr(settings, "DEFAULT_CURRENCY", "EUR")
 
+
+def default_currency():
+    return DEFAULT_CURRENCY
+
+
 CURRENCIES = getattr(settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIES", []))
 
 
-def default_currencies():
+# Expected to be an array of currencies ["EUR", "USD", "GBP"]
+def project_currencies() -> list:
     default_currs = getattr(
         settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIES", [])
     )
