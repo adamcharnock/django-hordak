@@ -17,6 +17,8 @@ class Migration(migrations.Migration):
                 DECLARE
                     tx_id INT;
                     non_zero RECORD;
+                    source RECORD;
+                    destination RECORD;
                 BEGIN
                     IF (TG_OP = 'DELETE') THEN
                         tx_id := OLD.transaction_id;
@@ -24,6 +26,8 @@ class Migration(migrations.Migration):
                         tx_id := NEW.transaction_id;
                     END IF;
 
+                    SELECT name, code, hordak_account.currencies as currencies INTO source FROM hordak_leg JOIN hordak_account ON account_id=hordak_account.id WHERE transaction_id=tx_id ORDER BY account_id LIMIT 1;
+                    SELECT name, code, hordak_account.currencies as currencies INTO destination FROM hordak_leg JOIN hordak_account ON account_id=hordak_account.id WHERE transaction_id=tx_id ORDER BY -account_id LIMIT 1;
 
                     SELECT ABS(SUM(amount)) AS total, amount_currency AS currency
                         INTO non_zero
@@ -34,8 +38,8 @@ class Migration(migrations.Migration):
                         LIMIT 1;
 
                     IF FOUND THEN
-                        RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency % has non-zero total %',
-                            non_zero.currency, non_zero.total;
+                        RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency % has non-zero total %, transaction id % from account "% (%) %", to account "% (%) %".',
+                            non_zero.currency, non_zero.total, tx_id, source.name, source.code, source.currencies, destination.name, destination.code, destination.currencies;
                     END IF;
 
                     RETURN NEW;
