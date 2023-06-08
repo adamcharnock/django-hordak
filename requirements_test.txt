@@ -4,3 +4,4 @@ pytest
 coveralls
 django-coverage-plugin
 psycopg2
+mysqlclient
