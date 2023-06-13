@@ -50,7 +50,7 @@ jobs:
         ports:
           - 5432:5432
       mariadb:
-        image: mariadb
+        image: mariadb:10.5.21
         env:
           MARIADB_DATABASE: mariadb
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
