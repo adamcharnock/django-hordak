@@ -3,16 +3,9 @@
 from django.db import migrations
 
 
-class Migration(migrations.Migration):
-    dependencies = [
-        (
-            "hordak",
-            "0036_remove_currencies_and_rename_account_currencies_json_to_currencies",
-        ),
-    ]
-
-    operations = [
-        migrations.RunSQL(
+def create_triggers(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
             """
             CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
                 RETURNS trigger AS
@@ -30,14 +23,46 @@ class Migration(migrations.Migration):
                 IF NOT FOUND THEN
                     SELECT * INTO account FROM hordak_account WHERE id = NEW.account_id;
 
-                    RAISE EXCEPTION 'Destination Account#% does not support currency %. Account currencies: %', account.id, NEW.amount_currency, account.currencies;
+                    RAISE EXCEPTION 'Destination Account#%% does not support currency %%. Account currencies: %%', account.id, NEW.amount_currency, account.currencies;
                 END IF;
 
                 RETURN NEW;
             END;
             $$
             LANGUAGE plpgsql
-            """,
-            "DROP FUNCTION check_leg_and_account_currency_match()",
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
+        pass  # nothing to do here, we've already created the procedure in 0007_auto_20161209_0111.py
+    else:
+        raise NotImplementedError(
+            "Unsupported database vendor: %s" % schema_editor.connection.vendor
+        )
+
+
+def drop_triggers(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
+            DROP FUNCTION check_leg_and_account_currency_match()
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
+        pass
+    else:
+        raise NotImplementedError(
+            "Unsupported database vendor: %s" % schema_editor.connection.vendor
+        )
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        (
+            "hordak",
+            "0036_remove_currencies_and_rename_account_currencies_json_to_currencies",
         ),
+    ]
+
+    operations = [
+        migrations.RunPython(create_triggers, drop_triggers),
     ]

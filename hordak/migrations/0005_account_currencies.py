@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 import django.contrib.postgres.fields
 from django.db import migrations, models
 
+import hordak.models.core
+
 
 class Migration(migrations.Migration):
     dependencies = [("hordak", "0004_auto_20161113_1932")]
@@ -13,11 +15,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="account",
             name="currencies",
-            field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.CharField(max_length=3),
-                db_index=True,
+            field=models.JSONField(
                 default=["EUR"],
-                size=None,
             ),
             preserve_default=False,
         )

@@ -3,23 +3,9 @@
 from django.db import migrations, models
 
 
-class Migration(migrations.Migration):
-    dependencies = [("hordak", "0023_auto_20180825_1029")]
-
-    operations = [
-        migrations.AlterField(
-            model_name="account",
-            name="code",
-            field=models.CharField(blank=True, max_length=3, null=True),
-        ),
-        migrations.AlterField(
-            model_name="account",
-            name="full_code",
-            field=models.CharField(
-                blank=True, db_index=True, max_length=100, null=True, unique=True
-            ),
-        ),
-        migrations.RunSQL(
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
             """
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
@@ -53,7 +39,42 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """,
-            "DROP FUNCTION update_full_account_codes()",
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
+        pass  # we don't care about MySQL here since support is added in 0027
+    else:
+        raise NotImplementedError(
+            "Don't know how to create trigger for %s" % schema_editor.connection.vendor
+        )
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("DROP FUNCTION update_full_account_codes()")
+    elif schema_editor.connection.vendor == "mysql":
+        pass
+    else:
+        raise NotImplementedError(
+            "Don't know how to drop trigger for %s" % schema_editor.connection.vendor
+        )
+
+
+class Migration(migrations.Migration):
+    dependencies = [("hordak", "0023_auto_20180825_1029")]
+
+    operations = [
+        migrations.AlterField(
+            model_name="account",
+            name="code",
+            field=models.CharField(blank=True, max_length=3, null=True),
         ),
+        migrations.AlterField(
+            model_name="account",
+            name="full_code",
+            field=models.CharField(
+                blank=True, db_index=True, max_length=100, null=True, unique=True
+            ),
+        ),
+        migrations.RunPython(create_trigger, reverse_code=drop_trigger),
     ]

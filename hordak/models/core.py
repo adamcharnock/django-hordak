@@ -21,7 +21,8 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
-from django.db import models
+from django.db import connection, models
+from django.db import transaction
 from django.db import transaction as db_transaction
 from django.db.models import JSONField
 from django.utils import timezone
@@ -66,6 +67,16 @@ class AccountQuerySet(models.QuerySet):
 class AccountManager(TreeManager):
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
+
+
+def _enforce_account():
+    with connection.cursor() as curs:
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
+        # triggers, and does not support triggers updating the table they are triggered from
+        # so we have to do it by calling a procedure here instead
+        # (https://stackoverflow.com/a/15300941/1908381)
+        if connection.vendor == "mysql":
+            curs.callproc("update_full_account_codes")
 
 
 class Account(MPTTModel):
@@ -178,6 +189,7 @@ class Account(MPTTModel):
                 "currencies",
             ]
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
+        transaction.on_commit(_enforce_account)
 
         do_refresh = False
 
@@ -531,6 +543,14 @@ class LegManager(models.Manager):
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
 
 
+def _enforce_leg(transaction_id: int):
+    with connection.cursor() as curs:
+        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
+        # triggers so we have to do it by calling a procedure here instead
+        if connection.vendor == "mysql":
+            curs.callproc("check_leg", [transaction_id])
+
+
 class Leg(models.Model):
     """The leg of a transaction
 
@@ -579,7 +599,10 @@ class Leg(models.Model):
     def save(self, *args, **kwargs):
         if self.amount.amount == 0:
             raise exceptions.ZeroAmountError()
-        return super(Leg, self).save(*args, **kwargs)
+
+        leg = super(Leg, self).save(*args, **kwargs)
+        transaction.on_commit(lambda: _enforce_leg(transaction_id=self.transaction_id))
+        return leg
 
     def natural_key(self):
         return (self.uuid,)

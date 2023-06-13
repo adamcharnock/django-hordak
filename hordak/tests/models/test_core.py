@@ -6,7 +6,12 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction as db_transaction
-from django.db.utils import DatabaseError, IntegrityError, InternalError
+from django.db.utils import (
+    DatabaseError,
+    IntegrityError,
+    InternalError,
+    OperationalError,
+)
 from django.test import TestCase, override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
@@ -937,5 +942,11 @@ class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
         error_str = f"Destination Account#{src.id} does not support currency MYR. "
         error_str += f"Account currencies: {currency_arr_str}"
 
-        with self.assertRaisesMessage(InternalError, error_str):
+        with self.assertRaisesMessage(
+            (
+                InternalError,
+                OperationalError,
+            ),
+            error_str,
+        ):
             src.transfer_to(dst, Money(100, "MYR"))

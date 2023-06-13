@@ -5,42 +5,65 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
+            CREATE OR REPLACE FUNCTION check_leg()
+                RETURNS trigger AS
+            $$
+            DECLARE
+                transaction_sum DECIMAL(13, 2);
+            BEGIN
+
+                IF (TG_OP = 'DELETE') THEN
+                    SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = OLD.transaction_id;
+                ELSE
+                    SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = NEW.transaction_id;
+                END IF;
+
+                IF transaction_sum != 0 THEN
+                    RAISE EXCEPTION 'Sum of transaction amounts must be 0';
+                END IF;
+                RETURN NEW;
+            END;
+            $$
+            LANGUAGE plpgsql
+        """
+        )
+        schema_editor.execute(
+            """
+            CREATE CONSTRAINT TRIGGER check_leg_trigger
+            AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
+            DEFERRABLE INITIALLY DEFERRED
+            FOR EACH ROW EXECUTE PROCEDURE check_leg();
+        """
+        )
+
+    elif schema_editor.connection.vendor == "mysql":
+        pass  # we don't care about MySQL here since support is added in 0006
+    else:
+        raise NotImplementedError(
+            "Database vendor %s not supported" % schema_editor.connection.vendor
+        )
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("DROP FUNCTION check_leg()")
+        schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg")
+    elif schema_editor.connection.vendor == "mysql":
+        pass
+    else:
+        raise NotImplementedError(
+            "Database vendor %s not supported" % schema_editor.connection.vendor
+        )
+
+
 class Migration(migrations.Migration):
     dependencies = [("hordak", "0001_initial")]
+    atomic = False
 
     operations = [
-        migrations.RunSQL(
-            """
-                CREATE OR REPLACE FUNCTION check_leg()
-                    RETURNS trigger AS
-                $$
-                DECLARE
-                    transaction_sum DECIMAL(13, 2);
-                BEGIN
-
-                    IF (TG_OP = 'DELETE') THEN
-                        SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = OLD.transaction_id;
-                    ELSE
-                        SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = NEW.transaction_id;
-                    END IF;
-
-                    IF transaction_sum != 0 THEN
-                        RAISE EXCEPTION 'Sum of transaction amounts must be 0';
-                    END IF;
-                    RETURN NEW;
-                END;
-                $$
-                LANGUAGE plpgsql
-            """,
-            "DROP FUNCTION check_leg()",
-        ),
-        migrations.RunSQL(
-            """
-                CREATE CONSTRAINT TRIGGER check_leg_trigger
-                AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
-                DEFERRABLE INITIALLY DEFERRED
-                FOR EACH ROW EXECUTE PROCEDURE check_leg();
-            """,
-            "DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg",
-        ),
+        migrations.RunPython(create_trigger, reverse_code=drop_trigger),
     ]

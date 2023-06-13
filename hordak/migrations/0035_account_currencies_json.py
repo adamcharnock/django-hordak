@@ -6,16 +6,29 @@ import hordak
 
 
 def copy_currencies_data(apps, schema_editor):
-    MyModel = apps.get_model(
-        "hordak", "Account"
-    )  # replace 'myapp' and 'MyModel' with your actual app and model names
-    table_name = MyModel._meta.db_table
-    with schema_editor.connection.cursor() as cursor:
-        cursor.execute(
-            f"""
-            UPDATE {table_name} SET currencies_json = array_to_json(currencies)::jsonb;
-        """
-        )
+    # MySQL won't have any old data, because support has only now been added
+    if schema_editor.connection.vendor == "postgresql":
+        MyModel = apps.get_model(
+            "hordak", "Account"
+        )  # replace 'myapp' and 'MyModel' with your actual app and model names
+        table_name = MyModel._meta.db_table
+        with schema_editor.connection.cursor() as cursor:
+            # only run this if there is data in the table (in which case we're an ARRAY to migrate);
+            # disregard if migrations are being run on a fresh database
+            if MyModel.objects.count() > 0:
+                cursor.execute(
+                    f"""
+                    UPDATE {table_name}
+                    SET currencies_json = array_to_json(currencies)::jsonb;
+                """
+                )
+            else:
+                cursor.execute(
+                    f"""
+                    UPDATE {table_name}
+                    SET currencies_json = currencies;
+                """
+                )
 
 
 class Migration(migrations.Migration):

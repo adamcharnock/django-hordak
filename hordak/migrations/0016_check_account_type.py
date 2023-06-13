@@ -5,13 +5,9 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 
-class Migration(migrations.Migration):
-    """Set child accounts to have the same type as their parent"""
-
-    dependencies = [("hordak", "0015_auto_20170302_2109")]
-
-    operations = [
-        migrations.RunSQL(
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
             """
             CREATE OR REPLACE FUNCTION check_account_type()
                 RETURNS TRIGGER AS
@@ -24,17 +20,34 @@ class Migration(migrations.Migration):
             END;
             $$
             LANGUAGE plpgsql;
-            """,
-            "DROP FUNCTION check_account_type()",
-        ),
-        migrations.RunSQL(
+        """
+        )
+        schema_editor.execute(
             """
             CREATE TRIGGER check_account_type_trigger
             BEFORE INSERT OR UPDATE ON hordak_account
             FOR EACH ROW
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE check_account_type();
-            """,
-            "DROP TRIGGER IF EXISTS check_account_type_trigger ON hordak_account",
-        ),
+        """
+        )
+    elif schema_editor.connection.vendor == "mysql":
+        pass  # we don't care about MySQL here since support is added in 0032
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("DROP FUNCTION check_account_type()")
+        schema_editor.execute(
+            "DROP TRIGGER IF EXISTS check_account_type_trigger ON hordak_account"
+        )
+
+
+class Migration(migrations.Migration):
+    """Set child accounts to have the same type as their parent"""
+
+    dependencies = [("hordak", "0015_auto_20170302_2109")]
+
+    operations = [
+        migrations.RunPython(create_trigger, reverse_code=drop_trigger),
     ]
