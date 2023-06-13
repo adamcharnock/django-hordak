@@ -14,6 +14,8 @@ Version 1.14.0,
       * `Fixtures`
     * Previous: `EUR, USD` => `["EUR", "USD"]`
     * Form complains if it is not valid JSON and returns an explanation.
+* MySQL support
+  * Migrations and triggers modified to target MySQL whilst maintaining compatibility with postgres
 
 Version 1.13.0, Fri 17 Feb 2023
 ===============================
