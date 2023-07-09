@@ -308,6 +308,24 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
         self.assertEqual(account1.balance(), Balance(100, "EUR"))
 
+    def test_asset_to_expense(self):
+        bank = self.account(type=Account.TYPES.asset)
+        expense = self.account(type=Account.TYPES.expense)
+
+        bank.transfer_to(expense, Money(100, "EUR"))
+
+        self.assertEqual(bank.simple_balance(), Balance(-100, "EUR"))
+        self.assertEqual(expense.simple_balance(), Balance(100, "EUR"))
+
+    def test_income_to_asset(self):
+        income = self.account(type=Account.TYPES.income)
+        bank = self.account(type=Account.TYPES.asset)
+
+        income.transfer_to(bank, Money(100, "EUR"))
+
+        self.assertEqual(income.simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(bank.simple_balance(), Balance(100, "EUR"))
+
     def test_net_balance(self):
         bank = self.account(type=Account.TYPES.asset)
         account1 = self.account(type=Account.TYPES.income)
