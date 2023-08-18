@@ -24,7 +24,7 @@ Additionally, there are models which related to the import of external bank stat
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField
+from django.db.models import JSONField, Sum
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -368,18 +368,10 @@ class Account(MPTTModel):
 
         transaction = Transaction.objects.create(**transaction_kwargs)
         Leg.objects.create(
-            transaction=transaction,
-            account=self,
-            amount=+amount * direction,
-            accounting_type=Leg.AccountingTypeChoices.CREDIT,
-            accounting_amount=amount,
+            transaction=transaction, account=self, amount=+amount * direction
         )
         Leg.objects.create(
-            transaction=transaction,
-            account=to_account,
-            amount=-amount * direction,
-            accounting_type=Leg.AccountingTypeChoices.DEBIT,
-            accounting_amount=amount,
+            transaction=transaction, account=to_account, amount=-amount * direction
         )
         return transaction
 
@@ -510,6 +502,20 @@ class Transaction(models.Model):
     def natural_key(self):
         return (self.uuid,)
 
+    def validate_accounting_legs(self):
+        dr_sum = self.legs.filter(accounting_type="DR").aggregate(
+            Sum("accounting_amount")
+        )["accounting_amount__sum"]
+
+        cr_sum = self.legs.filter(accounting_type="CR").aggregate(
+            Sum("accounting_amount")
+        )["accounting_amount__sum"]
+
+        if dr_sum == cr_sum:
+            return True
+
+        raise exceptions.AccountingTrxnDoesNotBalance
+
 
 class LegQuerySet(models.QuerySet):
     def sum_to_balance(self):
@@ -587,6 +593,7 @@ class Leg(models.Model):
         decimal_places=DECIMAL_PLACES,
         help_text="Amount adheres to double-entry accounting rules.",
         default_currency=get_internal_currency,
+        default=Money(0, get_internal_currency),
         verbose_name=_("Accounting Amount"),
     )
 

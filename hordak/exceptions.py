@@ -75,3 +75,9 @@ class CannotSimplifyError(HordakError):
     """Used internally by Currency class"""
 
     pass
+
+
+class AccountingTrxnDoesNotBalance(HordakError):
+    """Transaction's DR Legs do not equal CR Legs"""
+
+    pass
