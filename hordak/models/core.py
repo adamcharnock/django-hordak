@@ -368,10 +368,18 @@ class Account(MPTTModel):
 
         transaction = Transaction.objects.create(**transaction_kwargs)
         Leg.objects.create(
-            transaction=transaction, account=self, amount=+amount * direction
+            transaction=transaction,
+            account=self,
+            amount=+amount * direction,
+            accounting_type=Leg.AccountingTypeChoices.CREDIT,
+            accounting_amount=amount,
         )
         Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-amount * direction
+            transaction=transaction,
+            account=to_account,
+            amount=-amount * direction,
+            accounting_type=Leg.AccountingTypeChoices.DEBIT,
+            accounting_amount=amount,
         )
         return transaction
 
@@ -412,8 +420,20 @@ class Account(MPTTModel):
 
         transaction = Transaction.objects.create(**transaction_kwargs)
 
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount)
+        Leg.objects.create(
+            transaction=transaction,
+            account=self,
+            amount=+amount,
+            accounting_type=Leg.AccountingTypeChoices.CREDIT,
+            accounting_amount=amount,
+        )
+        Leg.objects.create(
+            transaction=transaction,
+            account=to_account,
+            amount=-amount,
+            accounting_type=Leg.AccountingTypeChoices.DEBIT,
+            accounting_amount=amount,
+        )
 
         return transaction
 
@@ -561,6 +581,28 @@ class Leg(models.Model):
         default_currency=get_internal_currency,
         verbose_name=_("amount"),
     )
+
+    accounting_amount = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        help_text="Amount adheres to double-entry accounting rules.",
+        default_currency=get_internal_currency,
+        verbose_name=_("Accounting Amount"),
+    )
+
+    class AccountingTypeChoices(models.TextChoices):
+        DEBIT = "DR", _("Debit")
+        CREDIT = "CR", _("Credit")
+
+    accounting_type = models.CharField(
+        max_length=2,
+        choices=AccountingTypeChoices.choices,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_("Debit or Credit. Adheres to accounting rules."),
+    )
+
     description = models.TextField(
         default="", blank=True, verbose_name=_("description")
     )
@@ -594,6 +636,12 @@ class Leg(models.Model):
 
     def is_credit(self):
         return self.type == CREDIT
+
+    def is_accounting_debit(self):
+        return self.accounting_type == self.AccountingTypeChoices.DEBIT
+
+    def is_accounting_credit(self):
+        return self.accounting_type == self.AccountingTypeChoices.CREDIT
 
     def account_balance_after(self):
         """Get the balance of the account associated with this leg following the transaction"""
