@@ -33,6 +33,7 @@ from djmoney.settings import CURRENCY_CHOICES
 from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
+from django.contrib.contenttypes.fields import GenericForeignKey, ContentType
 
 from hordak import exceptions
 from hordak.defaults import (
@@ -508,6 +509,15 @@ class Transaction(models.Model):
     )
 
     objects = TransactionManager()
+
+    related_object_content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    related_object_id = models.CharField(null=False, blank=True, max_length=64)
+    related_object = GenericForeignKey('related_object_content_type', 'related_object_id')
 
     class Meta:
         get_latest_by = "date"
