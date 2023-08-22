@@ -122,7 +122,7 @@ class Account(MPTTModel):
     uuid = SmallUUIDField(
         default=uuid_default(), editable=False, verbose_name=_("uuid")
     )
-    name = models.CharField(max_length=50, verbose_name=_("name"))
+    name = models.CharField(max_length=50, verbose_name=_("name"), unique=True, blank=False, null=False)
     parent = TreeForeignKey(
         "self",
         null=True,
@@ -185,10 +185,12 @@ class Account(MPTTModel):
                 "name",
                 "parent",
                 "code",
+                "full_code",
                 "type",
                 "is_bank_account",
                 "currencies",
             ]
+        print('ACA', is_creating, args, kwargs)
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
         transaction.on_commit(_enforce_account)
 
@@ -204,8 +206,10 @@ class Account(MPTTModel):
         if is_creating or self._initial_code != self.code:
             do_refresh = True
 
+        print('2', is_creating, self.full_code, do_refresh)
         if do_refresh:
             self.refresh_from_db()
+            print(self.__dict__)
 
     @classmethod
     def validate_accounting_equation(cls):
