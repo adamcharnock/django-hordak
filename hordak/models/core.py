@@ -20,6 +20,10 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
+import contextlib
+from contextlib import ContextDecorator
+from contextvars import ContextVar
+from typing import Callable, Optional
 
 from django.db import connection, models
 from django.db import transaction
@@ -57,6 +61,26 @@ def json_default():
 
 def get_currency_choices():
     return CURRENCY_CHOICES
+
+
+COMMIT_CALLBACKS = ContextVar('COMMIT_CALLBACKS', default=None)
+
+def register_commit_callback(callback: Callable):
+    ourset = COMMIT_CALLBACKS.get()
+    if ourset is None:
+        ourset = set()
+        COMMIT_CALLBACKS.set(ourset)
+    ourset.add(callback)
+
+
+@contextlib.contextmanager
+def enforce_atomic():
+    with transaction.atomic():
+        yield
+        callbacks = COMMIT_CALLBACKS.get()
+        for callback in COMMIT_CALLBACKS.get():
+            callback()
+        callbacks.clear()
 
 
 class AccountQuerySet(models.QuerySet):
@@ -189,7 +213,8 @@ class Account(MPTTModel):
                 "currencies",
             ]
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
-        transaction.on_commit(_enforce_account)
+        # transaction.on_commit(_enforce_account)
+        register_commit_callback(_enforce_account)
 
         do_refresh = False
 
@@ -317,7 +342,7 @@ class Account(MPTTModel):
         "accounting equation, see notes. Use .accounting_transfer_to() instead. "
         "This method will raise an error in v2.0.0."
     )
-    @db_transaction.atomic()
+    @enforce_atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
         """**Deprecated** Please use `.accounting_transfer_to()` instead. Will raise an error in Hordak 2.x.
 
@@ -375,7 +400,7 @@ class Account(MPTTModel):
         )
         return transaction
 
-    @db_transaction.atomic()
+    @enforce_atomic()
     def accounting_transfer_to(self, to_account, amount, **transaction_kwargs):
         """Create a transaction which transfers amount to to_account using double entry accounting rules
 
@@ -601,7 +626,8 @@ class Leg(models.Model):
             raise exceptions.ZeroAmountError()
 
         leg = super(Leg, self).save(*args, **kwargs)
-        transaction.on_commit(lambda: _enforce_leg(transaction_id=self.transaction_id))
+        # transaction.on_commit(lambda: _enforce_leg(transaction_id=self.transaction_id))
+        register_commit_callback(lambda: _enforce_leg(transaction_id=self.transaction_id))
         return leg
 
     def natural_key(self):
@@ -786,7 +812,7 @@ class StatementLine(models.Model):
         """
         return bool(self.transaction)
 
-    @db_transaction.atomic()
+    @enforce_atomic()
     def create_transaction(self, to_account):
         """Create a transaction for this statement amount and account, into to_account
 
