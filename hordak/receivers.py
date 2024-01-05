@@ -1,4 +1,4 @@
-from django.db import connection
+from django.db import transaction
 from django.db.models import F
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -21,10 +21,9 @@ def update_running_totals(sender, instance, **kwargs):
         amount_change = instance.amount
 
     amount_change = instance.account.sign * amount_change
-    with connection.cursor() as cursor:
-        cursor.execute("LOCK TABLE %s IN EXCLUSIVE MODE" % RunningTotal._meta.db_table)
-
-        running_total, created = RunningTotal.objects.get_or_create(
+    with transaction.atomic():
+        # Lock the specific running total row
+        running_total, created = RunningTotal.objects.select_for_update().get_or_create(
             account=instance.account,
             currency=instance.amount.currency,
             defaults={"balance": amount_change},
