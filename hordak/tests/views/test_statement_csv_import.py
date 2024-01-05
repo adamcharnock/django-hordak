@@ -77,6 +77,10 @@ class DryRunViewTestCase(DataProvider, TestCase):
         result = response.context["result"]
 
         self.assertEqual(len(result.failed_dataset), 1, result.failed_dataset.dict)
+        self.assertEqual(
+            result.failed_dataset["Error"],
+            ["Invalid value for date. Expected dd/mm/yyyy"],
+        )
         self.assertEqual(len(result.row_errors()), 1)
         self.assertEqual(StatementLine.objects.count(), 0)
 
@@ -144,6 +148,10 @@ class ExecuteViewTestCase(DataProvider, TestCase):
         result = response.context["result"]
 
         self.assertEqual(len(result.failed_dataset), 1, result.failed_dataset.dict)
+        self.assertEqual(
+            result.failed_dataset["Error"],
+            ["Invalid value for date. Expected dd/mm/yyyy"],
+        )
         self.assertEqual(len(result.row_errors()), 1)
         self.assertEqual(StatementLine.objects.count(), 0)
 
