@@ -71,6 +71,7 @@ jobs:
            pip install -r requirements_test.txt
            python setup.py develop
            pip install -e .
+           pip install git+https://github.com/jazzband/django-model-utils@master  # remove after new release of django-model-utils (>4.3.1)
            pip install Django==${{ matrix.DJANGO_VERSION }}
            pip install codecov
 
