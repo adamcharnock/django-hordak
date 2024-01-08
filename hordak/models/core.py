@@ -24,7 +24,7 @@ Additionally, there are models which related to the import of external bank stat
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField
+from django.db.models import JSONField, Sum
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -410,40 +410,23 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
-        if (
-            self.sign == 1
-            and to_account.sign == 1
-            and to_account.type != self.TYPES.trading
-        ):
-            # Using Left hand side (LHS) and Right hand side (RHS):
-            #
-            #    LHS             RHS
-            #  Assets = Liabilities + Equity
-            #
-            # RHS -> RHS transfers are the only transfer that is truly different is in the
-            # accounting equation. When you move money from the giving account increases in value
-            # while the receiving account decreases in value.
-            #
-            # Real world: Income -> Loan
-            # In this example, the cash never hits the bank and is paid directly to the Loan.
-            # i.e. Stripe pays Stripe Capital directly. Your income directly pays your
-            # loan from Stripe.
-            #
-            # Thusly even though we "made money", increases income, it pays down the Loan,
-            # decreases liability.
-
-            #  and not trading
-            direction = -1
-        else:
-            direction = 1
-
         transaction = Transaction.objects.create(**transaction_kwargs)
+
         Leg.objects.create(
-            transaction=transaction, account=self, amount=+amount * direction
+            transaction=transaction,
+            account=self,
+            amount=+amount,
+            accounting_type=Leg.AccountingTypeChoices.CREDIT,
+            accounting_amount=amount,
         )
         Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-amount * direction
+            transaction=transaction,
+            account=to_account,
+            amount=-amount,
+            accounting_type=Leg.AccountingTypeChoices.DEBIT,
+            accounting_amount=amount,
         )
+
         return transaction
 
 
@@ -519,6 +502,20 @@ class Transaction(models.Model):
     def natural_key(self):
         return (self.uuid,)
 
+    def validate_accounting_legs(self):
+        dr_sum = self.legs.filter(accounting_type="DR").aggregate(
+            Sum("accounting_amount")
+        )["accounting_amount__sum"]
+
+        cr_sum = self.legs.filter(accounting_type="CR").aggregate(
+            Sum("accounting_amount")
+        )["accounting_amount__sum"]
+
+        if dr_sum == cr_sum:
+            return True
+
+        raise exceptions.AccountingTrxnDoesNotBalance
+
 
 class LegQuerySet(models.QuerySet):
     def sum_to_balance(self):
@@ -590,6 +587,29 @@ class Leg(models.Model):
         default_currency=get_internal_currency,
         verbose_name=_("amount"),
     )
+
+    accounting_amount = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        help_text="Amount adheres to double-entry accounting rules.",
+        default_currency=get_internal_currency,
+        default=Money(0, get_internal_currency),
+        verbose_name=_("Accounting Amount"),
+    )
+
+    class AccountingTypeChoices(models.TextChoices):
+        DEBIT = "DR", _("Debit")
+        CREDIT = "CR", _("Credit")
+
+    accounting_type = models.CharField(
+        max_length=2,
+        choices=AccountingTypeChoices.choices,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_("Debit or Credit. Adheres to accounting rules."),
+    )
+
     description = models.TextField(
         default="", blank=True, verbose_name=_("description")
     )
@@ -623,6 +643,12 @@ class Leg(models.Model):
 
     def is_credit(self):
         return self.type == CREDIT
+
+    def is_accounting_debit(self):
+        return self.accounting_type == self.AccountingTypeChoices.DEBIT
+
+    def is_accounting_credit(self):
+        return self.accounting_type == self.AccountingTypeChoices.CREDIT
 
     def account_balance_after(self):
         """Get the balance of the account associated with this leg following the transaction"""
