@@ -23,8 +23,8 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         )
 
     def test_accounting_transfer_to(self):
-        account1 = self.account(type=Account.TYPES.income)
-        account2 = self.account(type=Account.TYPES.income)
+        account1 = self.account(type=Account.TYPES.asset)
+        account2 = self.account(type=Account.TYPES.asset)
         transaction = account1.accounting_transfer_to(account2, Money(500, "EUR"))
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(account1.balance(), Balance(-500, "EUR"))
@@ -39,8 +39,10 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.income)
         src.accounting_transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
+
         Account.validate_accounting_equation()
 
     def test_transfer_income_to_asset(self):
@@ -161,7 +163,7 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(debit.account, src)
         self.assertEqual(credit.account, dst)
 
-    def test_account_balance_after(self):
+    def test_account_balance_after_income_to_income(self):
         src = self.account()
         dst = self.account()
         src.accounting_transfer_to(dst, Money(100, "EUR"))
@@ -170,12 +172,12 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         dst.accounting_transfer_to(src, Money(70, "EUR"))
 
         legs = Leg.objects.filter(account=dst).order_by("pk").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
+        self.assertEqual(legs[0].account_balance_after(), Balance("-100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("-200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("-250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("-180", "EUR"))
 
-    def test_account_balance_after_out_of_order_ids(self):
+    def test_account_balance_after_out_of_order_ids_income_to_income(self):
         src = self.account()
         dst = self.account()
         # Take test_account_balance_after() as a reference test,
@@ -187,12 +189,12 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         src.accounting_transfer_to(dst, Money(100, "EUR"), date="2000-01-01")
 
         legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
+        self.assertEqual(legs[0].account_balance_after(), Balance("-100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("-200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("-250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("-180", "EUR"))
 
-    def test_account_balance_after_out_of_order_ids_on_same_day(self):
+    def test_account_balance_after_out_of_order_ids_on_same_day_income_to_income(self):
         src = self.account()
         dst = self.account()
         # A more complex version of the above test_account_balance_after_out_of_order_ids()
@@ -206,12 +208,12 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         src.accounting_transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
         legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("110", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("210", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("260", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("190", "EUR"))
+        self.assertEqual(legs[0].account_balance_after(), Balance("-110", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("-210", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("-260", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("-190", "EUR"))
 
-    def test_account_balance_before_out_of_order_ids_on_same_day(self):
+    def test_account_balance_before_out_of_order_ids_on_same_day_income_to_income(self):
         src = self.account()
         dst = self.account()
         # A more complex version of the above test_account_balance_after_out_of_order_ids()
@@ -226,6 +228,17 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
 
         legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
         self.assertEqual(legs[0].account_balance_before(), Balance("0", "EUR"))
-        self.assertEqual(legs[1].account_balance_before(), Balance("110", "EUR"))
-        self.assertEqual(legs[2].account_balance_before(), Balance("210", "EUR"))
-        self.assertEqual(legs[3].account_balance_before(), Balance("260", "EUR"))
+        self.assertEqual(legs[1].account_balance_before(), Balance("-110", "EUR"))
+        self.assertEqual(legs[2].account_balance_before(), Balance("-210", "EUR"))
+        self.assertEqual(legs[3].account_balance_before(), Balance("-260", "EUR"))
+
+    def test_transfer_liability_to_liability(self):
+        src = self.account(type=Account.TYPES.liability)
+        dst = self.account(type=Account.TYPES.liability)
+
+        # Expect first to increase, dst to decrease
+        src.accounting_transfer_to(dst, Money(100, "EUR"))
+
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
+        Account.validate_accounting_equation()

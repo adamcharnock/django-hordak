@@ -410,40 +410,11 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
-        if (
-            self.sign == 1
-            and to_account.sign == 1
-            and to_account.type != self.TYPES.trading
-        ):
-            # Using Left hand side (LHS) and Right hand side (RHS):
-            #
-            #    LHS             RHS
-            #  Assets = Liabilities + Equity
-            #
-            # RHS -> RHS transfers are the only transfer that is truly different is in the
-            # accounting equation. When you move money from the giving account increases in value
-            # while the receiving account decreases in value.
-            #
-            # Real world: Income -> Loan
-            # In this example, the cash never hits the bank and is paid directly to the Loan.
-            # i.e. Stripe pays Stripe Capital directly. Your income directly pays your
-            # loan from Stripe.
-            #
-            # Thusly even though we "made money", increases income, it pays down the Loan,
-            # decreases liability.
-
-            #  and not trading
-            direction = -1
-        else:
-            direction = 1
-
         transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(
-            transaction=transaction, account=self, amount=+amount * direction
-        )
-        Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-amount * direction
-        )
+
+        Leg.objects.create(transaction=transaction, account=self, amount=+amount)
+        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount)
+
         return transaction
 
 
