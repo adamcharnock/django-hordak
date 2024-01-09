@@ -934,7 +934,7 @@ class TestCoreDefaultCurrenciesAsArr(TestCase):
 
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
-        self.assertEquals(project_currencies(), ["EUR", "USD"])
+        self.assertEqual(project_currencies(), ["EUR", "USD"])
 
 
 def project_currencies_func():
@@ -948,7 +948,7 @@ class TestCoreDefaultCurrenciesAsFunc(TestCase):
 
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
-        self.assertEquals(project_currencies(), ["SGD", "MYR"])
+        self.assertEqual(project_currencies(), ["SGD", "MYR"])
 
 
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):

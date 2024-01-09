@@ -4,10 +4,7 @@ import djmoney.models.fields
 from django.db import migrations, models
 
 
-try:
-    from django.db.models import JSONField
-except ImportError:
-    from django.contrib.postgres.fields.jsonb import JSONField
+from django.db.models import JSONField
 
 import hordak.models.core
 

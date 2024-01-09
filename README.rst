@@ -7,8 +7,8 @@ Django Hordak provides a `simple model layer`_ for a double-entry accounting
 system. The intention is not to provide a full-featured app, but rather
 to provide a reliable foundation on which to build such apps.
 
-Tested under Python: 3.7, 3.8, 3.9, 3.10
-Django: 3.2, 4.0, 4.1
+Tested under Python: 3.8, 3.9, 3.10, 3.11, 3.12
+Django: 4.2, 5.0
 
 .. image:: https://img.shields.io/pypi/v/django-hordak.svg
     :target: https://badge.fury.io/py/django-hordak

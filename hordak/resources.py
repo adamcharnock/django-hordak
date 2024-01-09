@@ -2,35 +2,22 @@ from datetime import datetime
 from decimal import Decimal, DecimalException, InvalidOperation
 
 from import_export import resources
-from import_export.results import Result as _Result
 
 from hordak.models import StatementLine, TransactionCsvImportColumn
 from hordak.utilities.statement_import import DATE_FORMATS
-
-
-class Result(_Result):
-    def append_failed_row(self, row, error):
-        # This class can be removed once this is merged:
-        #   https://github.com/django-import-export/django-import-export/pull/526
-        row_values = [v for (k, v) in row.items()]
-        row_values.append(str(error.error))
-        self.failed_dataset.append(row_values)
 
 
 class StatementLineResource(resources.ModelResource):
     class Meta:
         model = StatementLine
         fields = ("date", "amount", "description")
+        import_id_fields = ()
 
     def __init__(self, date_format, statement_import):
         self.date_format = date_format
         self.statement_import = statement_import
 
-    @classmethod
-    def get_result_class(self):
-        return Result
-
-    def before_import(self, dataset, using_transactions, dry_run, **kwargs):
+    def before_import(self, dataset, *args, **kwargs):
         def _strip(s):
             return s.strip() if isinstance(s, str) else s
 
@@ -51,7 +38,7 @@ class StatementLineResource(resources.ModelResource):
         # identical rows precede this one.
         self.dataset.append_col(similar_totals, header="similar_total")
 
-    def before_save_instance(self, instance, using_transactions, dry_run):
+    def before_save_instance(self, instance, *args, **kwargs):
         # We need to record this statement line against the parent statement import
         # instance passed to the constructor
         instance.statement_import = self.statement_import
@@ -82,14 +69,17 @@ class StatementLineResource(resources.ModelResource):
         return len(list(filter(lambda r: row == r, self.dataset[:until])))
 
     def import_obj(self, obj, data, dry_run, *args, **kwargs):
-        F = TransactionCsvImportColumn.TO_FIELDS
-        use_dual_amounts = F.amount_out in data and F.amount_in in data
+        return self.import_instance(obj, data, *args, dry_run=dry_run, **kwargs)
 
-        if F.date not in data:
+    def import_instance(self, instance, row, *args, **kwargs):
+        F = TransactionCsvImportColumn.TO_FIELDS
+        use_dual_amounts = F.amount_out in row and F.amount_in in row
+
+        if F.date not in row:
             raise ValueError("No date column found")
 
         try:
-            date = datetime.strptime(data[F.date], self.date_format).date()
+            date = datetime.strptime(row[F.date], self.date_format).date()
         except ValueError:
             raise ValueError(
                 "Invalid value for date. Expected {}".format(
@@ -97,12 +87,12 @@ class StatementLineResource(resources.ModelResource):
                 )
             )
 
-        description = data[F.description]
+        description = row[F.description]
 
         # Do we have in/out columns, or just one amount column?
         if use_dual_amounts:
-            amount_out = data[F.amount_out]
-            amount_in = data[F.amount_in]
+            amount_out = row[F.amount_out]
+            amount_in = row[F.amount_in]
 
             if amount_in and amount_out:
                 raise ValueError("Values found for both Amount In and Amount Out")
@@ -120,17 +110,24 @@ class StatementLineResource(resources.ModelResource):
                 except DecimalException:
                     raise ValueError("Invalid value found for Amount In")
         else:
-            if F.amount not in data:
+            if F.amount not in row:
                 raise ValueError("No amount column found")
-            if not data[F.amount]:
+            if not row[F.amount]:
                 raise ValueError("No value found for amount")
             try:
-                amount = Decimal(data[F.amount])
+                amount = Decimal(row[F.amount])
             except InvalidOperation:
                 raise DecimalException("Invalid value found for Amount")
 
         if amount == Decimal("0"):
             raise ValueError("Amount of zero not allowed")
 
-        data = dict(date=date, amount=amount, description=description)
-        return super(StatementLineResource, self).import_obj(obj, data, dry_run)
+        row = dict(date=date, amount=amount, description=description)
+        try:
+            return super(StatementLineResource, self).import_instance(
+                instance, row, *args, **kwargs
+            )
+        except AttributeError:  # django-import-export < 4.0.0
+            return super(StatementLineResource, self).import_obj(
+                instance, row, *args, **kwargs
+            )

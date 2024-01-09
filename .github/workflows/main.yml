@@ -22,19 +22,14 @@ jobs:
 
     strategy:
       matrix:
-        DJANGO_VERSION: [ '3.2.*', '4.0.*', '4.1.*', '4.2.*']
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        DJANGO_VERSION: ['4.2.*', '5.0.*']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        import-export: ['3.3.5', '4.0.0b2']
         exclude:
-          - DJANGO_VERSION: '4.2.*'
-            python-version: '3.7'
-          - DJANGO_VERSION: '4.1.*'
-            python-version: '3.7'
-          - DJANGO_VERSION: '4.0.*'
-            python-version: '3.7'
-          - DJANGO_VERSION: '4.0.*'
-            python-version: '3.11'
-          - DJANGO_VERSION: '3.2.*'
-            python-version: '3.11'
+          - DJANGO_VERSION: '5.0.*'
+            python-version: '3.8'
+          - DJANGO_VERSION: '5.0.*'
+            python-version: '3.9'
       fail-fast: false
 
     services:
@@ -68,16 +63,18 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}
+          key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}-${{ matrix.import-export }}
 
       - name: Install
         run: |
            sudo apt-get update
            sudo apt-get install -y mariadb-client
+           pip install -r requirements_test.txt
            python setup.py develop
            pip install -e .
-           pip install -r requirements_test.txt
+           pip install git+https://github.com/jazzband/django-model-utils@master  # remove after new release of django-model-utils (>4.3.1)
            pip install Django==${{ matrix.DJANGO_VERSION }}
+           pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
 
       - name: Check Migrations

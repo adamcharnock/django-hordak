@@ -1,3 +1,9 @@
+Version 1.15.0, Fri, 5 Jan 2024
+===============================
+* updated testing to Django 5.0, Python 3.12
+* fixed Resource to be compatible with django-import-export 3.3.5-4.0.0b2
+* dropped support of Django < 4.2, Python < 3.8
+
 Version 1.14.0, Tue 20 Jun 2023
 ===============================
 * `transfer_to()` on `Account` is now deprecated and raises a warning

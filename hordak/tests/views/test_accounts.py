@@ -168,7 +168,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         if response.context:
             self.assertTrue(response.context["form"].errors["currencies"])
 
-        self.assertEquals(Account.objects.count(), 0)
+        self.assertEqual(Account.objects.count(), 0)
 
 
 class AccountUpdateViewTestCase(DataProvider, TestCase):
