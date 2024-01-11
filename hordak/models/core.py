@@ -34,7 +34,7 @@ from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 
-from hordak import exceptions
+from hordak import defaults, exceptions
 from hordak.defaults import (
     DECIMAL_PLACES,
     MAX_DIGITS,
@@ -77,6 +77,43 @@ def _enforce_account():
         # (https://stackoverflow.com/a/15300941/1908381)
         if connection.vendor == "mysql":
             curs.callproc("update_full_account_codes")
+
+
+class RunningTotal(models.Model):
+    """
+    A running total of the balance of an account.
+
+    This is used to speed up the calculation of account balances.
+
+    This field should be considered an estimated value calculated for performance reasons.
+    It is not guaranteed to be accurate:
+    * Running totals are calculated through post_delete and pre_save signals on the Transaction model.
+        This means that they are not updated when a transaction is mass updated.
+    * They don't take into account children accounts - the total value of a parent
+        account needs to be calculated from its children manually now
+
+    """
+
+    account = models.ForeignKey(
+        "hordak.Account", on_delete=models.CASCADE, related_name="running_totals"
+    )
+    currency = models.CharField(
+        max_length=15,
+    )
+    balance = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        default_currency=defaults.DEFAULT_CURRENCY,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = _("Running Total")
+        verbose_name_plural = _("Running Totals")
+
+    def __str__(self):
+        return f"{self.account}: {self.balance}"
 
 
 class Account(MPTTModel):
@@ -445,6 +482,47 @@ class Account(MPTTModel):
             transaction=transaction, account=to_account, amount=-amount * direction
         )
         return transaction
+
+    def update_running_totals(self, check_only=False):
+        """
+        Update the running totals for this account by counting all transactions
+
+        Args:
+            check_only (bool): If true, don't actually update the running totals,
+                just check that they are correct.
+        Returns:
+            list: A list of currencies that have been updated or didn't pass the check
+        """
+        total = self.balance()
+        faulty_values = []
+
+        for money in total.monies():
+            currency = money.currency.code
+            try:
+                running_total = self.running_totals.get(currency=currency)
+                if running_total.balance != total[currency]:
+                    print(
+                        f"Running totals difference is {running_total.balance - total[currency]}\t"
+                        f"(running total: {running_total.balance},\ttotal: {total[currency]})\t",
+                        f"for account {self}",
+                    )
+                    faulty_values.append(
+                        (currency, running_total.balance, total[currency])
+                    )
+                    if not check_only:
+                        self.running_totals.filter(currency=currency).update(
+                            balance=total[currency]
+                        )
+            except RunningTotal.DoesNotExist:
+                print(f"No running total for {self} ({currency})")
+                faulty_values.append((currency, None, total[currency]))
+                if not check_only:
+                    RunningTotal.objects.create(
+                        account=self,
+                        currency=currency,
+                        balance=total[currency],
+                    )
+        return faulty_values
 
 
 class TransactionManager(models.Manager):

@@ -116,6 +116,7 @@ jobs:
 
       - name: Install
         run: |
+          pip install -r requirements_test.txt
           pip install flake8 isort black mypy django-stubs dj_database_url types-six types-requests types-mock
           pip install "django-stubs<1.13.0"  # Remove this line once https://github.com/typeddjango/django-stubs/issues/1227 is fixed
           pip install -r requirements_test.txt
