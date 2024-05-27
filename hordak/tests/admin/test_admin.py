@@ -54,7 +54,7 @@ class TestAdmin(DataProvider, TestCase):
         self.assertContains(
             res,
             '<input type="text" name="name" value="Bank account" '
-            'class="vTextField" maxlength="50" required id="id_name">',
+            'class="vTextField" maxlength="255" required id="id_name">',
             html=True,
         )
 
