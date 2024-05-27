@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("hordak", "0038_alter_account_id_alter_leg_id_and_more"),
+        ("hordak", "0039_recreate_update_full_account_codes"),
     ]
 
     operations = [
