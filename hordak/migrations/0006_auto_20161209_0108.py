@@ -75,6 +75,7 @@ def create_trigger(apps, schema_editor):
             "Database vendor %s not supported" % schema_editor.connection.vendor
         )
 
+
 def create_trigger_reverse(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
         # As per migration 0002
@@ -104,9 +105,7 @@ def create_trigger_reverse(apps, schema_editor):
         )
 
     elif schema_editor.connection.vendor == "mysql":
-        schema_editor.execute(
-            "DROP PROCEDURE IF EXISTS check_leg"
-        )
+        schema_editor.execute("DROP PROCEDURE IF EXISTS check_leg")
     else:
         raise NotImplementedError(
             "Database vendor %s not supported" % schema_editor.connection.vendor

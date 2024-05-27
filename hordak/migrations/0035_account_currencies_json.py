@@ -8,9 +8,7 @@ import hordak
 def copy_currencies_data(apps, schema_editor):
     # MySQL won't have any old data, because support has only now been added
     if schema_editor.connection.vendor == "postgresql":
-        Account = apps.get_model(
-            "hordak", "Account"
-        )
+        Account = apps.get_model("hordak", "Account")
         table_name = Account._meta.db_table
         with schema_editor.connection.cursor() as cursor:
             # only run this if there is data in the table (in which case we have an ARRAY to migrate);
@@ -30,11 +28,10 @@ def copy_currencies_data(apps, schema_editor):
                 """
                 )
 
+
 def copy_currencies_data_reverse(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        Account = apps.get_model(
-            "hordak", "Account"
-        )
+        Account = apps.get_model("hordak", "Account")
         table_name = Account._meta.db_table
         with schema_editor.connection.cursor() as cursor:
             # only run this if there is data in the table (in which case we have an ARRAY to migrate);
