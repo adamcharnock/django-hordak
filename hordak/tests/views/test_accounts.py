@@ -188,7 +188,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.assertIn("form", response.context)
         self.assertEqual(response.context["form"]["code"].value(), "01")
 
-    def test_post(self):
+    def test_post_ok(self):
         response = self.client.post(
             self.view_url,
             data=dict(
