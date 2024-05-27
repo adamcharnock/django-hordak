@@ -103,13 +103,12 @@ def currency_exchange(
     of currency going in and out of the transaction.
 
     You can also record any exchange fees by syphoning off funds to
-    ``fee_account`` of amount ``fee_amount``. Note
-    that the free currency must be the same as the source currency.
+    ``fee_account`` of amount ``fee_amount``.
 
     Examples:
 
         For example, imagine our Canadian bank has obligingly transferred 120 CAD into our US bank account.
-        We sent CAD 120, and received USD 100. We were also changed 1.50 CAD in fees.
+        We sent CAD 120, and received USD 100. We were also charged 1.50 CAD in fees.
 
         We can represent this exchange in Hordak as follows::
 
@@ -182,11 +181,13 @@ def currency_exchange(
         fee_amount = Money(0, source_amount.currency)
     else:
         # If we do have fees then make sure the fee currency matches the source currency
-        if fee_amount.currency != source_amount.currency:
+        if fee_amount.currency not in (
+            source_amount.currency,
+            destination_amount.currency,
+        ):
             raise InvalidFeeCurrency(
-                "Fee amount currency ({}) must match source amount currency ({})".format(
-                    fee_amount.currency, source_amount.currency
-                )
+                f"Fee amount currency ({fee_amount.currency}) must match source "
+                f"({source_amount.currency}) or destination ({destination_amount.currency}) amount currency "
             )
 
     # Checks over and done now. Let's create the transaction
@@ -201,6 +202,9 @@ def currency_exchange(
             ),
         )
 
+        # Are we charging the fee at the source or destination?
+        charge_fee_at_source = source_amount.currency == fee_amount.currency
+
         # Source currency into trading account
         Leg.objects.create(
             transaction=transaction, account=source, amount=source_amount
@@ -208,7 +212,9 @@ def currency_exchange(
         Leg.objects.create(
             transaction=transaction,
             account=trading_account,
-            amount=-(source_amount - fee_amount),
+            amount=-(
+                (source_amount - fee_amount) if charge_fee_at_source else source_amount
+            ),
         )
 
         # Any fees
@@ -222,7 +228,13 @@ def currency_exchange(
 
         # Destination currency out of trading account
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=destination_amount
+            transaction=transaction,
+            account=trading_account,
+            amount=(
+                destination_amount
+                if charge_fee_at_source
+                else destination_amount + fee_amount
+            ),
         )
         Leg.objects.create(
             transaction=transaction, account=destination, amount=-destination_amount

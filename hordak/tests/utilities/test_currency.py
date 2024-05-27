@@ -365,7 +365,7 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(cad_cash.balance(), Balance(135, "CAD"))
         self.assertEqual(food.balance(), Balance(72, "CAD"))
 
-    def test_fees(self):
+    def test_fees_source_currency(self):
         cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
         usd_cash = self.account(type=Account.TYPES.asset, currencies=["USD"])
         initial_capital = self.account(type=Account.TYPES.equity, currencies=["CAD"])
@@ -385,3 +385,24 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
         self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
         self.assertEqual(banking_fees.balance(), Balance(1.50, "CAD"))
+
+    def test_fees_destination_currency(self):
+        cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
+        usd_cash = self.account(type=Account.TYPES.asset, currencies=["USD"])
+        initial_capital = self.account(type=Account.TYPES.equity, currencies=["CAD"])
+        trading = self.account(type=Account.TYPES.trading, currencies=["CAD", "USD"])
+        banking_fees = self.account(type=Account.TYPES.expense, currencies=["USD"])
+
+        initial_capital.transfer_to(cad_cash, Money(200, "CAD"))
+        currency_exchange(
+            source=cad_cash,
+            source_amount=Money(120, "CAD"),
+            destination=usd_cash,
+            destination_amount=Money(100, "USD"),
+            trading_account=trading,
+            fee_destination=banking_fees,
+            fee_amount=Money(1.50, "USD"),
+        )
+        self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
+        self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
+        self.assertEqual(banking_fees.balance(), Balance(1.50, "USD"))
