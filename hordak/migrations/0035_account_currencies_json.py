@@ -8,14 +8,14 @@ import hordak
 def copy_currencies_data(apps, schema_editor):
     # MySQL won't have any old data, because support has only now been added
     if schema_editor.connection.vendor == "postgresql":
-        MyModel = apps.get_model(
+        Account = apps.get_model(
             "hordak", "Account"
-        )  # replace 'myapp' and 'MyModel' with your actual app and model names
-        table_name = MyModel._meta.db_table
+        )
+        table_name = Account._meta.db_table
         with schema_editor.connection.cursor() as cursor:
-            # only run this if there is data in the table (in which case we're an ARRAY to migrate);
+            # only run this if there is data in the table (in which case we have an ARRAY to migrate);
             # disregard if migrations are being run on a fresh database
-            if MyModel.objects.count() > 0:
+            if Account.objects.count() > 0:
                 cursor.execute(
                     f"""
                     UPDATE {table_name}
@@ -27,6 +27,23 @@ def copy_currencies_data(apps, schema_editor):
                     f"""
                     UPDATE {table_name}
                     SET currencies_json = currencies;
+                """
+                )
+
+def copy_currencies_data_reverse(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        Account = apps.get_model(
+            "hordak", "Account"
+        )
+        table_name = Account._meta.db_table
+        with schema_editor.connection.cursor() as cursor:
+            # only run this if there is data in the table (in which case we have an ARRAY to migrate);
+            # disregard if migrations are being run on a fresh database
+            if Account.objects.count() > 0:
+                cursor.execute(
+                    f"""
+                    UPDATE {table_name}
+                    SET currencies = (array_agg(ary)::text[] FROM jsonb_array_elements_text(currencies_json) as ary)
                 """
                 )
 
@@ -45,5 +62,5 @@ class Migration(migrations.Migration):
                 default=hordak.defaults.project_currencies,
             ),
         ),
-        migrations.RunPython(copy_currencies_data),
+        migrations.RunPython(copy_currencies_data, copy_currencies_data_reverse),
     ]

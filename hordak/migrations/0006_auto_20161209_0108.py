@@ -75,11 +75,48 @@ def create_trigger(apps, schema_editor):
             "Database vendor %s not supported" % schema_editor.connection.vendor
         )
 
+def create_trigger_reverse(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        # As per migration 0002
+        schema_editor.execute(
+            """
+            CREATE OR REPLACE FUNCTION check_leg()
+                RETURNS trigger AS
+            $$
+            DECLARE
+                transaction_sum DECIMAL(13, 2);
+            BEGIN
+
+                IF (TG_OP = 'DELETE') THEN
+                    SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = OLD.transaction_id;
+                ELSE
+                    SELECT SUM(amount) INTO transaction_sum FROM hordak_leg WHERE transaction_id = NEW.transaction_id;
+                END IF;
+
+                IF transaction_sum != 0 THEN
+                    RAISE EXCEPTION 'Sum of transaction amounts must be 0';
+                END IF;
+                RETURN NEW;
+            END;
+            $$
+            LANGUAGE plpgsql
+        """
+        )
+
+    elif schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            "DROP PROCEDURE IF EXISTS check_leg"
+        )
+    else:
+        raise NotImplementedError(
+            "Database vendor %s not supported" % schema_editor.connection.vendor
+        )
+
 
 class Migration(migrations.Migration):
     dependencies = [("hordak", "0005_account_currencies")]
     atomic = False
 
     operations = [
-        migrations.RunPython(create_trigger),
+        migrations.RunPython(create_trigger, create_trigger_reverse),
     ]

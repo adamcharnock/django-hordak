@@ -51,7 +51,27 @@ def create_trigger(apps, schema_editor):
 
 def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute("DROP FUNCTION update_full_account_codes()")
+        # Recreate update_full_account_codes as it was in migration 0013
+        schema_editor.execute(
+            """
+            CREATE OR REPLACE FUNCTION update_full_account_codes()
+                RETURNS TRIGGER AS
+            $$
+            BEGIN
+                UPDATE
+                    hordak_account AS a
+                SET
+                    full_code = (
+                        SELECT string_agg(code, '' order by lft)
+                        FROM hordak_account AS a2
+                        WHERE a2.lft <= a.lft AND a2.rght >= a.rght AND a.tree_id = a2.tree_id
+                    );
+                RETURN NULL;
+            END;
+            $$
+            LANGUAGE plpgsql;
+        """
+        )
     elif schema_editor.connection.vendor == "mysql":
         pass
     else:

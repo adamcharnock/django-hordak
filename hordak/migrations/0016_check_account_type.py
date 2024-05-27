@@ -37,10 +37,10 @@ def create_trigger(apps, schema_editor):
 
 def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute("DROP FUNCTION check_account_type()")
         schema_editor.execute(
             "DROP TRIGGER IF EXISTS check_account_type_trigger ON hordak_account"
         )
+        schema_editor.execute("DROP FUNCTION check_account_type()")
 
 
 class Migration(migrations.Migration):

@@ -42,9 +42,30 @@ def create_triggers(apps, schema_editor):
 
 def drop_triggers(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
+        # Recreate check_leg_and_account_currency_match as it was in migration 0007
         schema_editor.execute(
             """
-            DROP FUNCTION check_leg_and_account_currency_match()
+            CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
+                RETURNS trigger AS
+            $$
+            DECLARE
+
+            BEGIN
+
+                IF (TG_OP = 'DELETE') THEN
+                    RETURN OLD;
+                END IF;
+
+                PERFORM * FROM hordak_account WHERE id = NEW.account_id AND NEW.amount_currency = ANY(currencies);
+
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'Destination account does not support currency %%', NEW.amount_currency;
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$
+            LANGUAGE plpgsql
         """
         )
     elif schema_editor.connection.vendor == "mysql":

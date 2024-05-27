@@ -50,8 +50,8 @@ def create_trigger(apps, schema_editor):
 
 def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute("DROP FUNCTION check_leg()")
         schema_editor.execute("DROP TRIGGER IF EXISTS check_leg_trigger ON hordak_leg")
+        schema_editor.execute("DROP FUNCTION check_leg()")
     elif schema_editor.connection.vendor == "mysql":
         pass
     else:

@@ -6,7 +6,10 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [("hordak", "0017_auto_20171203_1516")]
+    dependencies = [
+        ("hordak", "0017_auto_20171203_1516"),
+        ("contenttypes", "0002_remove_content_type_name"),
+    ]
 
     operations = [
         migrations.RenameModel(

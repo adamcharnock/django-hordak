@@ -45,10 +45,10 @@ def create_trigger(apps, schema_editor):
 
 def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute("DROP FUNCTION update_full_account_codes()")
         schema_editor.execute(
             "DROP TRIGGER IF EXISTS update_full_account_codes_trigger ON hordak_account"
         )
+        schema_editor.execute("DROP FUNCTION update_full_account_codes()")
     elif schema_editor.connection.vendor == "mysql":
         pass  # we don't care about MySQL here since support is added in 0027
     else:
