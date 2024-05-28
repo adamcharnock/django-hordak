@@ -28,17 +28,28 @@ class AccountCodeGenerator:
         self.current = self._to_list(self.start_at)
 
     def _to_list(self, value: str) -> list[int]:
+        # "0A" -> (0, 10)
         return [self.chars.index(v) for v in value]
 
     def _to_str(self, value: list[int]) -> str:
+        # (0, 10) -> "0A"
         return "".join([self.chars[i] for i in value])
 
     def __next__(self):
+        # Increment the right-most value
         self.current[-1] += 1
+        # Now go through each value and carry over values that exceed the number base.
+        # We iterate from right to left, carrying over as we go.
         for i, _ in reversed(list(enumerate(self.current))):
             if self.current[i] >= self.base:
                 if i == 0:
+                    # The left-most value is now too big,
+                    # so we have exhausted this sequence.
+                    # Stop iterating
                     raise StopIteration()
+
+                # Otherwise, do the cary-over. Set this value to 0,
+                # and add one to the value left of us
                 self.current[i] = 0
                 self.current[i - 1] += 1
 
@@ -50,6 +61,7 @@ class AccountCodeGenerator:
 
 
 def get_next_account_code(account_code: str, alpha=False):
+    """Get the next account code in sequence"""
     try:
         return next(AccountCodeGenerator(start_at=account_code, alpha=alpha))
     except StopIteration:
