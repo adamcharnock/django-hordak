@@ -57,6 +57,29 @@ class TestAdmin(DataProvider, TestCase):
             '?_changelist_filters=q%3DBank">Bank account</a>',
             html=True,
         )
+        self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
+
+    def test_filter_query(self):
+        """Test that filter query works"""
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_account_changelist")
+        res = self.client.get(url + "?type__exact=AS")
+        self.assertContains(
+            res,
+            f'<a href="/admin/hordak/account/{self.bank_account.id}/change/'
+            '?_changelist_filters=type__exact%3DAS">Bank account</a>',
+            html=True,
+        )
+        self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
+
+    def test_filter_query_liability(self):
+        """Test that filter query works"""
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_account_changelist")
+        res = self.client.get(url + "?type__exact=LI")
+        self.assertContains(res, '<p class="paginator">0 accounts</p>', html=True)
 
     def test_account_edit(self):
         """Test account edit page"""
