@@ -22,13 +22,18 @@ jobs:
 
     strategy:
       matrix:
-        DJANGO_VERSION: ['4.2.*', '5.0.*']
+        DJANGO_VERSION: ['4.2.*', '5.0.*', '5.1.*']
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-        import-export: ['3.3.5', '4.0.0b2']
+        import-export: ['3.3.5', '4.0.*']
         exclude:
           - DJANGO_VERSION: '5.0.*'
             python-version: '3.8'
           - DJANGO_VERSION: '5.0.*'
+            python-version: '3.9'
+
+          - DJANGO_VERSION: '5.1.*'
+            python-version: '3.8'
+          - DJANGO_VERSION: '5.1.*'
             python-version: '3.9'
       fail-fast: false
 
@@ -72,8 +77,7 @@ jobs:
            pip install -r requirements_test.txt
            python setup.py develop
            pip install -e .
-           pip install git+https://github.com/jazzband/django-model-utils@master  # remove after new release of django-model-utils (>4.3.1)
-           pip install Django==${{ matrix.DJANGO_VERSION }}
+           pip install Django==${{ matrix.DJANGO_VERSION }} --pre
            pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
 
