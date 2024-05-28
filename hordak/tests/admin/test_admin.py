@@ -45,6 +45,19 @@ class TestAdmin(DataProvider, TestCase):
         self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
         self.assertContains(res, '<td class="field-type_">Asset</td>', html=True)
 
+    def test_search_query(self):
+        """Test that search query works"""
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_account_changelist")
+        res = self.client.get(url + "?q=Bank")
+        self.assertContains(
+            res,
+            f'<a href="/admin/hordak/account/{self.bank_account.id}/change/'
+            '?_changelist_filters=q%3DBank">Bank account</a>',
+            html=True,
+        )
+
     def test_account_edit(self):
         """Test account edit page"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
