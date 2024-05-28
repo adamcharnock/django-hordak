@@ -5,6 +5,9 @@ from hordak.models import Account, StatementImport
 from hordak.utilities.currency import Balance
 
 
+Empty = object()
+
+
 class DataProvider(object):
     """Utility methods for providing data to test cases"""
 
@@ -36,7 +39,7 @@ class DataProvider(object):
         name=None,
         parent=None,
         type=Account.TYPES.income,
-        code=None,
+        code=Empty,
         currencies=("EUR",),
         **kwargs
     ):
@@ -46,9 +49,7 @@ class DataProvider(object):
             Account
         """
         name = name or "Account {}".format(Account.objects.count() + 1)
-        code = (
-            code if code is not None else Account.objects.filter(parent=parent).count()
-        )
+        code = Account.objects.filter(parent=parent).count() if code is Empty else code
 
         return Account.objects.create(
             name=name,

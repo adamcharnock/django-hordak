@@ -426,7 +426,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(DatabaseError):
             self.account(parent=account1, code="0")
 
-    def test_full_code_changes_on_update(self):
+    def test_full_code_changes_on_update_simple(self):
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -445,6 +445,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account3.full_code, "A09")
 
     def test_full_code_changes_on_update_with_null_code(self):
+        account0 = self.account(code="1")
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -455,11 +456,13 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2.refresh_from_db()
         account3.refresh_from_db()
 
+        self.assertEqual(account0.full_code, "1")
         self.assertEqual(account1.full_code, None)
         self.assertEqual(account2.full_code, None)
         self.assertEqual(account3.full_code, None)
 
     def test_full_code_changes_on_update_with_empty_string_code(self):
+        account0 = self.account(code="1")
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -470,7 +473,34 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2.refresh_from_db()
         account3.refresh_from_db()
 
+        self.assertEqual(account0.full_code, "1")
         self.assertEqual(account1.full_code, None)
+        self.assertEqual(account2.full_code, None)
+        self.assertEqual(account3.full_code, None)
+
+    def test_full_code_changes_on_create_with_null_code(self):
+        account1 = self.account(code="5")
+        account2 = self.account(parent=account1, code=None)
+        account3 = self.account(parent=account2, code="9")
+
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, "5")
+        self.assertEqual(account2.full_code, None)
+        self.assertEqual(account3.full_code, None)
+
+    def test_full_code_changes_on_create_with_empty_string_code(self):
+        account1 = self.account(code="5")
+        account2 = self.account(parent=account1, code="")
+        account3 = self.account(parent=account2, code="9")
+
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        account3.refresh_from_db()
+
+        self.assertEqual(account1.full_code, "5")
         self.assertEqual(account2.full_code, None)
         self.assertEqual(account3.full_code, None)
 
