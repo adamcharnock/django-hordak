@@ -75,3 +75,13 @@ class CannotSimplifyError(HordakError):
     """Used internally by Currency class"""
 
     pass
+
+
+class NoMoreAccountCodesAvailableInSequence(HordakError):
+    """Raised when all account codes in a sequence have been generated
+
+    For example, we cannot generate an account code after "999". Or,
+    when using alpha characters, after "ZZZ".
+    """
+
+    pass
