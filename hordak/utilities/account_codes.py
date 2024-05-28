@@ -1,4 +1,5 @@
 import string
+from typing import List
 
 from hordak.exceptions import NoMoreAccountCodesAvailableInSequence
 
@@ -27,11 +28,11 @@ class AccountCodeGenerator:
     def reset_iterator(self):
         self.current = self._to_list(self.start_at)
 
-    def _to_list(self, value: str) -> list[int]:
+    def _to_list(self, value: str) -> List[int]:
         # "0A" -> (0, 10)
         return [self.chars.index(v) for v in value]
 
-    def _to_str(self, value: list[int]) -> str:
+    def _to_str(self, value: List[int]) -> str:
         # (0, 10) -> "0A"
         return "".join([self.chars[i] for i in value])
 
