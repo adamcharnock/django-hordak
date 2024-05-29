@@ -66,7 +66,35 @@ def forward(apps, schema_editor):
 
     elif schema_editor.connection.vendor == "mysql":
         # Performance improvement not implemented in mysql (a port is welcome)
-        pass
+        # But we do fix an issue that surfaced
+        schema_editor.execute("DROP PROCEDURE update_full_account_codes")
+        schema_editor.execute(
+            """
+            CREATE PROCEDURE update_full_account_codes()
+            BEGIN
+                UPDATE
+                    hordak_account AS a
+                SET
+                    full_code = (
+                        SELECT CASE
+                            -- Aggregate the codes of all parents to make the full account code.
+                            -- However, if this path includes NULL values then the full code must be set to null.
+                            -- Checking for the existence of NULLS in an array is not that easy in mariadb
+                            -- so we do a little tick to keep things
+                            -- sane and readable. We simply compare the stringified version of the array
+                            -- against one that has NULL values replaced with '*'. If they match then we are free of any NULL
+                            -- values.
+                            WHEN GROUP_CONCAT(IFNULL(NULLIF(code, ''), '*')) = GROUP_CONCAT(IFNULL(NULLIF(code, ''), ''))
+                                THEN GROUP_CONCAT(code ORDER BY lft SEPARATOR '')
+                            ELSE NULL
+                        END
+                        FROM hordak_account AS a2
+                        WHERE a2.lft <= a.lft AND a2.rght >= a.rght AND a.tree_id = a2.tree_id
+                    )
+                ;
+            END
+        """
+        )
 
     else:
         raise NotImplementedError(
@@ -140,6 +168,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("hordak", "0040_alter_account_name"),
     ]
+    atomic = False
 
     operations = [
         migrations.RunPython(forward, reverse),
