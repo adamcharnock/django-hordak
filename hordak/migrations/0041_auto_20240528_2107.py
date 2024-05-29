@@ -41,7 +41,7 @@ def forward(apps, schema_editor):
                             FROM hordak_account AS a2
                             WHERE a2.lft <= a.lft AND a2.rght >= a.rght AND a.tree_id = a2.tree_id
                         )
-                        -- Only update this account and the accounts below it in the tree
+                    -- Only update this account and the accounts below it in the tree
                     WHERE a.lft >= NEW.lft AND a.rght <= NEW.rght AND a.tree_id = NEW.tree_id
                     ;
 
@@ -70,7 +70,7 @@ def forward(apps, schema_editor):
         schema_editor.execute("DROP PROCEDURE update_full_account_codes")
         schema_editor.execute(
             """
-            CREATE PROCEDURE update_full_account_codes()
+            CREATE PROCEDURE update_full_account_codes(changed_lft int, changed_rght int, changed_tree int)
             BEGIN
                 UPDATE
                     hordak_account AS a
@@ -91,6 +91,8 @@ def forward(apps, schema_editor):
                         FROM hordak_account AS a2
                         WHERE a2.lft <= a.lft AND a2.rght >= a.rght AND a.tree_id = a2.tree_id
                     )
+                -- Only update this account and the accounts below it in the tree
+                WHERE a.lft >= changed_lft AND a.rght <= changed_rght AND a.tree_id = changed_tree
                 ;
             END
         """
