@@ -69,16 +69,6 @@ class AccountManager(TreeManager):
         return self.get(uuid=uuid)
 
 
-def _enforce_account():
-    with connection.cursor() as curs:
-        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
-        # triggers, and does not support triggers updating the table they are triggered from
-        # so we have to do it by calling a procedure here instead
-        # (https://stackoverflow.com/a/15300941/1908381)
-        if connection.vendor == "mysql":
-            curs.callproc("update_full_account_codes")
-
-
 class Account(MPTTModel):
     """Represents an account
 
@@ -189,7 +179,14 @@ class Account(MPTTModel):
                 "currencies",
             ]
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
-        transaction.on_commit(_enforce_account)
+
+        if connection.vendor == "mysql":
+            # We need updated lft/rght/tree_id values for the mysql_run_manual_trigger() call
+            self.refresh_from_db()
+
+        mysql_simulate_trigger(
+            "update_full_account_codes", self.lft, self.rght, self.tree_id
+        )
 
         do_refresh = False
 
@@ -543,14 +540,6 @@ class LegManager(models.Manager):
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
 
 
-def _enforce_leg(transaction_id: int):
-    with connection.cursor() as curs:
-        # postgresql has this enforced by a trigger, but MySQL/MariaDB does not support deferred constraint
-        # triggers so we have to do it by calling a procedure here instead
-        if connection.vendor == "mysql":
-            curs.callproc("check_leg", [transaction_id])
-
-
 class Leg(models.Model):
     """The leg of a transaction
 
@@ -601,7 +590,7 @@ class Leg(models.Model):
             raise exceptions.ZeroAmountError()
 
         leg = super(Leg, self).save(*args, **kwargs)
-        transaction.on_commit(lambda: _enforce_leg(transaction_id=self.transaction_id))
+        mysql_simulate_trigger("check_leg", self.transaction_id)
         return leg
 
     def natural_key(self):
@@ -819,3 +808,19 @@ class StatementLine(models.Model):
 
     class Meta:
         verbose_name = _("statementLine")
+
+
+def mysql_simulate_trigger(proc_name, *args):
+    # MySQL/MariaDB does not support deferred constraint triggers (unlike postgres),
+    # and also does not support triggers updating the table they are triggered from.
+    # So this function allows us to trigger manual function calls on transaction finish.
+    # Enforcing this at the application level is not idea. If this is important to you
+    # then use postgres.
+    # (https://stackoverflow.com/a/15300941/1908381)
+    def _mysql_call_proc():
+        with connection.cursor() as curs:
+            curs.callproc(proc_name, args)
+
+    if connection.vendor == "mysql":
+        with connection.cursor():
+            transaction.on_commit(_mysql_call_proc)

@@ -22,7 +22,7 @@ def create_trigger(apps, schema_editor):
         )
 
     elif schema_editor.connection.vendor == "mysql":
-        # we have to call this procedure in Leg.on_commit, because MySQL does not support deferred triggers
+        # we have to call this procedure in python via mysql_simulate_trigger(), because MySQL does not support deferred triggers
         schema_editor.execute(
             """
             CREATE OR REPLACE TRIGGER check_account_type_on_insert
