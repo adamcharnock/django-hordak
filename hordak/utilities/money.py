@@ -3,7 +3,7 @@ from decimal import Decimal
 from hordak.defaults import DECIMAL_PLACES
 
 
-def ratio_split(amount, ratios):
+def ratio_split(amount, ratios, precision=None):
     """Split in_value according to the ratios specified in `ratios`
 
     This is special in that it ensures the returned values always sum to
@@ -28,15 +28,21 @@ def ratio_split(amount, ratios):
     Args:
         amount (Decimal): The amount to be split
         ratios (list[Decimal]): The ratios that will determine the split
+        precision (Optional[Decimal]): How many decimal places to round to
+            (defaults to the `HORDAK_DECIMAL_PLACES` setting)
 
     Returns: list(Decimal)
 
     """
-    precision = Decimal(10) ** Decimal(-DECIMAL_PLACES)
-    assert amount == amount.quantize(precision)
+    if precision is None:
+        precision = Decimal(10) ** Decimal(-DECIMAL_PLACES)
+    assert amount == amount.quantize(precision), (
+        "Input amount is not at the required precision (%s)" % precision
+    )
 
     # Distribute the amount according to the ratios:
     ratio_total = sum(ratios)
+    assert ratio_total > 0, "Ratio sum cannot be zero"
     values = [amount * ratio / ratio_total for ratio in ratios]
 
     # Now round the values to the desired number of decimal places:
@@ -55,6 +61,10 @@ def ratio_split(amount, ratios):
         else:
             break
 
-    assert sum(rounded) == amount
+    rounded_sum = sum(rounded)
+    assert rounded_sum == amount, (
+        "Sanity check failed, output total (%s) did not match input amount"
+        % rounded_sum
+    )
 
     return rounded
