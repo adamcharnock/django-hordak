@@ -585,6 +585,9 @@ class Leg(models.Model):
 
     objects = CustomLegManager()
 
+    def __str__(self):
+        return f"{self.type.title()} {self.account.name} ({self.account.full_code}) {self.amount}"
+
     def save(self, *args, **kwargs):
         if self.amount.amount == 0:
             raise exceptions.ZeroAmountError()
