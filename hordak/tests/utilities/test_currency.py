@@ -270,11 +270,12 @@ class BalanceTestCase(CacheTestCase):
             True,
         )
 
-    def test_lt(self):
+    def test_lt_simple(self):
         self.assertEqual(Balance() < Balance(), False)
         self.assertEqual(self.balance_1 < self.balance_1, False)
         self.assertEqual(Balance() < Balance([Money(1, "USD")]), True)
         self.assertEqual(Balance([Money(1, "USD")]) < Balance(), False)
+        self.assertEqual(Balance([Money(0, "USD")]) < 0, False)
         self.assertEqual(Balance([Money(-1, "USD")]) < Balance([Money(1, "USD")]), True)
         self.assertEqual(
             Balance([Money(1, "USD")]) < Balance([Money(-1, "USD")]), False
@@ -286,7 +287,7 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(Balance(1, "USD") < Balance(2, "USD"), True)
         self.assertEqual(Balance(2, "USD") < Balance(1, "USD"), False)
 
-    def test_gt(self):
+    def test_gt_simple(self):
         self.assertEqual(Balance() > Balance(), False)
         self.assertEqual(self.balance_1 > self.balance_1, False)
         self.assertEqual(Balance() > Balance([Money(1, "USD")]), False)

@@ -539,10 +539,17 @@ class Balance(object):
         # -1, 0, and 1, and the values are different, then
         # just compare those.
         try:
+            # Will be -1, 0, or 1
             self_simplified = self._simplify()
             other_simplified = other._simplify()
+            # If simplified values are different then we can just compare them
             if self_simplified != other_simplified:
                 return self_simplified < other_simplified
+            # Also, if the simplified values are both 0, then we can return False
+            if self_simplified == 0 and other_simplified == 0:
+                return False
+            # So we now know that both currencies are positive, or both currencies
+            # are negative. In which case we need to do a smarter comparison.
         except CannotSimplifyError:
             pass
 
@@ -550,6 +557,9 @@ class Balance(object):
             # Shortcut if we have a single value with the same currency
             return self._money_obs[0] < other._money_obs[0]
         else:
+            # At this point we need to start doing currency conversions
+            # via normalise() in order to do the comparison (despite our
+            # above efforts to try to avoid this)
             money = self.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
             other_money = other.normalise(defaults.INTERNAL_CURRENCY)._money_obs[0]
             return money < other_money
