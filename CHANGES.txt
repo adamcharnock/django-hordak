@@ -1,3 +1,20 @@
+Version 1.16.0, Fri, 25 June 2024
+=================================
+
+* Now testing against Django 5.1
+* Account name max length increased from 50 to 255 (#47)
+* Account code regeneration major performance improvement in database trigger (#117)
+* Improvements to ratio_split()
+  * Adding assertion to catch div-by-zero error
+  * Adding assertion failure messages
+  * Adding `precision` parameter (defaults to previous value)
+* Adding `get_next_account_code()` utility function (#114)
+* `currency_exchange()` can now charge fees in the destination currency (#56)
+* Fixed error in `Balance` comparison where one value is a zero-balance and the other is a zero-decimal
+* Fixed search in admin UI, was giving a 500 error (#107)
+* Add `__str__()` method to Leg model
+* Postgres migrations can now reverse all the way back to zero
+
 Version 1.15.0, Fri, 5 Jan 2024
 ===============================
 * updated testing to Django 5.0, Python 3.12
