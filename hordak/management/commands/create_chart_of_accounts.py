@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from hordak.models import Account
+from hordak.models import Account, AccountType
 
 
 class Command(BaseCommand):
@@ -60,7 +60,7 @@ class Command(BaseCommand):
 
         kw = dict(currencies=currencies)
         # Root accounts (level 0)
-        T = Account.TYPES
+        T = AccountType
         assets = Account.objects.create(name="Assets", code="1", type=T.asset, **kw)
         liabilities = Account.objects.create(
             name="Liabilities", code="2", type=T.liability, **kw

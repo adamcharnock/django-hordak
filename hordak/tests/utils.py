@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 
-from hordak.models import Account, StatementImport
+from hordak.models import Account, AccountType, StatementImport
 from hordak.utilities.currency import Balance
 
 
@@ -38,7 +38,7 @@ class DataProvider(object):
         self,
         name=None,
         parent=None,
-        type=Account.TYPES.income,
+        type=AccountType.income,
         code=Empty,
         currencies=("EUR",),
         **kwargs
@@ -62,7 +62,7 @@ class DataProvider(object):
 
     def statement_import(self, bank_account=None, **kwargs):
         return StatementImport.objects.create(
-            bank_account=bank_account or self.account(type=Account.TYPES.asset),
+            bank_account=bank_account or self.account(type=AccountType.asset),
             source="csv",
             **kwargs
         )

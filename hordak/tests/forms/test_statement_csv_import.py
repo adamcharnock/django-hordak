@@ -2,13 +2,13 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from hordak.forms.statement_csv_import import TransactionCsvImportForm
-from hordak.models import Account, TransactionCsvImport
+from hordak.models import AccountType, TransactionCsvImport
 from hordak.tests.utils import DataProvider
 
 
 class TransactionCsvImportFormTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.account = self.account(is_bank_account=True, type=AccountType.asset)
         self.f = SimpleUploadedFile(
             "data.csv", b"Number,Date,Account,Amount,Subcategory,Memo"
         )

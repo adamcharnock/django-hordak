@@ -3,7 +3,7 @@ from decimal import Decimal, DecimalException, InvalidOperation
 
 from import_export import resources
 
-from hordak.models import StatementLine, TransactionCsvImportColumn
+from hordak.models import StatementLine, ToField
 from hordak.utilities.statement_import import DATE_FORMATS
 
 
@@ -72,14 +72,14 @@ class StatementLineResource(resources.ModelResource):
         return self.import_instance(obj, data, *args, dry_run=dry_run, **kwargs)
 
     def import_instance(self, instance, row, *args, **kwargs):
-        F = TransactionCsvImportColumn.TO_FIELDS
-        use_dual_amounts = F.amount_out in row and F.amount_in in row
+        F = ToField
+        use_dual_amounts = F.amount_out.value in row and F.amount_in.value in row
 
-        if F.date not in row:
+        if F.date.value not in row:
             raise ValueError("No date column found")
 
         try:
-            date = datetime.strptime(row[F.date], self.date_format).date()
+            date = datetime.strptime(row[F.date.value], self.date_format).date()
         except ValueError:
             raise ValueError(
                 "Invalid value for date. Expected {}".format(
@@ -87,12 +87,12 @@ class StatementLineResource(resources.ModelResource):
                 )
             )
 
-        description = row[F.description]
+        description = row[F.description.value]
 
         # Do we have in/out columns, or just one amount column?
         if use_dual_amounts:
-            amount_out = row[F.amount_out]
-            amount_in = row[F.amount_in]
+            amount_out = row[F.amount_out.value]
+            amount_in = row[F.amount_in.value]
 
             if amount_in and amount_out:
                 raise ValueError("Values found for both Amount In and Amount Out")
@@ -110,12 +110,12 @@ class StatementLineResource(resources.ModelResource):
                 except DecimalException:
                     raise ValueError("Invalid value found for Amount In")
         else:
-            if F.amount not in row:
+            if F.amount.value not in row:
                 raise ValueError("No amount column found")
-            if not row[F.amount]:
+            if not row[F.amount.value]:
                 raise ValueError("No value found for amount")
             try:
-                amount = Decimal(row[F.amount])
+                amount = Decimal(row[F.amount.value])
             except InvalidOperation:
                 raise DecimalException("Invalid value found for Amount")
 

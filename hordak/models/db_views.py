@@ -1,10 +1,14 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
-from model_utils import Choices
 
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, get_internal_currency
 from hordak.models import Account, Transaction
+
+
+class LegType(models.TextChoices):
+    debit = "DR", "Debit"
+    credit = "CR", "Credit"
 
 
 class LegView(models.Model):
@@ -26,11 +30,6 @@ class LegView(models.Model):
         HordakLegView.objects.defer('account_balance')
 
     """
-
-    TYPES = Choices(
-        ("DR", "debit", "Debit"),
-        ("CR", "credit", "Credit"),
-    )
 
     uuid = models.UUIDField(verbose_name=_("uuid"), editable=False)
     transaction = models.ForeignKey(
@@ -59,7 +58,7 @@ class LegView(models.Model):
         max_length=2,
         help_text="Type of this transaction leg: debit or credit",
         verbose_name=_("type"),
-        choices=TYPES,
+        choices=LegType,
     )
     credit = models.DecimalField(
         max_digits=MAX_DIGITS,

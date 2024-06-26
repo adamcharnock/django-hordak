@@ -11,7 +11,7 @@ from django.test import TestCase, override_settings
 from moneyed import Money
 
 from hordak.exceptions import LossyCalculationError
-from hordak.models import Account
+from hordak.models import AccountType
 from hordak.tests.utils import BalanceUtils, DataProvider
 from hordak.utilities.currency import (
     Balance,
@@ -328,11 +328,11 @@ class BalanceTestCase(CacheTestCase):
 class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
     def test_peter_selinger_tutorial_table_4_4(self):
         """Test the example given by Peter Selinger in his muticurrency accounting tutorial. Table 4.4"""
-        cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
-        usd_cash = self.account(type=Account.TYPES.asset, currencies=["USD"])
-        initial_capital = self.account(type=Account.TYPES.equity, currencies=["CAD"])
-        food = self.account(type=Account.TYPES.expense, currencies=["CAD"])
-        trading = self.account(type=Account.TYPES.trading, currencies=["CAD", "USD"])
+        cad_cash = self.account(type=AccountType.asset, currencies=["CAD"])
+        usd_cash = self.account(type=AccountType.asset, currencies=["USD"])
+        initial_capital = self.account(type=AccountType.equity, currencies=["CAD"])
+        food = self.account(type=AccountType.expense, currencies=["CAD"])
+        trading = self.account(type=AccountType.trading, currencies=["CAD", "USD"])
 
         # Put CAD 200 into cad_cash
         initial_capital.transfer_to(cad_cash, Money(200, "CAD"))
@@ -367,11 +367,11 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(food.balance(), Balance(72, "CAD"))
 
     def test_fees_source_currency(self):
-        cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
-        usd_cash = self.account(type=Account.TYPES.asset, currencies=["USD"])
-        initial_capital = self.account(type=Account.TYPES.equity, currencies=["CAD"])
-        trading = self.account(type=Account.TYPES.trading, currencies=["CAD", "USD"])
-        banking_fees = self.account(type=Account.TYPES.expense, currencies=["CAD"])
+        cad_cash = self.account(type=AccountType.asset, currencies=["CAD"])
+        usd_cash = self.account(type=AccountType.asset, currencies=["USD"])
+        initial_capital = self.account(type=AccountType.equity, currencies=["CAD"])
+        trading = self.account(type=AccountType.trading, currencies=["CAD", "USD"])
+        banking_fees = self.account(type=AccountType.expense, currencies=["CAD"])
 
         initial_capital.transfer_to(cad_cash, Money(200, "CAD"))
         currency_exchange(
@@ -388,11 +388,11 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         self.assertEqual(banking_fees.balance(), Balance(1.50, "CAD"))
 
     def test_fees_destination_currency(self):
-        cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
-        usd_cash = self.account(type=Account.TYPES.asset, currencies=["USD"])
-        initial_capital = self.account(type=Account.TYPES.equity, currencies=["CAD"])
-        trading = self.account(type=Account.TYPES.trading, currencies=["CAD", "USD"])
-        banking_fees = self.account(type=Account.TYPES.expense, currencies=["USD"])
+        cad_cash = self.account(type=AccountType.asset, currencies=["CAD"])
+        usd_cash = self.account(type=AccountType.asset, currencies=["USD"])
+        initial_capital = self.account(type=AccountType.equity, currencies=["CAD"])
+        trading = self.account(type=AccountType.trading, currencies=["CAD", "USD"])
+        banking_fees = self.account(type=AccountType.expense, currencies=["USD"])
 
         initial_capital.transfer_to(cad_cash, Money(200, "CAD"))
         currency_exchange(

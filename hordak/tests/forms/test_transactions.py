@@ -2,19 +2,19 @@ from django.test import TestCase
 from moneyed import Money
 
 from hordak.forms.transactions import CurrencyTradeForm, SimpleTransactionForm
-from hordak.models import Account, Transaction
+from hordak.models import AccountType, Transaction
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
 
 class SimpleTransactionFormTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.from_account = self.account(name="From Account", type=Account.TYPES.income)
-        self.to_account = self.account(name="To Account", type=Account.TYPES.income)
+        self.from_account = self.account(name="From Account", type=AccountType.income)
+        self.to_account = self.account(name="To Account", type=AccountType.income)
 
-        self.bank = self.account(name="Bank", type=Account.TYPES.asset)
-        self.income = self.account(name="Income", type=Account.TYPES.income)
-        self.expense = self.account(name="Expense", type=Account.TYPES.expense)
+        self.bank = self.account(name="Bank", type=AccountType.asset)
+        self.income = self.account(name="Income", type=AccountType.income)
+        self.expense = self.account(name="Expense", type=AccountType.expense)
 
     def test_valid_data(self):
         form = SimpleTransactionForm(
@@ -121,26 +121,26 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
 class CurrencyTradeFormTestCase(DataProvider, TestCase):
     def setUp(self):
         self.account_gbp = self.account(
-            name="GBP", type=Account.TYPES.asset, currencies=["GBP"]
+            name="GBP", type=AccountType.asset, currencies=["GBP"]
         )
         self.account_eur = self.account(
-            name="EUR", type=Account.TYPES.asset, currencies=["EUR"]
+            name="EUR", type=AccountType.asset, currencies=["EUR"]
         )
         self.account_usd = self.account(
-            name="USD", type=Account.TYPES.asset, currencies=["USD"]
+            name="USD", type=AccountType.asset, currencies=["USD"]
         )
 
         self.trading_gbp_eur = self.account(
             name="GBP, EUR, CZK",
-            type=Account.TYPES.trading,
+            type=AccountType.trading,
             currencies=["GBP", "EUR", "CZK"],
         )
         self.trading_eur_usd = self.account(
-            name="EUR, USD", type=Account.TYPES.trading, currencies=["EUR", "USD"]
+            name="EUR, USD", type=AccountType.trading, currencies=["EUR", "USD"]
         )
         self.trading_all = self.account(
             name="GBP, EUR, USD",
-            type=Account.TYPES.trading,
+            type=AccountType.trading,
             currencies=["GBP", "EUR", "USD"],
         )
 
@@ -213,7 +213,7 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
                 source_amount_0="100",
                 source_amount_1="GBP",
                 trading_account=self.account(
-                    name="trading", type=Account.TYPES.trading, currencies=["GBP"]
+                    name="trading", type=AccountType.trading, currencies=["GBP"]
                 ).uuid,
                 destination_account=self.account_eur.uuid,
                 destination_amount_0="110",
@@ -230,7 +230,7 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
                 source_amount_1="GBP",
                 trading_account=self.account(
                     name="trading",
-                    type=Account.TYPES.trading,
+                    type=AccountType.trading,
                     currencies=["EUR", "USD"],
                 ).uuid,
                 destination_account=self.account_eur.uuid,
@@ -248,7 +248,7 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
                 source_amount_1="GBP",
                 trading_account=self.account(
                     name="trading",
-                    type=Account.TYPES.trading,
+                    type=AccountType.trading,
                     currencies=["GBP", "USD"],
                 ).uuid,
                 destination_account=self.account_eur.uuid,

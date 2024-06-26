@@ -3,7 +3,7 @@ import json
 from django import forms
 from djmoney.settings import CURRENCY_CHOICES
 
-from hordak.models import Account
+from hordak.models import Account, AccountType
 
 
 class AccountForm(forms.ModelForm):
@@ -84,7 +84,7 @@ class AccountForm(forms.ModelForm):
         if (
             not self.is_updating
             and is_bank_account
-            and cleaned_data["type"] != Account.TYPES.asset
+            and cleaned_data["type"] != AccountType.asset
         ):
             raise forms.ValidationError("Bank accounts must also be asset accounts.")
 

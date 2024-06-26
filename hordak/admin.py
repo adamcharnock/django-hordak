@@ -75,7 +75,7 @@ class AccountAdmin(MPTTModelAdmin):
     @admin.display(ordering="type")
     def type_(self, obj):
         if obj.type:
-            return models.Account.TYPES[obj.type]
+            return obj.get_type_display()
         return "-"
 
 

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test.testcases import TestCase
 from django.urls import reverse
 
-from hordak.models import Account, Leg, Transaction
+from hordak.models import AccountType, Leg, Transaction
 from hordak.tests.utils import DataProvider
 
 
@@ -13,10 +13,10 @@ class AdminTestCase(DataProvider, TestCase):
             name="User account", parent=self.user_account
         )
         self.bank_account = self.account(
-            name="Bank account", is_bank_account=True, type=Account.TYPES.asset
+            name="Bank account", is_bank_account=True, type=AccountType.asset
         )
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
+            is_bank_account=False, type=AccountType.income
         )
         transaction = Transaction.objects.create()
         Leg.objects.create(

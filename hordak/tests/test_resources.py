@@ -5,7 +5,7 @@ from decimal import Decimal
 import tablib
 from django.test import TestCase
 
-from hordak.models import Account, StatementImport, StatementLine
+from hordak.models import AccountType, StatementImport, StatementLine
 from hordak.resources import StatementLineResource
 from hordak.tests.utils import DataProvider
 
@@ -14,7 +14,7 @@ class StatementLineResourceTestCase(DataProvider, TestCase):
     """Test the resource definition in test_resources.py"""
 
     def setUp(self):
-        self.account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.account = self.account(is_bank_account=True, type=AccountType.asset)
         logging.disable(logging.CRITICAL)
 
     def tearDown(self):

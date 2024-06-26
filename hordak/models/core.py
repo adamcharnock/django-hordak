@@ -29,7 +29,6 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
 from djmoney.settings import CURRENCY_CHOICES
-from model_utils import Choices
 from moneyed import CurrencyDoesNotExist, Money
 from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 
@@ -69,6 +68,21 @@ class AccountManager(TreeManager):
         return self.get(uuid=uuid)
 
 
+class AccountType(models.TextChoices):
+    # Eg. Cash in bank
+    asset = "AS", _("Asset")
+    # Eg. Loans, bills paid after the fact (in arrears)
+    liability = "LI", _("Liability")
+    # Eg. Sales, housemate contributions
+    income = "IN", _("Income")
+    # Eg. Office supplies, paying bills
+    expense = "EX", _("Expense")
+    # Eg. Money from shares
+    equity = "EQ", _("Equity")
+    # Used to represent currency conversions
+    trading = "TR", _("Currency Trading")
+
+
 class Account(MPTTModel):
     """Represents an account
 
@@ -86,28 +100,14 @@ class Account(MPTTModel):
         parent (Account|None): Parent account, nonen if root account
         code (str): Account code. Must combine with account codes of parent
             accounts to get fully qualified account code.
-        type (str): Type of account as defined by :attr:`Account.TYPES`. Can only be set on
+        type (str): Type of account as defined by `AccountType`. Can only be set on
             root accounts. Child accounts are assumed to have the same time as their parent.
-        TYPES (Choices): Available account types. Uses ``Choices`` from ``django-model-utils``. Types can be
-            accessed in the form ``Account.TYPES.asset``, ``Account.TYPES.expense``, etc.
         is_bank_account (bool): Is this a bank account. This implies we can import bank statements into
             it and that it only supports a single currency.
 
 
     """
 
-    TYPES = Choices(
-        ("AS", "asset", "Asset"),  # Eg. Cash in bank
-        (
-            "LI",
-            "liability",
-            "Liability",
-        ),  # Eg. Loans, bills paid after the fact (in arrears)
-        ("IN", "income", "Income"),  # Eg. Sales, housemate contributions
-        ("EX", "expense", "Expense"),  # Eg. Office supplies, paying bills
-        ("EQ", "equity", "Equity"),  # Eg. Money from shares
-        ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
-    )
     uuid = models.UUIDField(
         default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
@@ -133,7 +133,7 @@ class Account(MPTTModel):
     # TODO: Implement this child_code_width field, as it is probably a good idea
     # child_code_width = models.PositiveSmallIntegerField(default=1)
     type = models.CharField(
-        max_length=2, choices=TYPES, blank=True, verbose_name=_("type")
+        max_length=2, choices=AccountType, blank=True, verbose_name=_("type")
     )
     is_bank_account = models.BooleanField(
         default=False,
@@ -258,7 +258,7 @@ class Account(MPTTModel):
         Further details here: https://en.wikipedia.org/wiki/Debits_and_credits
 
         """
-        return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
+        return -1 if self.type in (AccountType.asset, AccountType.expense) else 1
 
     def balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
@@ -348,13 +348,14 @@ class Account(MPTTModel):
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
-        if to_account.sign == 1 and to_account.type != self.TYPES.trading:
+        if to_account.sign == 1 and to_account.type != AccountType.trading:
             # Transferring from two positive-signed accounts implies that
             # the caller wants to reduce the first account and increase the second
             # (which is opposite to the implicit behaviour)
             direction = -1
         elif (
-            self.type == self.TYPES.liability and to_account.type == self.TYPES.expense
+            self.type == AccountType.liability
+            and to_account.type == AccountType.expense
         ):
             # Transfers from liability -> asset accounts should reduce both.
             # For example, moving money from Rent Payable (liability) to your Rent (expense) account

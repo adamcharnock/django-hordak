@@ -22,6 +22,7 @@ from hordak.models import (
     CREDIT,
     DEBIT,
     Account,
+    AccountType,
     Leg,
     StatementImport,
     StatementLine,
@@ -107,45 +108,45 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def test_type_root(self):
         """Check we can set the type on a root account"""
-        account1 = self.account(type=Account.TYPES.asset)
-        self.assertEqual(account1.type, Account.TYPES.asset)
+        account1 = self.account(type=AccountType.asset)
+        self.assertEqual(account1.type, AccountType.asset)
 
     def test_type_leaf(self):
         """Check the type gets set on the leaf account (via db trigger)"""
-        account1 = self.account(type=Account.TYPES.asset)
+        account1 = self.account(type=AccountType.asset)
         account2 = self.account(parent=account1)
         account2.refresh_from_db()
-        self.assertEqual(account2.type, Account.TYPES.asset)
+        self.assertEqual(account2.type, AccountType.asset)
 
     def test_type_leaf_create(self):
         """Check set the type upon creation has no effect on child accounts
 
         Account types are determined by the root node
         """
-        account1 = self.account(type=Account.TYPES.asset)
+        account1 = self.account(type=AccountType.asset)
         account2 = Account.objects.create(
-            parent=account1, type=Account.TYPES.income, code="1", currencies=["EUR"]
+            parent=account1, type=AccountType.income, code="1", currencies=["EUR"]
         )
-        self.assertEqual(account2.type, Account.TYPES.asset)
+        self.assertEqual(account2.type, AccountType.asset)
 
     def test_type_leaf_set(self):
         """Check setting account type leaf account has not effect
 
         Account types are determined by the root node
         """
-        account1 = self.account(type=Account.TYPES.asset)
+        account1 = self.account(type=AccountType.asset)
         account2 = self.account(parent=account1)
-        account2.type = Account.TYPES.income
+        account2.type = AccountType.income
         account2.save()
-        self.assertEqual(account2.type, Account.TYPES.asset)
+        self.assertEqual(account2.type, AccountType.asset)
 
     def test_sign(self):
-        asset = self.account(type=Account.TYPES.asset)
-        liability = self.account(type=Account.TYPES.liability)
-        income = self.account(type=Account.TYPES.income)
-        expense = self.account(type=Account.TYPES.expense)
-        equity = self.account(type=Account.TYPES.equity)
-        trading = self.account(type=Account.TYPES.trading)
+        asset = self.account(type=AccountType.asset)
+        liability = self.account(type=AccountType.liability)
+        income = self.account(type=AccountType.income)
+        expense = self.account(type=AccountType.expense)
+        equity = self.account(type=AccountType.equity)
+        trading = self.account(type=AccountType.trading)
 
         self.assertEqual(asset.sign, -1)
         self.assertEqual(expense.sign, -1)
@@ -156,7 +157,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(trading.sign, 1)
 
         self.assertEqual(
-            len(Account.TYPES),
+            len(AccountType),
             6,
             msg="Did not test all account types. Update this test.",
         )
@@ -280,9 +281,9 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         )
 
     def test_balance(self):
-        account1 = self.account(type=Account.TYPES.income)
-        account1_child = self.account(type=Account.TYPES.income, parent=account1)
-        account2 = self.account(type=Account.TYPES.income)
+        account1 = self.account(type=AccountType.income)
+        account1_child = self.account(type=AccountType.income, parent=account1)
+        account2 = self.account(type=AccountType.income)
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
@@ -326,15 +327,15 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(bank.simple_balance(), Balance(100, "EUR"))
 
     def test_net_balance(self):
-        bank = self.account(type=Account.TYPES.asset)
-        account1 = self.account(type=Account.TYPES.income)
-        account2 = self.account(type=Account.TYPES.income)
+        bank = self.account(type=AccountType.asset)
+        account1 = self.account(type=AccountType.income)
+        account2 = self.account(type=AccountType.income)
 
         bank.transfer_to(account1, Money(100, "EUR"))
         bank.transfer_to(account2, Money(50, "EUR"))
 
         self.assertEqual(
-            Account.objects.filter(type=Account.TYPES.income).net_balance(),
+            Account.objects.filter(type=AccountType.income).net_balance(),
             Balance(150, "EUR"),
         )
 
@@ -351,45 +352,45 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account, Balance())
 
     def test_transfer_to(self):
-        account1 = self.account(type=Account.TYPES.income)
-        account2 = self.account(type=Account.TYPES.income)
+        account1 = self.account(type=AccountType.income)
+        account2 = self.account(type=AccountType.income)
         transaction = account1.transfer_to(account2, Money(500, "EUR"))
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(account1.balance(), Balance(-500, "EUR"))
         self.assertEqual(account2.balance(), Balance(500, "EUR"))
 
     def test_transfer_to_not_money(self):
-        account1 = self.account(type=Account.TYPES.income)
+        account1 = self.account(type=AccountType.income)
         with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
             account1.transfer_to(account1, 500)
 
     def test_transfer_pos_to_pos(self):
-        src = self.account(type=Account.TYPES.income)
-        dst = self.account(type=Account.TYPES.income)
+        src = self.account(type=AccountType.income)
+        dst = self.account(type=AccountType.income)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(-100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_pos_to_neg(self):
-        src = self.account(type=Account.TYPES.income)
-        dst = self.account(type=Account.TYPES.asset)
+        src = self.account(type=AccountType.income)
+        dst = self.account(type=AccountType.asset)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_neg_to_pos(self):
-        src = self.account(type=Account.TYPES.asset)
-        dst = self.account(type=Account.TYPES.income)
+        src = self.account(type=AccountType.asset)
+        dst = self.account(type=AccountType.income)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_neg_to_neg(self):
-        src = self.account(type=Account.TYPES.asset)
-        dst = self.account(type=Account.TYPES.asset)
+        src = self.account(type=AccountType.asset)
+        dst = self.account(type=AccountType.asset)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(-100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
@@ -398,8 +399,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
     def test_transfer_liability_to_expense(self):
         # When doing this it is probably safe to assume we want to the
         # liability account to contribute to an expense, therefore both should decrease
-        src = self.account(type=Account.TYPES.liability)
-        dst = self.account(type=Account.TYPES.expense)
+        src = self.account(type=AccountType.liability)
+        dst = self.account(type=AccountType.expense)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(-100, "EUR"))
         self.assertEqual(dst.balance(), Balance(-100, "EUR"))
@@ -407,17 +408,17 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def test_transfer_expense_to_liability(self):
         # This should perform the reverse action to that in the above test_transfer_liability_to_expense()
-        src = self.account(type=Account.TYPES.expense)
-        dst = self.account(type=Account.TYPES.liability)
+        src = self.account(type=AccountType.expense)
+        dst = self.account(type=AccountType.liability)
         src.transfer_to(dst, Money(100, "EUR"))
         self.assertEqual(src.balance(), Balance(100, "EUR"))
         self.assertEqual(dst.balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_currency_exchange(self):
-        src = self.account(type=Account.TYPES.asset, currencies=["GBP"])
-        trading = self.account(type=Account.TYPES.trading, currencies=["GBP", "EUR"])
-        dst = self.account(type=Account.TYPES.asset, currencies=["EUR"])
+        src = self.account(type=AccountType.asset, currencies=["GBP"])
+        trading = self.account(type=AccountType.trading, currencies=["GBP", "EUR"])
+        dst = self.account(type=AccountType.asset, currencies=["EUR"])
         src.transfer_to(trading, Money("100", "GBP"))
         trading.transfer_to(dst, Money("110", "EUR"))
         self.assertEqual(src.balance(), Balance("-100", "GBP"))
@@ -540,10 +541,10 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         See Also:
             https://github.com/adamcharnock/django-hordak/issues/4
         """
-        account1 = self.account(type=Account.TYPES.asset)
+        account1 = self.account(type=AccountType.asset)
         account2 = self.account(parent=account1, is_bank_account=True)
         account2.refresh_from_db()
-        self.assertEqual(account2.type, Account.TYPES.asset)
+        self.assertEqual(account2.type, AccountType.asset)
         self.assertEqual(account2.is_bank_account, True)
 
 
@@ -676,9 +677,9 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
 
     def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
         """Check the database enforces that only asset accounts can be bank accounts"""
-        self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.account(is_bank_account=True, type=AccountType.asset)
         with self.assertRaises(DatabaseError):
-            self.account(is_bank_account=True, type=Account.TYPES.income)
+            self.account(is_bank_account=True, type=AccountType.income)
 
     def test_type(self):
         account1 = self.account()
@@ -741,8 +742,8 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.filter(pk=leg1.pk).update(amount=Money(0.0000001, "EUR"))
 
     def test_debits(self):
-        src = self.account(type=Account.TYPES.asset)
-        dst = self.account(type=Account.TYPES.asset)
+        src = self.account(type=AccountType.asset)
+        dst = self.account(type=AccountType.asset)
         src.transfer_to(dst, Money(100, "EUR"))
 
         debit = Leg.objects.debits().get()
@@ -855,13 +856,13 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
 class StatementLineTestCase(DataProvider, DbTransactionTestCase):
     def setUp(self):
         self.bank = self.account(
-            name="Bank", type=Account.TYPES.asset, currencies=["EUR"]
+            name="Bank", type=AccountType.asset, currencies=["EUR"]
         )
         self.sales = self.account(
-            name="Sales", type=Account.TYPES.income, currencies=["EUR"]
+            name="Sales", type=AccountType.income, currencies=["EUR"]
         )
         self.expenses = self.account(
-            name="Expenses", type=Account.TYPES.expense, currencies=["EUR"]
+            name="Expenses", type=AccountType.expense, currencies=["EUR"]
         )
 
         self.statement_import = StatementImport.objects.create(
@@ -959,8 +960,8 @@ class TestQueryAccount(DataProvider, TestCase):
 
 class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
     def test_transfer_to_deprecation(self):
-        src = self.account(type=Account.TYPES.income)
-        dst = self.account(type=Account.TYPES.asset)
+        src = self.account(type=AccountType.income)
+        dst = self.account(type=AccountType.asset)
 
         with self.assertWarns(DeprecationWarning) as warning_cm:
             src.transfer_to(dst, Money(100, "EUR"))
@@ -970,8 +971,8 @@ class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
 
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
     def test_non_matching(self):
-        src = self.account(type=Account.TYPES.income)
-        dst = self.account(type=Account.TYPES.asset)
+        src = self.account(type=AccountType.income)
+        dst = self.account(type=AccountType.asset)
 
         currency_arr_str = json.dumps(["EUR"])
         error_str = f"Destination Account#{src.id} does not support currency MYR. "

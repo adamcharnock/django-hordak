@@ -4,7 +4,14 @@ from django.db import transaction as db_transaction
 from django.test import TestCase
 from moneyed import Money
 
-from hordak.models import Account, Leg, StatementImport, StatementLine, Transaction
+from hordak.models import (
+    Account,
+    AccountType,
+    Leg,
+    StatementImport,
+    StatementLine,
+    Transaction,
+)
 from hordak.tests.utils import BalanceUtils, DataProvider
 from hordak.utilities.currency import Balance
 
@@ -14,8 +21,8 @@ warnings.simplefilter("ignore", category=DeprecationWarning)
 
 class InitialEquityTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.cash = self.account(type=Account.TYPES.asset)
-        self.equity = self.account(type=Account.TYPES.equity)
+        self.cash = self.account(type=AccountType.asset)
+        self.equity = self.account(type=AccountType.equity)
 
     def test_initial_equity(self):
         self.equity.transfer_to(self.cash, Money(100000, "EUR"))
@@ -25,12 +32,12 @@ class InitialEquityTestCase(DataProvider, TestCase):
 
 class CapitalGainsTestCase(DataProvider, BalanceUtils, TestCase):
     def setUp(self):
-        self.cash = self.account(type=Account.TYPES.asset)
-        self.equity = self.account(type=Account.TYPES.equity)
-        self.painting_cost = self.account(type=Account.TYPES.asset)
-        self.painting_unrealised_gain = self.account(type=Account.TYPES.asset)
-        self.income_realised_gain = self.account(type=Account.TYPES.income)
-        self.income_unrealised_gain = self.account(type=Account.TYPES.income)
+        self.cash = self.account(type=AccountType.asset)
+        self.equity = self.account(type=AccountType.equity)
+        self.painting_cost = self.account(type=AccountType.asset)
+        self.painting_unrealised_gain = self.account(type=AccountType.asset)
+        self.income_realised_gain = self.account(type=AccountType.income)
+        self.income_unrealised_gain = self.account(type=AccountType.income)
 
     def test_capital_gains(self):
         # Initial investment
@@ -80,9 +87,9 @@ class PrepaidRentTestCase(DataProvider, BalanceUtils, TestCase):
     """
 
     def setUp(self):
-        self.cash = self.account(type=Account.TYPES.asset)
-        self.rent_expense = self.account(type=Account.TYPES.expense)
-        self.prepaid_rent = self.account(type=Account.TYPES.asset)
+        self.cash = self.account(type=AccountType.asset)
+        self.rent_expense = self.account(type=AccountType.expense)
+        self.prepaid_rent = self.account(type=AccountType.asset)
 
     def test_prepaid_rent(self):
         # All accounts start at 0
@@ -120,11 +127,9 @@ class UtilityBillTestCase(DataProvider, TestCase):
     """Pay an estimateable sum every 3 months"""
 
     def setUp(self):
-        self.cash = self.account(name="Cash", type=Account.TYPES.asset)
-        self.gas_expense = self.account(name="Gas Expense", type=Account.TYPES.expense)
-        self.gas_payable = self.account(
-            name="Gas Payable", type=Account.TYPES.liability
-        )
+        self.cash = self.account(name="Cash", type=AccountType.asset)
+        self.gas_expense = self.account(name="Gas Expense", type=AccountType.expense)
+        self.gas_payable = self.account(name="Gas Payable", type=AccountType.liability)
 
     def test_utility_bill(self):
         # Month 1
@@ -162,7 +167,7 @@ class UtilityBillTestCase(DataProvider, TestCase):
 
 class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
     def setUp(self):
-        T = Account.TYPES
+        T = AccountType
 
         self.bank = self.account(name="Bank", type=T.asset, code="0")
 

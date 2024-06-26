@@ -7,7 +7,7 @@ from moneyed import Money
 from mptt.forms import TreeNodeChoiceField
 
 from hordak.defaults import CURRENCIES, DECIMAL_PLACES, DEFAULT_CURRENCY, MAX_DIGITS
-from hordak.models import Account, Leg, Transaction
+from hordak.models import Account, AccountType, Leg, Transaction
 
 
 class SimpleTransactionForm(forms.ModelForm):
@@ -181,7 +181,7 @@ class CurrencyTradeForm(forms.Form):
     source_amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
     trading_account = forms.ModelChoiceField(
         queryset=Account.objects.filter(
-            children__isnull=True, type=Account.TYPES.trading
+            children__isnull=True, type=AccountType.trading
         ),
         to_field_name="uuid",
         help_text="The account in which to perform the trade. "

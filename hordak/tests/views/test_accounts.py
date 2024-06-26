@@ -3,15 +3,15 @@ from django.urls import reverse
 from django.utils.translation import activate, get_language, to_locale
 
 from hordak.forms.accounts import AccountForm
-from hordak.models import Account, Leg, Transaction
+from hordak.models import Account, AccountType, Leg, Transaction
 from hordak.tests.utils import DataProvider
 
 
 class AccountTransactionsViewTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.bank_account = self.account(is_bank_account=True, type=AccountType.asset)
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
+            is_bank_account=False, type=AccountType.income
         )
         transaction = Transaction.objects.create()
         Leg.objects.create(
@@ -43,9 +43,9 @@ class AccountListViewTestCase(DataProvider, TestCase):
         self.view_url = reverse("hordak:accounts_list")
         self.login()
 
-        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.bank_account = self.account(is_bank_account=True, type=AccountType.asset)
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
+            is_bank_account=False, type=AccountType.income
         )
 
     def test_get(self):
@@ -81,7 +81,7 @@ class AccountCreateViewTestCase(DataProvider, TestCase):
         account = Account.objects.get()
         self.assertEqual(account.name, "Test Account")
         self.assertEqual(account.code, "01")
-        self.assertEqual(account.type, Account.TYPES.income)
+        self.assertEqual(account.type, AccountType.income)
         self.assertEqual(account.is_bank_account, False)
         self.assertEqual(account.currencies, ["EUR", "GBP"])
 
@@ -176,7 +176,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.account1 = self.account(
             code="01",
             currencies=["USD"],
-            type=Account.TYPES.expense,
+            type=AccountType.expense,
             is_bank_account=False,
         )
         self.view_url = reverse("hordak:accounts_update", args=[self.account1.uuid])
@@ -206,7 +206,7 @@ class AccountUpdateViewTestCase(DataProvider, TestCase):
         self.assertEqual(self.account1.name, "My Account")
         self.assertEqual(self.account1.code, "04")
         self.assertEqual(
-            self.account1.type, Account.TYPES.expense
+            self.account1.type, AccountType.expense
         )  # Not editable, so unchanged
         self.assertEqual(
             self.account1.is_bank_account, False

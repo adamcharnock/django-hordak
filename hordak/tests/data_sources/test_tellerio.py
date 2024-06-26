@@ -7,14 +7,14 @@ from django.test.testcases import TestCase
 
 from hordak.data_sources import tellerio
 from hordak.models import StatementImport
-from hordak.models.core import Account, StatementLine
+from hordak.models.core import AccountType, StatementLine
 from hordak.tests.utils import DataProvider
 
 
 class TellerIoDataSourceTestCase(DataProvider, TestCase):
     def setUp(self):
         self.bank = self.account(
-            name="bank", type=Account.TYPES.asset, is_bank_account=True
+            name="bank", type=AccountType.asset, is_bank_account=True
         )
 
     @requests_mock.mock()

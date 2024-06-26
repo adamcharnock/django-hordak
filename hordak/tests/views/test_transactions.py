@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from moneyed import Money
 
-from hordak.models import Account, StatementImport, StatementLine, Transaction
+from hordak.models import AccountType, StatementImport, StatementLine, Transaction
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
@@ -19,9 +19,9 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         self.view_url = reverse("hordak:transactions_create")
         self.login()
 
-        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.bank_account = self.account(is_bank_account=True, type=AccountType.asset)
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
+            is_bank_account=False, type=AccountType.income
         )
 
     def test_get(self):
@@ -65,10 +65,10 @@ class TransactionDeleteViewTestCase(DataProvider, TestCase):
         self.login()
 
         self.bank_account = self.account(
-            is_bank_account=True, type=Account.TYPES.asset, currencies=["GBP"]
+            is_bank_account=True, type=AccountType.asset, currencies=["GBP"]
         )
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income, currencies=["GBP"]
+            is_bank_account=False, type=AccountType.income, currencies=["GBP"]
         )
         self.transaction = self.bank_account.transfer_to(
             self.income_account, Money(100, "GBP")
@@ -94,24 +94,24 @@ class CurrencyTradeView(DataProvider, TestCase):
         self.login()
 
         self.account_gbp = self.account(
-            name="GBP", type=Account.TYPES.asset, currencies=["GBP"]
+            name="GBP", type=AccountType.asset, currencies=["GBP"]
         )
         self.account_eur = self.account(
-            name="EUR", type=Account.TYPES.asset, currencies=["EUR"]
+            name="EUR", type=AccountType.asset, currencies=["EUR"]
         )
         self.account_usd = self.account(
-            name="USD", type=Account.TYPES.asset, currencies=["USD"]
+            name="USD", type=AccountType.asset, currencies=["USD"]
         )
 
         self.trading_gbp_eur = self.account(
-            name="GBP, EUR", type=Account.TYPES.trading, currencies=["GBP", "EUR"]
+            name="GBP, EUR", type=AccountType.trading, currencies=["GBP", "EUR"]
         )
         self.trading_eur_usd = self.account(
-            name="EUR, USD", type=Account.TYPES.trading, currencies=["EUR", "USD"]
+            name="EUR, USD", type=AccountType.trading, currencies=["EUR", "USD"]
         )
         self.trading_all = self.account(
             name="GBP, EUR, USD",
-            type=Account.TYPES.trading,
+            type=AccountType.trading,
             currencies=["GBP", "EUR", "USD"],
         )
 
@@ -149,10 +149,10 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
     def create_statement_import(self, **kwargs):
         self.bank_account = self.account(
-            is_bank_account=True, type=Account.TYPES.asset, **kwargs
+            is_bank_account=True, type=AccountType.asset, **kwargs
         )
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income, **kwargs
+            is_bank_account=False, type=AccountType.income, **kwargs
         )
 
         statement_import = StatementImport.objects.create(
@@ -416,9 +416,9 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
 class UnreconcileTransactionsViewTestCase(DataProvider, TestCase):
     def setUp(self):
-        self.bank_account = self.account(is_bank_account=True, type=Account.TYPES.asset)
+        self.bank_account = self.account(is_bank_account=True, type=AccountType.asset)
         self.income_account = self.account(
-            is_bank_account=False, type=Account.TYPES.income
+            is_bank_account=False, type=AccountType.income
         )
 
         statement_import = StatementImport.objects.create(

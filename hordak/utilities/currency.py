@@ -164,9 +164,9 @@ def currency_exchange(
     .. _test_currency.py:
         https://github.com/adamcharnock/django-hordak/blob/master/hordak/tests/utilities/test_currency.py
     """
-    from hordak.models import Account, Leg, Transaction
+    from hordak.models import AccountType, Leg, Transaction
 
-    if trading_account.type != Account.TYPES.trading:
+    if trading_account.type != AccountType.trading:
         raise TradingAccountRequiredError(
             "Account {} must be a trading account".format(trading_account)
         )
