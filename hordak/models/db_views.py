@@ -58,7 +58,7 @@ class LegView(models.Model):
         max_length=2,
         help_text="Type of this transaction leg: debit or credit",
         verbose_name=_("type"),
-        choices=LegType,
+        choices=LegType.choices,
     )
     credit = models.DecimalField(
         max_digits=MAX_DIGITS,

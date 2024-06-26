@@ -31,7 +31,7 @@ class TransactionCsvImport(models.Model):
     )
     state = models.CharField(
         max_length=20,
-        choices=TransactionCsvImportState,
+        choices=TransactionCsvImportState.choices,
         default="pending",
         verbose_name=_("state"),
     )
@@ -137,7 +137,7 @@ class TransactionCsvImportColumn(models.Model):
         blank=True,
         default=None,
         null=True,
-        choices=ToField,
+        choices=ToField.choices,
         verbose_name=_("Is"),
     )
     example = models.CharField(
