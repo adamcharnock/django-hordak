@@ -6,7 +6,7 @@ from hordak.models import Account, Leg, Transaction
 from hordak.tests.utils import DataProvider
 
 
-class TestAdmin(DataProvider, TestCase):
+class AdminTestCase(DataProvider, TestCase):
     def setUp(self):
         self.user_account = self.account(name="User account", type="")
         self.user_subaccount = self.account(
@@ -103,3 +103,19 @@ class TestAdmin(DataProvider, TestCase):
         self.assertContains(
             res, '<td class="field-debited_accounts">Account 4</td>', html=True
         )
+
+    def test_leg_list(self):
+        """Test the leg listing loads"""
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_leg_changelist")
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+    def test_legview_list(self):
+        """Test the leg view listing loads"""
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_legview_changelist")
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
