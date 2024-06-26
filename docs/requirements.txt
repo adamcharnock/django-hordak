@@ -1,4 +1,5 @@
 -r ../requirements.txt
+-r ../requirements_test.txt
 sphinx
 sphinx-autobuild
 sphinx_rtd_theme
