@@ -88,6 +88,8 @@ class LegView(models.Model):
         verbose_name=_("transaction description"),
     )
 
+    objects = models.Manager()
+
     class Meta:
         managed = False
         db_table = "hordak_leg_view"
