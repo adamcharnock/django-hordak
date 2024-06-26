@@ -21,4 +21,4 @@ DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)
 
 MAX_DIGITS = getattr(settings, "HORDAK_MAX_DIGITS", 13)
 
-UUID_DEFAULT = getattr(settings, "UUID_DEFAULT", uuid4)
+UUID_DEFAULT = getattr(settings, "HORDAK_UUID_DEFAULT", uuid4)
