@@ -3,6 +3,7 @@
 from django.db import migrations, models
 
 import hordak
+from hordak.defaults import DEFAULT_CURRENCY
 
 
 def copy_currencies_data(apps, schema_editor):
@@ -56,7 +57,7 @@ class Migration(migrations.Migration):
             name="currencies_json",
             field=models.JSONField(
                 db_index=True,
-                default=hordak.defaults.project_currencies,
+                default=(DEFAULT_CURRENCY,),
             ),
         ),
         migrations.RunPython(copy_currencies_data, copy_currencies_data_reverse),

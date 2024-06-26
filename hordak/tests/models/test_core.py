@@ -4,7 +4,6 @@ import warnings
 from datetime import date
 from decimal import Decimal
 
-from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.utils import (
     DatabaseError,
@@ -28,7 +27,6 @@ from hordak.models import (
     StatementLine,
     Transaction,
 )
-from hordak.models.core import project_currencies
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
@@ -99,12 +97,13 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     @override_settings(
         HORDAK_CURRENCIES=lambda: ["EUR", "GBP"],
+        DEFFAULT_CURRENCY=lambda: ["EUR"],
     )
     def test_function_hordak_currencies(self):
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
         account = Account()
-        self.assertEqual(account.currencies, ["EUR", "GBP"])
+        self.assertEqual(account.currencies, ("EUR",))
 
     def test_type_root(self):
         """Check we can set the type on a root account"""
@@ -967,30 +966,6 @@ class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
             src.transfer_to(dst, Money(100, "EUR"))
 
         self.assertIn("transfer_to() has been deprecated.", str(warning_cm.warning))
-
-
-class TestCoreDefaultCurrenciesAsArr(TestCase):
-    @override_settings(CURRENCIES=["EUR", "USD"])
-    def test_project_currencies(self):
-        del settings.HORDAK_CURRENCIES
-
-        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
-
-        self.assertEqual(project_currencies(), ["EUR", "USD"])
-
-
-def project_currencies_func():
-    return ["SGD", "MYR"]
-
-
-class TestCoreDefaultCurrenciesAsFunc(TestCase):
-    @override_settings(CURRENCIES=project_currencies_func)
-    def test_project_currencies(self):
-        del settings.HORDAK_CURRENCIES
-
-        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
-
-        self.assertEqual(project_currencies(), ["SGD", "MYR"])
 
 
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):

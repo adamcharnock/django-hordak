@@ -37,9 +37,9 @@ from mptt.models import MPTTModel, TreeForeignKey, TreeManager
 from hordak import exceptions
 from hordak.defaults import (
     DECIMAL_PLACES,
+    DEFAULT_CURRENCY,
     MAX_DIGITS,
     get_internal_currency,
-    project_currencies,
 )
 from hordak.utilities.currency import Balance
 from hordak.utilities.dreprecation import deprecated
@@ -144,7 +144,7 @@ class Account(MPTTModel):
     )
     currencies = JSONField(
         db_index=True,
-        default=project_currencies,
+        default=(DEFAULT_CURRENCY,),
         verbose_name=_("currencies"),
     )
 
