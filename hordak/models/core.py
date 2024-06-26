@@ -27,7 +27,6 @@ from django.db import transaction as db_transaction
 from django.db.models import JSONField
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django_smalluuid.models import SmallUUIDField, uuid_default
 from djmoney.models.fields import MoneyField
 from djmoney.settings import CURRENCY_CHOICES
 from model_utils import Choices
@@ -39,6 +38,7 @@ from hordak.defaults import (
     DECIMAL_PLACES,
     DEFAULT_CURRENCY,
     MAX_DIGITS,
+    UUID_DEFAULT,
     get_internal_currency,
 )
 from hordak.utilities.currency import Balance
@@ -81,7 +81,7 @@ class Account(MPTTModel):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for account. Use to prevent leaking of IDs (if desired).
+        uuid (UUID): UUID for account. Use to prevent leaking of IDs (if desired).
         name (str): Name of the account. Required.
         parent (Account|None): Parent account, nonen if root account
         code (str): Account code. Must combine with account codes of parent
@@ -108,8 +108,8 @@ class Account(MPTTModel):
         ("EQ", "equity", "Equity"),  # Eg. Money from shares
         ("TR", "trading", "Currency Trading"),  # Used to represent currency conversions
     )
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     name = models.CharField(max_length=255, verbose_name=_("name"))
     parent = TreeForeignKey(
@@ -450,7 +450,7 @@ class Transaction(models.Model):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for transaction. Use to prevent leaking of IDs (if desired).
+        uuid (models.UUIDField): UUID for transaction. Use to prevent leaking of IDs (if desired).
         timestamp (datetime): The datetime when the object was created.
         date (date): The date when the transaction actually occurred, as this may be different to
             :attr:`timestamp`.
@@ -458,8 +458,8 @@ class Transaction(models.Model):
 
     """
 
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     timestamp = models.DateTimeField(
         default=timezone.now,
@@ -519,7 +519,7 @@ class Leg(models.Model):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for transaction leg. Use to prevent leaking of IDs (if desired).
+        uuid (UUID): UUID for transaction leg. Use to prevent leaking of IDs (if desired).
         transaction (Transaction): Transaction to which the Leg belongs.
         account (Account): Account the leg is transferring to/from.
         amount (Money): The amount being transferred
@@ -528,8 +528,8 @@ class Leg(models.Model):
 
     """
 
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     transaction = models.ForeignKey(
         Transaction,
@@ -631,15 +631,15 @@ class StatementImport(models.Model):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for statement import. Use to prevent leaking of IDs (if desired).
+        uuid (UUID): UUID for statement import. Use to prevent leaking of IDs (if desired).
         timestamp (datetime): The datetime when the object was created.
         bank_account (Account): The account the import is for (should normally point to an asset
             account which represents your bank account)
 
     """
 
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     # TODO: Add constraint to ensure destination account expects statements (copy 0007)
@@ -688,7 +688,7 @@ class StatementLine(models.Model):
 
     Attributes:
 
-        uuid (SmallUUID): UUID for statement line. Use to prevent leaking of IDs (if desired).
+        uuid (UUID): UUID for statement line. Use to prevent leaking of IDs (if desired).
         timestamp (datetime): The datetime when the object was created.
         date (date): The date given by the statement line
         statement_import (StatementImport): The import to which the line belongs
@@ -698,8 +698,8 @@ class StatementLine(models.Model):
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
     """
 
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("timestamp"))
     date = models.DateField(verbose_name=_("date"))

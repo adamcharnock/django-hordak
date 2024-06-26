@@ -4,10 +4,10 @@ from io import StringIO
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django_smalluuid.models import SmallUUIDField, uuid_default
 from model_utils import Choices
 from tablib import Dataset
 
+from hordak.defaults import UUID_DEFAULT
 from hordak.utilities.statement_import import DATE_FORMATS
 
 
@@ -18,8 +18,8 @@ class TransactionCsvImport(models.Model):
         ("done", "Import complete"),
     )
 
-    uuid = SmallUUIDField(
-        default=uuid_default(), editable=False, verbose_name=_("uuid")
+    uuid = models.UUIDField(
+        default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
     timestamp = models.DateTimeField(
         default=timezone.now, editable=False, verbose_name=_("timestamp")
