@@ -425,7 +425,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(trading.balance(), Balance("-100", "GBP", "110", "EUR"))
         self.assertEqual(dst.balance(), Balance("110", "EUR"))
 
-    def test_full_code(self):
+    def test_full_code_simple(self):
         """
         Check that the full code for a account is correctly set by the db trigger
         """
@@ -436,6 +436,18 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account1.full_code, "5")
         self.assertEqual(account2.full_code, "50")
         self.assertEqual(account3.full_code, "509")
+
+    def test_full_code_long(self):
+        """
+        Check that the full code for a account is correctly set by the db trigger
+        """
+        account1 = self.account(code="555555")
+        account2 = self.account(parent=account1, code="000000")
+        account3 = self.account(parent=account2, code="999999")
+
+        self.assertEqual(account1.full_code, "555555")
+        self.assertEqual(account2.full_code, "555555000000")
+        self.assertEqual(account3.full_code, "555555000000999999")
 
     def test_full_code_error_on_non_unique(self):
         account1 = self.account(code="5")

@@ -121,9 +121,9 @@ class Account(MPTTModel):
         on_delete=models.CASCADE,
         verbose_name=_("parent"),
     )
-    code = models.CharField(max_length=3, null=True, blank=True, verbose_name=_("code"))
+    code = models.CharField(max_length=6, null=True, blank=True, verbose_name=_("code"))
     full_code = models.CharField(
-        max_length=100,
+        max_length=255,
         db_index=True,
         unique=True,
         null=True,
