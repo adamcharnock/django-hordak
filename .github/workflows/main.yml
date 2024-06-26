@@ -81,7 +81,7 @@ jobs:
            pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
 
-      - name: Check Migrations
+      - name: Check All Migrations Exist
         run: |
           pip install "py-moneyed<3" --upgrade
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak

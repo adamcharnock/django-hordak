@@ -1,6 +1,5 @@
 # flake8: noqa
 import random
-from typing import List
 
 from django.core.management.base import BaseCommand
 from django.db import transaction as db_transaction
@@ -80,7 +79,7 @@ def _create_many(debit: Account, credit: Account, count: int):
 
 def _transfer_no_commit(
     debit: Account, credit: Account, amount=None
-) -> (Transaction, List[Leg]):
+) -> tuple[Transaction, list[Leg]]:
     if not amount:
         amount = Money(round((random.random() + 0.1) * 100, 2), debit.currencies[0])
 
