@@ -37,7 +37,7 @@ class Command(BaseCommand):
         delete_all = options.get("deleteall")
 
         if delete_all:
-            Account.objects.delete()
+            Account.objects.all().delete()
 
         accounts_exist = Account.objects.count()
 
@@ -125,9 +125,9 @@ class Command(BaseCommand):
         )
         Account.objects.create(parent=equity, name="Retained Earnings", code="1", **kw)
         Account.objects.create(
-            parent=equity, name="Order Funds Introduced", code="2", **kw
+            parent=equity, name="Owner Funds Introduced", code="2", **kw
         )
-        Account.objects.create(parent=equity, name="Order Drawings", code="3", **kw)
+        Account.objects.create(parent=equity, name="Owner Drawings", code="3", **kw)
 
         # Income (level 1)
         Account.objects.create(parent=income, name="Sales", code="01", **kw)

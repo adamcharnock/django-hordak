@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.db.models import Prefetch, Q
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
 
 from hordak.models import TransactionCsvImport, TransactionCsvImportColumn
@@ -153,6 +155,77 @@ class LegAdmin(admin.ModelAdmin):
         "account__type",
         "transaction__description",
     )
+
+
+@admin.register(models.LegView)
+class LegViewAdmin(admin.ModelAdmin):
+    list_display = [
+        "date",
+        "account_",
+        "code",
+        "currency",
+        "type",
+        "credit_",
+        "debit_",
+        "balance",
+        "leg_description",
+        "transaction_description",
+    ]
+    search_fields = (
+        "account__name",
+        "account__full_code__exact",
+        "leg_description",
+        "transaction_description",
+    )
+    raw_id_fields = (
+        "account",
+        "transaction",
+    )
+    list_filter = (
+        "type",
+        "account__type",
+    )
+    list_select_related = ("account",)
+    readonly_fields = [
+        "uuid",
+        "transaction",
+        "account",
+        "date",
+        "amount",
+        "type",
+        "credit",
+        "debit",
+        "account_balance",
+        "leg_description",
+        "transaction_description",
+    ]
+
+    def account_(self, obj: models.LegView):
+        return f"{obj.account}"
+
+    def code(self, obj: models.LegView):
+        return mark_safe(f"<code>{escape(obj.account.full_code)}</code>")
+
+    def currency(self, obj: models.LegView):
+        return obj.amount.currency.code
+
+    def balance(self, obj: models.LegView):
+        return _fmt_admin_decimal(obj.account_balance)
+
+    def credit_(self, obj: models.LegView):
+        return _fmt_admin_decimal(obj.credit)
+
+    def debit_(self, obj: models.LegView):
+        return _fmt_admin_decimal(obj.debit)
+
+
+def _fmt_admin_decimal(v):
+    if v is None:
+        v = "-"
+    else:
+        v = f"{v:,}"  # noqa: E231
+
+    return mark_safe(f'<div style="text-align: right;">{v}</div>')  # noqa: E702,E231
 
 
 @admin.register(models.StatementImport)
