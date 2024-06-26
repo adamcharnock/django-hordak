@@ -36,13 +36,13 @@ class LegView(models.Model):
     transaction = models.ForeignKey(
         Transaction,
         related_name="legs_view",
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("transaction"),
     )
     account = models.ForeignKey(
         Account,
         related_name="legs_view",
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         verbose_name=_("account"),
     )
     date = models.DateField(
