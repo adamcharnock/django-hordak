@@ -36,3 +36,10 @@ StatementLine
 
 .. autoclass:: hordak.models.StatementLine
     :members:
+
+
+LegView (Database View)
+-----------------------
+
+.. autoclass:: hordak.models.LegView
+    :members:
