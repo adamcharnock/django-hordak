@@ -1,6 +1,7 @@
 import json
 from datetime import date
 from functools import cached_property
+from typing import Union
 
 from django.db.models import Func
 from django.db.models.expressions import Combinable, Value
@@ -17,8 +18,8 @@ class GetBalance(Func):
 
     def __init__(
         self,
-        account_id: int | Combinable,
-        as_of: date | Combinable = None,
+        account_id: Union[Combinable, int],
+        as_of: Union[Combinable, date] = None,
         output_field=None,
         **extra
     ):
