@@ -104,6 +104,23 @@ class AdminTestCase(DataProvider, TestCase):
             res, '<td class="field-debited_accounts">Account 4</td>', html=True
         )
 
+    def test_transaction_list_queries(self):
+        for _ in range(0, 50):
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                amount=-10, account=self.bank_account, transaction=transaction
+            )
+            Leg.objects.create(
+                amount=10, account=self.income_account, transaction=transaction
+            )
+
+        superuser = get_user_model().objects.create_superuser(username="superuser")
+        self.client.force_login(superuser)
+        url = reverse("admin:hordak_transaction_changelist")
+        with self.assertNumQueries(8):
+            res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
     def test_leg_list(self):
         """Test the leg listing loads"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
