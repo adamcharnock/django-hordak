@@ -1,4 +1,4 @@
-Django Hordak
+RETIRED DOCUMENTATION. See our GitHub page for the new docs.
 =============
 
 Django Hordak is the core functionality of a double entry accounting system.
