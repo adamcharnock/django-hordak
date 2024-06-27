@@ -547,6 +547,52 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account2.type, AccountType.asset)
         self.assertEqual(account2.is_bank_account, True)
 
+    def test_with_balances_simple(self):
+        """Ensure with_balances() returns a valid value in the simplest case"""
+        src = self.account(type=AccountType.liability)
+        dst = self.account(type=AccountType.expense)
+        src.transfer_to(dst, Money(100, "EUR"))
+        src.transfer_to(dst, Money(10, "EUR"))
+
+        # Just some other transaction that should be ignored
+        self.account().transfer_to(self.account(), Money(50, "EUR"))
+
+        src = Account.objects.filter(type=AccountType.liability).with_balances().get()
+        self.assertEqual(src.balance, Balance([Money("-110", "EUR")]))
+
+        dst = Account.objects.filter(type=AccountType.expense).with_balances().get()
+        self.assertEqual(dst.balance, Balance([Money("110", "EUR")]))
+
+    def test_with_balances_child_accounts(self):
+        """Ensure with_balances() returns a valid value for child accounts"""
+        parent = self.account(type=AccountType.liability, name="Parent")
+
+        src = self.account(type=AccountType.liability, parent=parent)
+        dst = self.account(type=AccountType.expense)
+        src.transfer_to(dst, Money(100, "EUR"))
+
+        # Just some other transaction that should be ignored
+        self.account().transfer_to(self.account(), Money(50, "EUR"))
+
+        parent = Account.objects.filter(name="Parent").with_balances().get()
+        self.assertEqual(parent.balance, Balance([Money("-100", "EUR")]))
+
+    def test_with_balances_as_of(self):
+        src = self.account(type=AccountType.liability)
+        dst = self.account(type=AccountType.expense)
+        src.transfer_to(dst, Money(100, "EUR"), date="2000-01-15")
+        src.transfer_to(dst, Money(110, "EUR"), date="2000-01-16")
+
+        # Just some other transaction that should be ignored
+        self.account().transfer_to(self.account(), Money(50, "EUR"))
+
+        src = (
+            Account.objects.filter(type=AccountType.liability)
+            .with_balances(as_of="2000-01-15")
+            .get()
+        )
+        self.assertEqual(src.balance, Balance([Money("-100", "EUR")]))
+
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
     def test_manager(self):

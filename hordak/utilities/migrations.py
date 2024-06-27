@@ -7,6 +7,8 @@ from django.db import migrations
 def migration_operations_from_sql(file_path: Path):
     operations = []
     sql: str = file_path.read_text(encoding="utf8").strip().strip("-")
+    # Mysql needs to have spaces after a '--' comment
+    sql = sql.replace("-- ----", "------").replace("-- -", "---")
     if not sql:
         return []
 
