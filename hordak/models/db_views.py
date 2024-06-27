@@ -27,7 +27,27 @@ class LegView(models.Model):
     You can also improve query performance (in Postgresql) by deferring the
     `account_balance` field, assuming the value not required. For example:
 
-        HordakLegView.objects.defer('account_balance')
+        .. code-block:: python
+
+            HordakLegView.objects.defer('account_balance')
+
+    Attributes:
+
+        id (int): The leg ID
+        uuid (UUID): The leg UUID
+        transaction (Transaction): The transaction which contains this leg
+        account (Account): The account this leg is associated with
+        date (date): The date when the parent transaction actually occurred
+        amount (Balance): The balance of this leg (use ``amount.currency``
+                          to get the currency for the other ``Decimal`` fields on this view.
+        type (LegType): Either ``LegType.debit`` or ``LegType.credit``.
+        credit (Decimal): Amount of this credit, or NULL if not a credit
+        debit (Decimal): Amount of this debit, or NULL if not a debit
+        account_balance (Decimal): Account balance following this transaction.
+                                   For multiple-currency accounts this will
+                                   be the balance of the same currency as the leg amount.
+        leg_description (str): Description of the leg
+        transaction_description (str): Description of the transaction
 
     """
 

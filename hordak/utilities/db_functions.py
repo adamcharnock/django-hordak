@@ -19,10 +19,26 @@ class GetBalance(Func):
     def __init__(
         self,
         account_id: Union[Combinable, int],
-        as_of: Union[Combinable, date] = None,
+        as_of: Union[Combinable, date, str] = None,
         output_field=None,
         **extra
     ):
+        """Create a new GetBalance()
+
+        Examples:
+
+            .. code-block:: python
+
+                from hordak.utilities.db_functions import GetBalance
+
+                GetBalance(account_id=5)
+                GetBalance(account_id=5, as_of='2000-01-01')
+
+                Account.objects.all().annotate(
+                    balance=GetBalance(F("id"), as_of='2000-01-01')
+                )
+
+        """
         if as_of is not None:
             if not isinstance(as_of, Combinable):
                 as_of = Value(as_of)

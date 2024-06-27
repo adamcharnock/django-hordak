@@ -42,4 +42,3 @@ LegView (Database View)
 -----------------------
 
 .. autoclass:: hordak.models.LegView
-    :members:

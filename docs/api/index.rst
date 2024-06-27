@@ -11,4 +11,5 @@ API Documentation
     forms
     utilities_money
     utilities_currency
+    utilities_database
     exceptions
