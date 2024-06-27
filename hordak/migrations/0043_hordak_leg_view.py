@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
                 (CASE WHEN amount > 0 THEN 'CR' ELSE 'DR' END) AS type,
                 (CASE WHEN amount > 0 THEN ABS(amount) END) AS credit,
                 (CASE WHEN amount < 0 THEN ABS(amount) END) AS debit,
+                -- TODO: Only works for leaf nodes
                 SUM(amount) OVER (PARTITION BY account_id, amount_currency ORDER BY T.date, L.id) AS account_balance,
                 T.description as transaction_description,
                 L.description as leg_description
