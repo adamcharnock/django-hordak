@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("hordak", "0043_auto_20240626_1149"),
+        ("hordak", "0043_hordak_leg_view"),
     ]
 
     operations = [
