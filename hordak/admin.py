@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Sum
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
@@ -7,16 +7,6 @@ from mptt.admin import MPTTModelAdmin
 from hordak.models import TransactionCsvImport, TransactionCsvImportColumn
 
 from . import models
-
-
-try:  # SubquerySum is quicker, but django-sql-utils can remain as optional dependency.
-    from sql_util.utils import SubquerySum as Sum
-
-    legs_filter = Q(amount__lt=0)
-except ImportError:
-    from django.db.models import Sum
-
-    legs_filter = Q(legs__amount__lt=0)
 
 
 @admin.register(models.Account)
@@ -62,7 +52,7 @@ class AccountAdmin(MPTTModelAdmin):
             .get_queryset(*args, **kwargs)
             .annotate(
                 balance_sum=Sum("legs__amount"),
-                income=Sum("legs__amount", filter=legs_filter),
+                income=Sum("legs__amount", filter=Q(legs__amount__gt=0)),
             )
         )
 
@@ -127,14 +117,14 @@ class TransactionAdmin(admin.ModelAdmin):
                 ),
                 Prefetch(
                     "legs",
-                    queryset=models.Leg.objects.filter(amount__lt=0).select_related(
+                    queryset=models.Leg.objects.filter(amount__gt=0).select_related(
                         "account"
                     ),
                     to_attr="credit_legs",
                 ),
             )
             .annotate(
-                total_amount=Sum("legs__amount", filter=legs_filter),
+                total_amount=Sum("legs__amount", filter=Q(legs__amount__gt=0)),
             )
         )
 

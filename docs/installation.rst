@@ -5,10 +5,6 @@ Installation using pip::
 
     pip install django-hordak
 
-or using ``django-sql-utils`` to use SubsquerySum to make quicker admin listings::
-
-        pip install django-hordak[subqueries]
-
 Add to installed apps:
 
 .. code:: python
