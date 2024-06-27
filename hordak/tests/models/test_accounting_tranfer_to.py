@@ -233,8 +233,8 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(legs[3].account_balance_before(), Balance("-260", "EUR"))
 
     def test_transfer_liability_to_liability(self):
-        src = self.account(type=Account.TYPES.liability)
-        dst = self.account(type=Account.TYPES.liability)
+        src = self.account(type=AccountType.liability)
+        dst = self.account(type=AccountType.liability)
 
         # Expect first to increase, dst to decrease
         src.accounting_transfer_to(dst, Money(100, "EUR"))
