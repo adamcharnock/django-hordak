@@ -22,7 +22,6 @@ Additionally, there are models which related to the import of external bank stat
 """
 
 from datetime import date
-from typing import Optional
 
 from django.db import connection, models
 from django.db import transaction
@@ -66,7 +65,7 @@ class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
         return sum((account.balance(raw) for account in self), Balance())
 
-    def with_balances(self, as_of: Optional[date] = None):
+    def with_balances(self, as_of: date = None):
         """Annotate the account queryset with account balances
 
         This is a much more performant way to calculate account balances,
