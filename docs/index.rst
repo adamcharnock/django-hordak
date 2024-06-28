@@ -21,12 +21,12 @@ Requirements
 
 Hordak is ``tested against``:
 
- * Django <= 4.2
+ * Django 4.2, 5.0
  * Python >= 3.8
- * Postgres >= 9.5 or MariaDB >= 10.5 (MySQL >= 8.0)
+ * Postgres >= 9.5, and with partial support for MariaDB >= 10.5 (MySQL >= 8.0)
 
-Postgres or MariaDB / MySQL are required (MySQL support as of Hordak 1.14.0). Other databases (e.g. SQLite) are unsupported. This is due to the database constraints we apply to
-ensure data integrity. Others may be supported in future, volunteers welcome.
+Other databases (e.g. SQLite) are unsupported. This is due to the database constraints we apply to
+ensure data integrity.
 
 .. toctree::
     :maxdepth: 2
