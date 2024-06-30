@@ -1,22 +1,28 @@
 Version 2.0.0 (unreleased)
 ==========================
 
-* BREAKING: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies (trading accounts should be the only accounts with multiple currencies).
-* BREAKING: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
-* BREAKING: Removed use of ``django-model-utils``. Model choices have the same values, but the data structures have changed to use the Django-native ``models.TextChoices``:
+* **Breaking**: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies (trading accounts should be the only accounts with multiple currencies).
+* **Breaking**: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
+* **Breaking**: Removed use of ``django-model-utils``. Model choices have the same values, but the data structures have changed to use the Django-native ``models.TextChoices``:
+
   * ``Account.TYPES`` is now ``AccountType``
   * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
   * ``TransactionCsvImport.STATES`` is now ``TransactionCsvImportState``
-* New accounting-oriented database view on the Legs table (keep your accountants happier). Adds columns
+
+* **Feature:** New accounting-oriented database view on the Legs table (keep your accountants happier). Adds columns
+
   * debit - the debit amount, always positive, or null if the leg is a credit
   * credit - the credit amount, always positive, or null if the leg is a debit
   * amount - the amount, always positive
   * type - DR or CR
-* New accounting-oriented database view on the Transactions table
+
+* **Feature:** New accounting-oriented database view on the Transactions table
+
   * Shows the transaction amount (JSON list, one value per currency)
   * Shows credited/debited account IDs & names
-* Added ``GET_BALANCE(account_id: BIGINT, as_of: DATE = NULL)`` database function. Will get the balance of an account.
-* Account code max length increased from 3 to 6
+
+* **Feature:** Added ``GET_BALANCE(account_id: BIGINT, as_of: DATE = NULL)`` database function. Will get the balance of an account.
+* **Enhancement:** Account code max length increased from 3 to 6
 * ``Balance.__eq__()`` now returns False rather than raising an exception if the other object is not a ``Balance``
 * Removed used of ``django-sql-utils``
 
@@ -26,14 +32,16 @@ Version 1.16.0, Fri, 25 June 2024
 * Now testing against Django 5.1
 * Account code regeneration major performance improvement in database trigger (#117)
 * Improvements to ratio_split()
+
   * Adding assertion to catch div-by-zero error
   * Adding assertion failure messages
-  * Adding `precision` parameter (defaults to previous value)
-* Adding `get_next_account_code()` utility function (#114)
-* `currency_exchange()` can now charge fees in the destination currency (#56)
-* Fixed error in `Balance` comparison where one value is a zero-balance and the other is a zero-decimal
+  * Adding ``precision`` parameter (defaults to previous value)
+
+* Adding ``get_next_account_code()`` utility function (#114)
+* ``currency_exchange()`` can now charge fees in the destination currency (#56)
+* Fixed error in ``Balance`` comparison where one value is a zero-balance and the other is a zero-decimal
 * Fixed search in admin UI, was giving a 500 error (#107)
-* Add `__str__()` method to Leg model
+* Add ``__str__()`` method to Leg model
 * Postgres migrations can now reverse all the way back to zero
 
 Version 1.15.0, Fri, 5 Jan 2024
@@ -44,21 +52,27 @@ Version 1.15.0, Fri, 5 Jan 2024
 
 Version 1.14.0, Tue 20 Jun 2023
 ===============================
-* `transfer_to()` on `Account` is now deprecated and raises a warning
-  in favor of `accounting_transfer_to()`.  It performed transfers differently
+* ``transfer_to()`` on ``Account`` is now deprecated and raises a warning
+  in favor of ``accounting_transfer_to()``.  It performed transfers differently
   than expected when comparing it to Dr/Cr double entry accounting, see function notes.
 
   This function will raise an error in Hordak 2.0.
-* Now using Django's locale to `Balance.__str__`'s `format_money` allowing better formatting and specs.
-* Changed `Account.currencies` from `ArrayField => JSONField` to allow database agnostic work.
+* Now using Django's locale to ``Balance.__str__``'s ``format_money`` allowing better formatting and specs.
+* Changed ``Account.currencies`` from ``ArrayField => JSONField`` to allow database agnostic work.
+
   * **Breaking Change**
-    * `Account.currencies` input must be valid JSON now.
+
+    * ``Account.currencies`` input must be valid JSON now.
     * This is mostly important in 2 areas
-      * `Forms`, but also if you performed a `", ".join(currencies_str_arr)`.
-      * `Fixtures`
-    * Previous: `EUR, USD` => `["EUR", "USD"]`
+
+      * ``Forms``, but also if you performed a ``", ".join(currencies_str_arr)``.
+      * ``Fixtures``
+
+    * Previous: ``EUR, USD`` => ``["EUR", "USD"]``
     * Form complains if it is not valid JSON and returns an explanation.
+
 * MySQL support
+
   * Migrations and triggers modified to target MySQL whilst maintaining compatibility with postgres
 
 Version 1.13.0, Fri 17 Feb 2023
@@ -341,7 +355,7 @@ Version 1.1.1, Mon 12 Dec 2016
 ===============================
 
 * 725c86126f	Expanding on docs change in pull request #6 (Adam Charnock)
-* a0695c52c8	Adding `debits()` and `credits()` back to LegManager (Adam Charnock)
+* a0695c52c8	Adding ``debits()`` and ``credits()`` back to LegManager (Adam Charnock)
 * 2fae0ef542	Add mptt to installation docs (Kevin Dice)
 
 
@@ -406,7 +420,7 @@ Version 1.0.1, Fri 16 Sep 2016
 * bcbf6d3ad5	Adding examples to README (Adam Charnock)
 * ecb47c7a4b	Adding examples to README (Adam Charnock)
 * fcedbefc09	Addition to README - Explanation: Double Entry for Software Developers (Adam Charnock)
-* 66069c405a	`transfer_to()` now accepts `**transaction_kwargs` (Adam Charnock)
+* 66069c405a	``transfer_to()`` now accepts ``**transaction_kwargs`` (Adam Charnock)
 * e02a753656	Adding net_balance() to account query manager (Adam Charnock)
 * 28ccdaf31f	Ignoring build dirs (Adam Charnock)
 * 9bc5ad3704	Updating README description (Adam Charnock)
