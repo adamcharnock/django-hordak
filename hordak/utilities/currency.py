@@ -511,14 +511,16 @@ class Balance(object):
         return any([bool(m) for m in self._money_obs])
 
     def __eq__(self, other):
+        if isinstance(other, Money):
+            # If we have a money object then turn it into a balance
+            other = Balance([other])
+
         if other == 0:
             # Support comparing to integer/Decimal zero as it is useful
             return not self.__bool__()
         elif not isinstance(other, Balance):
-            raise TypeError(
-                "Can only compare Balance objects to other "
-                "Balance objects, not to type {}".format(type(other))
-            )
+            # It's not a balance, so it isn't going to be equal
+            return False
         return not self - other
 
     def __ne__(self, other):

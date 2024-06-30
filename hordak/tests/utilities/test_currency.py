@@ -155,11 +155,7 @@ class BalanceTestCase(CacheTestCase):
             Balance([Money(0, "USD"), Money(0, "USD")])
 
     def test_init_args(self):
-        b = Balance(100, "USD", 200, "EUR", 300, "GBP")
-        return
-        self.assertEqual(b["USD"].amount, 100)
-        self.assertEqual(b["EUR"].amount, 200)
-        self.assertEqual(b["GBP"].amount, 300)
+        Balance(100, "USD", 200, "EUR", 300, "GBP")
 
     def test_add(self):
         b = self.balance_1 + self.balance_2
@@ -226,6 +222,8 @@ class BalanceTestCase(CacheTestCase):
         self.assertEqual(Balance() == Balance(), True)
         self.assertEqual(Balance() == 0, True)
         self.assertEqual(Balance([Money(0, "USD")]) == Balance(), True)
+        self.assertEqual(Balance([Money(0, "USD")]) == 0, True)
+        self.assertEqual(Balance([Money(0, "USD")]) == Decimal("0"), True)
 
         self.assertEqual(self.balance_1 == +self.balance_1, True)
         self.assertEqual(self.balance_1 == self.balance_2, False)
@@ -243,6 +241,15 @@ class BalanceTestCase(CacheTestCase):
             == Balance([Money(100, "USD")]),
             False,
         )
+
+        self.assertEqual(Balance([Money(0, "USD")]) == Money(0, "USD"), True)
+
+    def test_not_eq(self):
+        self.assertNotEqual(self.balance_1, None)
+        self.assertNotEqual(self.balance_1, "hi")
+        self.assertNotEqual(self.balance_1, False)
+        self.assertNotEqual(self.balance_1, 0)
+        self.assertNotEqual(self.balance_1, Decimal("0"))
 
     def test_eq_zero(self):
         self.assertEqual(Balance() == 0, True)
