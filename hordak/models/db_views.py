@@ -44,6 +44,9 @@ class LegView(models.Model):
         type (LegType): Either ``LegType.debit`` or ``LegType.credit``.
         credit (Decimal): Amount of this credit, or NULL if not a credit
         debit (Decimal): Amount of this debit, or NULL if not a debit
+        account_name (str): The name of account for the leg
+        account_full_code (str): The full account code of account for the leg
+        account_type (AccountType): The type of account for the leg
         account_balance (Decimal): Account balance following this transaction.
                                    For multiple-currency accounts this will
                                    be the balance of the same currency as the leg amount.

@@ -11,10 +11,12 @@ Version 2.0.0 (unreleased)
 
 * **Feature:** New accounting-oriented database view on the Legs table (keep your accountants happier). Adds columns
 
-  * debit - the debit amount, always positive, or null if the leg is a credit
-  * credit - the credit amount, always positive, or null if the leg is a debit
-  * amount - the amount, always positive
-  * type - DR or CR
+  * ``debit`` - the debit amount, always positive, or null if the leg is a credit
+  * ``credit`` - the credit amount, always positive, or null if the leg is a debit
+  * ``amount`` - the amount, always positive
+  * ``type`` - DR or CR
+  * ``account_balance`` – The account balance following the leg (only available for leaf accounts)
+  * ``account_id``, ``account_name``, ``account_full_code``, ``account_type``
 
 * **Feature:** New accounting-oriented database view on the Transactions table
 
