@@ -18,6 +18,8 @@ BEGIN
         account_tree_id
     FROM hordak_account
     WHERE id = account_id;
+    -- TODO: OPTIMISATION: Crate get_balance_table_simple() for use when this is a leaf account,
+    --       and defer to it when lft + 1 = rght
 
     IF as_of IS NOT NULL THEN
         -- If `as_of` is specified then we need an extra join onto the

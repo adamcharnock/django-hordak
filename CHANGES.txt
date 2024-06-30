@@ -1,7 +1,24 @@
-Version 2.0.0 (proposed)
-========================
+Version 2.0.0 (unreleased)
+==========================
 
-*
+* BREAKING: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies (trading accounts should be the only accounts with multiple currencies).
+* BREAKING: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
+* BREAKING: Removed use of ``django-model-utils``. Model choices have the same values, but the data structures have changed to use the Django-native ``models.TextChoices``:
+  * ``Account.TYPES`` is now ``AccountType``
+  * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
+  * ``TransactionCsvImport.STATES`` is now ``TransactionCsvImportState``
+* New accounting-oriented database view on the Legs table (keep your accountants happier). Adds columns
+  * debit - the debit amount, always positive, or null if the leg is a credit
+  * credit - the credit amount, always positive, or null if the leg is a debit
+  * amount - the amount, always positive
+  * type - DR or CR
+* New accounting-oriented database view on the Transactions table
+  * Shows the transaction amount (JSON list, one value per currency)
+  * Shows credited/debited account IDs & names
+* Added ``GET_BALANCE(account_id: BIGINT, as_of: DATE = NULL)`` database function. Will get the balance of an account.
+* Account code max length increased from 3 to 6
+* ``Balance.__eq__()`` now returns False rather than raising an exception if the other object is not a ``Balance``
+* Removed used of ``django-sql-utils``
 
 Version 1.16.0, Fri, 25 June 2024
 =================================
