@@ -21,10 +21,12 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
+from datetime import date
+
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField
+from django.db.models import F, JSONField
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
@@ -41,6 +43,7 @@ from hordak.defaults import (
     get_internal_currency,
 )
 from hordak.utilities.currency import Balance
+from hordak.utilities.db_functions import GetBalance
 from hordak.utilities.dreprecation import deprecated
 
 
@@ -61,6 +64,18 @@ def get_currency_choices():
 class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
         return sum((account.balance(raw) for account in self), Balance())
+
+    def with_balances(self, as_of: date = None):
+        """Annotate the account queryset with account balances
+
+        This is a much more performant way to calculate account balances,
+        especially when calculating balances for a lot of accounts.
+
+        Note that you will get better performance by setting the `as_of`
+        to `None`. This is because the underlying custom database function
+        can avoid a join.
+        """
+        return self.annotate(balance=GetBalance(F("id"), as_of=as_of))
 
 
 class AccountManager(TreeManager):

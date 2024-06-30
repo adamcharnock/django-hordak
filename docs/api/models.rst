@@ -45,7 +45,6 @@ LegView (Database View)
     :members:
 
 
-
 TransactionView (Database View)
 -------------------------------
 

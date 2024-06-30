@@ -13,7 +13,7 @@ PATH = Path(__file__).parent
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("hordak", "0046_alter_account_uuid_alter_leg_uuid_and_more"),
+        ("hordak", "0047_get_balance"),
     ]
 
     # TODO: TEST!
