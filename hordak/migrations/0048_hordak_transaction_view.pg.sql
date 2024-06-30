@@ -44,26 +44,3 @@ GROUP BY T.id, T.uuid, T.timestamp, T.date, T.description
 ORDER BY T.id DESC);
 --- reverse:
 drop view hordak_transaction_view;
-
-
-
-
-        SELECT JSONB_AGG(DISTINCT L_CR.account_id)
-        FROM hordak_leg L_CR
-        INNER JOIN hordak_account A ON A.id = L_CR.account_id
-        WHERE L_CR.transaction_id = 1 AND L_CR.amount > 0;
-
-        SELECT JSONB_AGG(DISTINCT L_DR.account_id)
-        FROM hordak_leg L_DR
-        INNER JOIN hordak_account A ON A.id = L_DR.account_id
-        WHERE L_DR.transaction_id = 1 AND L_DR.amount < 0;
-
-        SELECT JSONB_AGG(DISTINCT A.name)
-        FROM hordak_leg L_CR
-        INNER JOIN hordak_account A ON A.id = L_CR.account_id
-        WHERE L_CR.transaction_id = 1 AND L_CR.amount > 0;
-
-        SELECT JSONB_AGG( A.name)
-        FROM hordak_leg L_DR
-        INNER JOIN hordak_account A ON A.id = L_DR.account_id
-        WHERE L_DR.transaction_id = 1 AND L_DR.amount < 0;
