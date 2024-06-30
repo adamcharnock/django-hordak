@@ -108,6 +108,20 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
         self.credit_account = self.account(currencies=["USD"], name="Credit")
         self.debit_account = self.account(currencies=["USD"], name="Debit")
 
+        # Create a transaction that should be ignored
+        with db_transaction.atomic():
+            self.transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.credit_account,
+                amount=Money(5, "USD"),
+            )
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.debit_account,
+                amount=Money(-5, "USD"),
+            )
+
         with db_transaction.atomic():
             self.transaction = Transaction.objects.create(
                 description="Transaction description", date="2000-01-01"
@@ -127,17 +141,17 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(self.transaction.view.description, "Transaction description")
 
     def test_debit_account_details(self):
-        view: TransactionView = TransactionView.objects.get()
+        view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.debit_account_ids, [self.debit_account.pk])
         self.assertEqual(view.debit_account_names, ["Debit"])
 
     def test_credit_account_details(self):
-        view: TransactionView = TransactionView.objects.get()
+        view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.credit_account_ids, [self.credit_account.pk])
         self.assertEqual(view.credit_account_names, ["Credit"])
 
     def test_amount_single_currency(self):
-        view: TransactionView = TransactionView.objects.get()
+        view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, Balance([Money(100, "USD")]))
 
     @postgres_only("Only postgres supports multi-currency account amounts")
@@ -156,7 +170,7 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
                 account=self.debit_account_eur,
                 amount=Money(-90, "EUR"),
             )
-        view: TransactionView = TransactionView.objects.get()
+        view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, Balance([Money(100, "USD"), Money(90, "EUR")]))
 
     @mysql_only("No MySQL support for multi-currency account amounts")
@@ -176,5 +190,20 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
                 account=self.debit_account_eur,
                 amount=Money(-90, "EUR"),
             )
-        view: TransactionView = TransactionView.objects.get()
+        view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, None)
+
+    def test_amount_multiple_legs_to_same_account(self):
+        with db_transaction.atomic():
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.credit_account,
+                amount=Money(100, "USD"),
+            )
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.debit_account,
+                amount=Money(-100, "USD"),
+            )
+        view: TransactionView = TransactionView.objects.latest("pk")
+        self.assertEqual(view.amount, Money(200, "USD"))
