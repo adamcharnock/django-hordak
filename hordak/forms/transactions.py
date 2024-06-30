@@ -22,10 +22,10 @@ class SimpleTransactionForm(forms.ModelForm):
     """
 
     debit_account = TreeNodeChoiceField(
-        queryset=Account.objects.all(), to_field_name="uuid", label="Debit account"
+        queryset=Account.objects.all(), to_field_name="uuid"
     )
     credit_account = TreeNodeChoiceField(
-        queryset=Account.objects.all(), to_field_name="uuid", label="Credit account"
+        queryset=Account.objects.all(), to_field_name="uuid"
     )
     amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
 
