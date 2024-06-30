@@ -100,6 +100,26 @@ class LegView(models.Model):
 
 
 class TransactionView(models.Model):
+    """An accounting view onto the Transaction table
+
+    This provides a number of features on top of the raw Transaction table:
+
+    1. Shows the transaction amount (JSON list, one value per currency)
+    2. Shows credited/debited account IDs & names
+
+    Note that this is a database view and is therefore read-only.
+
+    You can also improve query performance (in Postgresql) by deferring unneeded
+    fields. For example:
+
+        HordakLegView.objects.defer(
+            'credit_account_ids',
+            'debit_account_ids',
+            'credit_account_names',
+            'debit_account_names',
+        )
+    """
+
     parent = models.OneToOneField(
         Transaction,
         db_column="id",

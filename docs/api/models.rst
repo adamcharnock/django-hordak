@@ -43,3 +43,11 @@ LegView (Database View)
 
 .. autoclass:: hordak.models.LegView
     :members:
+
+
+
+TransactionView (Database View)
+-------------------------------
+
+.. autoclass:: hordak.models.TransactionView
+    :members:
