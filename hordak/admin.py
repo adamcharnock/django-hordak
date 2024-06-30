@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Prefetch, Q, Sum
+from django.db.models import Q, Sum
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
@@ -80,53 +80,31 @@ class TransactionAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "timestamp",
-        "debited_accounts",
-        "total_amount",
-        "credited_accounts",
+        # TODO: Include in view
+        # "debited_accounts",
+        "balance",
+        # "credited_accounts",
         "uuid",
         "date",
         "description",
     ]
-    list_filter = [
-        "description",
-    ]
+    # Use the TransactionView database view for balances
+    list_select_related = ("view",)
     readonly_fields = ("timestamp",)
     search_fields = ("legs__account__name",)
     inlines = [LegInline]
+    # Allowing sorting will really harm the performance of the TransactionView database view
+    sortable_by = []
 
     def debited_accounts(self, obj):
         return ", ".join([str(leg.account.name) for leg in obj.debit_legs]) or None
 
-    def total_amount(self, obj):
-        return obj.total_amount
-
     def credited_accounts(self, obj):
         return ", ".join([str(leg.account.name) for leg in obj.credit_legs]) or None
 
-    def get_queryset(self, *args, **kwargs):
-        return (
-            super()
-            .get_queryset(*args, **kwargs)
-            .prefetch_related(
-                Prefetch(
-                    "legs",
-                    queryset=models.Leg.objects.filter(amount__gt=0).select_related(
-                        "account"
-                    ),
-                    to_attr="debit_legs",
-                ),
-                Prefetch(
-                    "legs",
-                    queryset=models.Leg.objects.filter(amount__gt=0).select_related(
-                        "account"
-                    ),
-                    to_attr="credit_legs",
-                ),
-            )
-            .annotate(
-                total_amount=Sum("legs__amount", filter=Q(legs__amount__gt=0)),
-            )
-        )
+    def balance(self, obj):
+        # TODO: Parse
+        return obj.view.balance
 
 
 @admin.register(models.Leg)

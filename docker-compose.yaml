@@ -1,0 +1,23 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:16
+    platform: linux/amd64
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    command: postgres -c log_statement=all
+
+  mariadb:
+    image: mariadb:10.5.21
+    platform: linux/amd64
+    environment:
+      - MARIADB_DATABASE=mariadb
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    expose:
+      - "3306"
+    ports:
+      - "3306:3306"

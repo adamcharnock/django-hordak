@@ -96,3 +96,35 @@ class LegView(models.Model):
 
     def save(self, *args, **kwargs):
         raise RuntimeError("Cannot save, this is a read-only view")
+
+
+class TransactionView(models.Model):
+    parent = models.OneToOneField(
+        Transaction,
+        db_column="id",
+        editable=False,
+        on_delete=models.DO_NOTHING,
+        related_name="view",
+        primary_key=True,
+    )
+    uuid = models.UUIDField(verbose_name=_("uuid"), editable=False)
+    timestamp = models.DateTimeField(
+        editable=False,
+        help_text="The creation date of this transaction object",
+        verbose_name=_("timestamp"),
+    )
+    date = models.DateField(
+        editable=False,
+        help_text="The date on which this transaction occurred",
+        verbose_name=_("date"),
+    )
+    description = models.TextField(editable=False, verbose_name=_("description"))
+    # TODO: Parse it
+    balance = models.JSONField()
+
+    class Meta:
+        managed = False
+        db_table = "hordak_transaction_view"
+
+    def save(self, *args, **kwargs):
+        raise RuntimeError("Cannot save, this is a read-only view")
