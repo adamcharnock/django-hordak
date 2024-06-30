@@ -101,7 +101,7 @@ class AdminTestCase(DataProvider, TestCase):
         url = reverse("admin:hordak_transaction_changelist")
         res = self.client.get(url)
         self.assertContains(
-            res, '<td class="field-debited_accounts">Account 4</td>', html=True
+            res, '<td class="field-debited_accounts">Bank account</td>', html=True
         )
 
     def test_transaction_list_queries(self):
@@ -117,7 +117,7 @@ class AdminTestCase(DataProvider, TestCase):
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
         url = reverse("admin:hordak_transaction_changelist")
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(5):
             res = self.client.get(url)
         self.assertEqual(res.status_code, 200)
 

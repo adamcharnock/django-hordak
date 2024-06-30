@@ -4,6 +4,7 @@ from djmoney.models.fields import MoneyField
 
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, get_internal_currency
 from hordak.models import Account, Transaction
+from hordak.utilities.db import BalanceField
 
 
 class LegType(models.TextChoices):
@@ -119,8 +120,26 @@ class TransactionView(models.Model):
         verbose_name=_("date"),
     )
     description = models.TextField(editable=False, verbose_name=_("description"))
-    # TODO: Parse it
-    balance = models.JSONField()
+    amount = BalanceField(
+        editable=False, help_text="The total amount transferred in this transaction"
+    )
+
+    credit_account_ids = models.JSONField(
+        editable=False,
+        help_text="List of account ids for the credit legs of this transaction",
+    )
+    debit_account_ids = models.JSONField(
+        editable=False,
+        help_text="List of account ids for the debit legs of this transaction",
+    )
+    credit_account_names = models.JSONField(
+        editable=False,
+        help_text="List of account names for the credit legs of this transaction",
+    )
+    debit_account_names = models.JSONField(
+        editable=False,
+        help_text="List of account names for the debit legs of this transaction",
+    )
 
     class Meta:
         managed = False

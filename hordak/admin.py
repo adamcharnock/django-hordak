@@ -80,10 +80,9 @@ class TransactionAdmin(admin.ModelAdmin):
     list_display = [
         "pk",
         "timestamp",
-        # TODO: Include in view
-        # "debited_accounts",
-        "balance",
-        # "credited_accounts",
+        "debited_accounts",
+        "amount",
+        "credited_accounts",
         "uuid",
         "date",
         "description",
@@ -97,14 +96,13 @@ class TransactionAdmin(admin.ModelAdmin):
     sortable_by = []
 
     def debited_accounts(self, obj):
-        return ", ".join([str(leg.account.name) for leg in obj.debit_legs]) or None
+        return ", ".join(obj.view.debit_account_names) or None
 
     def credited_accounts(self, obj):
-        return ", ".join([str(leg.account.name) for leg in obj.credit_legs]) or None
+        return ", ".join(obj.view.credit_account_names) or None
 
-    def balance(self, obj):
-        # TODO: Parse
-        return obj.view.balance
+    def amount(self, obj):
+        return obj.view.amount
 
 
 @admin.register(models.Leg)
