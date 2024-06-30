@@ -16,7 +16,6 @@ class BalanceField(models.JSONField):
         if value is None:
             return value
         try:
-            breakpoint()
             return json_to_balance(value)
         except ValueError:
             raise ValidationError("Invalid JSON format")
@@ -46,7 +45,6 @@ class BalanceField(models.JSONField):
 def json_to_balance(json_: Union[str, List[dict]]) -> Balance:
     if isinstance(json_, str):
         json_ = json.loads(json_)
-
     return Balance([Money(m["amount"], m["currency"]) for m in json_])
 
 

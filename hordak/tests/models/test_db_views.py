@@ -7,6 +7,7 @@ from moneyed import Money
 from hordak.models import Leg, LegView, Transaction, TransactionView
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
+from hordak.utilities.test import mysql_only, postgres_only
 
 
 class LegViewTestCase(DataProvider, DbTransactionTestCase):
@@ -139,7 +140,8 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
         view: TransactionView = TransactionView.objects.get()
         self.assertEqual(view.amount, Balance([Money(100, "USD")]))
 
-    def test_amount_multi_currency(self):
+    @postgres_only("Only postgres supports multi-currency account amounts")
+    def test_amount_multi_currency_postgres(self):
         self.credit_account_eur = self.account(currencies=["EUR"], name="Credit EUR")
         self.debit_account_eur = self.account(currencies=["EUR"], name="Debit EUR")
 
@@ -154,6 +156,25 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
                 account=self.debit_account_eur,
                 amount=Money(-90, "EUR"),
             )
-
         view: TransactionView = TransactionView.objects.get()
         self.assertEqual(view.amount, Balance([Money(100, "USD"), Money(90, "EUR")]))
+
+    @mysql_only("No MySQL support for multi-currency account amounts")
+    def test_amount_multi_currency_mysql(self):
+        # Multi-currency transaction amounts only available in postgres
+        self.credit_account_eur = self.account(currencies=["EUR"], name="Credit EUR")
+        self.debit_account_eur = self.account(currencies=["EUR"], name="Debit EUR")
+
+        with db_transaction.atomic():
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.credit_account_eur,
+                amount=Money(90, "EUR"),
+            )
+            Leg.objects.create(
+                transaction=self.transaction,
+                account=self.debit_account_eur,
+                amount=Money(-90, "EUR"),
+            )
+        view: TransactionView = TransactionView.objects.get()
+        self.assertEqual(view.amount, None)
