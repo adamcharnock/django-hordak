@@ -42,8 +42,8 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         response = self.client.post(
             self.view_url,
             data=dict(
-                from_account=self.bank_account.uuid,
-                to_account=self.income_account.uuid,
+                debit_account=self.bank_account.uuid,
+                credit_account=self.income_account.uuid,
                 amount_0="123.45",
                 amount_1="EUR",
                 date="2000-06-15",
@@ -52,8 +52,8 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "/")
-        self.assertEqual(self.bank_account.balance(), Balance("123.45", "EUR"))
-        self.assertEqual(self.income_account.balance(), Balance("123.45", "EUR"))
+        self.assertEqual(self.bank_account.balance(), Balance("-123.45", "EUR"))
+        self.assertEqual(self.income_account.balance(), Balance("-123.45", "EUR"))
 
         transaction = Transaction.objects.get()
         self.assertEqual(str(transaction.date), "2000-06-15")

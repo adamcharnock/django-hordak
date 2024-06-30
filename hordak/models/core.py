@@ -44,7 +44,6 @@ from hordak.defaults import (
 )
 from hordak.utilities.currency import Balance
 from hordak.utilities.db_functions import GetBalance
-from hordak.utilities.dreprecation import deprecated
 
 
 #: Debit
@@ -328,73 +327,9 @@ class Account(MPTTModel):
         """Get a balance for this account with all currencies set to zero"""
         return Balance([Money("0", currency) for currency in self.currencies])
 
-    @deprecated(
-        "transfer_to() has been deprecated. This method does not adhere to expected transfers based on the "
-        "accounting equation, see notes. Use .accounting_transfer_to() instead. "
-        "This method will raise an error in v2.0.0."
-    )
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
-        """**Deprecated** Please use `.accounting_transfer_to()` instead. Will raise an error in Hordak 2.x.
-
-        Create a transaction which transfers amount to to_account
-
-        This is a shortcut utility method which simplifies the process of
-        transferring between accounts.
-
-        This method attempts to perform the transaction in an intuitive manner.
-        For example:
-
-          * Transferring income -> income will result in the former decreasing and the latter increasing
-          * Transferring asset (i.e. bank) -> income will result in the balance of both increasing
-          * Transferring asset -> asset will result in the former decreasing and the latter increasing
-
-        .. note::
-
-            Transfers in any direction between ``{asset | expense} <-> {income | liability | equity}``
-            will always result in both balances increasing. This may change in future if it is
-            found to be unhelpful.
-
-            Transfers to trading accounts will always behave as normal.
-
-        Args:
-
-            to_account (Account): The destination account.
-            amount (Money): The amount to be transferred.
-            transaction_kwargs: Passed through to transaction creation. Useful for setting the
-                transaction `description` field.
-        """
-        if not isinstance(amount, Money):
-            raise TypeError("amount must be of type Money")
-
-        if to_account.sign == 1 and to_account.type != AccountType.trading:
-            # Transferring from two positive-signed accounts implies that
-            # the caller wants to reduce the first account and increase the second
-            # (which is opposite to the implicit behaviour)
-            direction = -1
-        elif (
-            self.type == AccountType.liability
-            and to_account.type == AccountType.expense
-        ):
-            # Transfers from liability -> asset accounts should reduce both.
-            # For example, moving money from Rent Payable (liability) to your Rent (expense) account
-            # should use the funds you've built up in the liability account to pay off the expense account.
-            direction = -1
-        else:
-            direction = 1
-
-        transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(
-            transaction=transaction, account=self, amount=+amount * direction
-        )
-        Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-amount * direction
-        )
-        return transaction
-
-    @db_transaction.atomic()
-    def accounting_transfer_to(self, to_account, amount, **transaction_kwargs):
-        """Create a transaction which transfers amount to to_account using double entry accounting rules
+        """Create a transaction which credits self and debits `to_account`.
 
         See https://en.wikipedia.org/wiki/Double-entry_bookkeeping.
 
@@ -610,7 +545,8 @@ class Leg(models.Model):
     def account_balance_after(self):
         """Get the balance of the account associated with this leg following the transaction"""
         # TODO: Consider moving to annotation,
-        # particularly once we can count on Django 1.11's subquery support
+        #       particularly once we can count on Django 1.11's subquery support
+        #       Or use the new LegView.
         transaction_date = self.transaction.date
         return self.account.balance(
             leg_query=(
@@ -625,7 +561,8 @@ class Leg(models.Model):
     def account_balance_before(self):
         """Get the balance of the account associated with this leg before the transaction"""
         # TODO: Consider moving to annotation,
-        # particularly once we can count on Django 1.11's subquery support
+        #       particularly once we can count on Django 1.11's subquery support.
+        #       Or use the new LegView.
         transaction_date = self.transaction.date
         return self.account.balance(
             leg_query=(
