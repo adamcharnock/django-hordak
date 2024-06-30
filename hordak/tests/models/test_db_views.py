@@ -11,32 +11,42 @@ from hordak.utilities.test import mysql_only, postgres_only
 
 
 class LegViewTestCase(DataProvider, DbTransactionTestCase):
-    def test_simple(self):
-        """A single transaction between two accounts"""
-        account1 = self.account(currencies=["USD"])
-        account2 = self.account(currencies=["USD"])
+    def setUp(self):
+        self.parent = self.account(currencies=["USD"], name="Parent", code="A")
+        self.account1 = self.account(
+            currencies=["USD"], parent=self.parent, name="One", code="1"
+        )
+        self.account2 = self.account(
+            currencies=["USD"], parent=self.parent, name="Two", code="2"
+        )
 
+    def create_transaction(self, amount, account1=None, account2=None):
         with db_transaction.atomic():
             transaction = Transaction.objects.create(
                 description="Transaction description", date="2000-01-01"
             )
             leg1 = Leg.objects.create(
                 transaction=transaction,
-                account=account1,
-                amount=Money(100, "USD"),
+                account=account1 or self.account1,
+                amount=amount,
                 description="Leg 1 description",
             )
             leg2 = Leg.objects.create(
                 transaction=transaction,
-                account=account2,
-                amount=Money(-100, "USD"),
+                account=account2 or self.account2,
+                amount=-amount,
                 description="Leg 2 description",
             )
+        return transaction, leg1, leg2
 
-        leg_view = LegView.objects.get(account=account1)
+    def test_simple(self):
+        """A single transaction between two accounts"""
+
+        transaction, leg1, leg2 = self.create_transaction(Money(100, "USD"))
+        leg_view = LegView.objects.get(account=self.account1)
         self.assertEqual(leg_view.uuid, leg1.uuid)
         self.assertEqual(leg_view.transaction_id, transaction.pk)
-        self.assertEqual(leg_view.account, account1)
+        self.assertEqual(leg_view.account, self.account1)
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
         self.assertEqual(leg_view.type, "CR")
         self.assertEqual(leg_view.credit, Decimal(100))
@@ -44,11 +54,14 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(leg_view.account_balance, Decimal(100))
         self.assertEqual(leg_view.leg_description, "Leg 1 description")
         self.assertEqual(leg_view.transaction_description, "Transaction description")
+        self.assertEqual(leg_view.account_name, "One")
+        self.assertEqual(leg_view.account_type, "IN")
+        self.assertEqual(leg_view.account_full_code, "A1")
 
-        leg_view = LegView.objects.get(account=account2)
+        leg_view = LegView.objects.get(account=self.account2)
         self.assertEqual(leg_view.uuid, leg2.uuid)
         self.assertEqual(leg_view.transaction_id, transaction.pk)
-        self.assertEqual(leg_view.account, account2)
+        self.assertEqual(leg_view.account, self.account2)
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
         self.assertEqual(leg_view.type, "DR")
         self.assertEqual(leg_view.credit, None)
@@ -56,49 +69,38 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(leg_view.account_balance, Decimal(-100))
         self.assertEqual(leg_view.leg_description, "Leg 2 description")
         self.assertEqual(leg_view.transaction_description, "Transaction description")
+        self.assertEqual(leg_view.account_name, "Two")
+        self.assertEqual(leg_view.account_type, "IN")
+        self.assertEqual(leg_view.account_full_code, "A2")
 
-    def test_account_balance(self):
-        account1 = self.account(currencies=["USD"])
-        account2 = self.account(currencies=["USD"])
-
-        with db_transaction.atomic():
-            transaction1 = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction1, account=account1, amount=Money(100, "USD")
-            )
-            Leg.objects.create(
-                transaction=transaction1, account=account2, amount=Money(-100, "USD")
-            )
-
-            transaction2 = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction2, account=account1, amount=Money(20, "USD")
-            )
-            Leg.objects.create(
-                transaction=transaction2, account=account2, amount=Money(-20, "USD")
-            )
-
-            transaction3 = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction3, account=account1, amount=Money(-10, "USD")
-            )
-            Leg.objects.create(
-                transaction=transaction3, account=account2, amount=Money(10, "USD")
-            )
+    def test_account_balance_leaf(self):
+        self.create_transaction(Money(100, "USD"))
+        self.create_transaction(Money(20, "USD"))
+        self.create_transaction(Money(-10, "USD"))
 
         # First transaction is for 100
-        leg_view = LegView.objects.filter(account=account1).first()
+        leg_view = LegView.objects.filter(account=self.account1).first()
         self.assertEqual(leg_view.account_balance, Decimal(100))
 
-        leg_view = LegView.objects.filter(account=account2).first()
+        leg_view = LegView.objects.filter(account=self.account2).first()
         self.assertEqual(leg_view.account_balance, Decimal(-100))
 
         # Then we have + 20 - 10
-        leg_view = LegView.objects.filter(account=account1).last()
+        leg_view = LegView.objects.filter(account=self.account1).last()
         self.assertEqual(leg_view.account_balance, Decimal(110))
 
-        leg_view = LegView.objects.filter(account=account2).last()
+        leg_view = LegView.objects.filter(account=self.account2).last()
         self.assertEqual(leg_view.account_balance, Decimal(-110))
+
+    def test_account_balance_parent(self):
+        self.create_transaction(
+            amount=Money(15, "USD"),
+            account1=self.parent,
+            account2=self.account(currencies=["USD"]),
+        )
+        leg_view = LegView.objects.filter(account=self.parent).last()
+        # Account balance is None because it is a non-leaf account
+        self.assertEqual(leg_view.account_balance, None)
 
 
 class TransactionViewTestCase(DataProvider, DbTransactionTestCase):

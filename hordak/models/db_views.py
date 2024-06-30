@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
 
 from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, get_internal_currency
-from hordak.models import Account, Transaction
+from hordak.models import Account, AccountType, Transaction
 from hordak.utilities.db import BalanceField
 
 
@@ -65,6 +65,21 @@ class LegView(models.Model):
         on_delete=models.DO_NOTHING,
         verbose_name=_("account"),
     )
+    account_name = models.CharField(
+        editable=False, max_length=255, verbose_name=_("name")
+    )
+    account_full_code = models.CharField(
+        editable=False,
+        max_length=255,
+        verbose_name=_("full_code"),
+    )
+    account_type = models.CharField(
+        editable=False,
+        max_length=2,
+        choices=AccountType.choices,
+        verbose_name=_("type"),
+    )
+
     date = models.DateField(
         help_text="The date on which this transaction leg occurred",
         verbose_name=_("date"),
@@ -98,7 +113,7 @@ class LegView(models.Model):
         decimal_places=DECIMAL_PLACES,
         help_text=(
             "Account balance following this transaction. For multiple-currency accounts this will "
-            "be the balance of the same currency as the leg amount."
+            "be the balance of the same currency as the leg amount. Will be NULL/None for non-leaf accounts."
         ),
         verbose_name=_("account balance"),
     )

@@ -20,18 +20,25 @@ class Migration(migrations.Migration):
                 L.uuid,
                 transaction_id,
                 account_id,
+                A.full_code as account_full_code,
+                A.name as account_name,
+                A.type as account_type,
                 T.date as date,
                 ABS(amount) as amount,
                 amount_currency,
                 (CASE WHEN amount > 0 THEN 'CR' ELSE 'DR' END) AS type,
                 (CASE WHEN amount > 0 THEN ABS(amount) END) AS credit,
                 (CASE WHEN amount < 0 THEN ABS(amount) END) AS debit,
-                -- TODO: Only works for leaf nodes
-                SUM(amount) OVER (PARTITION BY account_id, amount_currency ORDER BY T.date, L.id) AS account_balance,
+                (
+                    CASE WHEN A.lft = A.rght - 1
+                    THEN SUM(amount) OVER (PARTITION BY account_id, amount_currency ORDER BY T.date, L.id)
+                    END
+                ) AS account_balance,
                 T.description as transaction_description,
                 L.description as leg_description
             FROM hordak_leg L
             INNER JOIN hordak_transaction T on L.transaction_id = T.id
+            INNER JOIN hordak_account A on A.id = L.account_id
             order by T.date desc, id desc);
             """,
             """drop view hordak_leg_view;""",
