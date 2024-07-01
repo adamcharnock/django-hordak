@@ -13,19 +13,19 @@ BEGIN
     -- Note: Error 45000 / 1048 becomes an integrity error in the mysqlDB library, and therefore in Django.
     --       That is the apropriate error for this case.
     IF v_debit IS NULL AND v_credit IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Either the debit or credit field must be specified.';
+        SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Either the debit or credit field must be specified.';
     END IF;
 
     IF v_debit IS NOT NULL AND v_credit IS NOT NULL THEN
-        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Only the debit or credit field must be specified, not both.';
+        SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Only the debit or credit field must be specified, not both.';
     END IF;
 
     IF v_debit IS NOT NULL AND v_debit <= 0 THEN
-        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `debit` field must be greater than zero.';
+        SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `debit` field must be greater than zero.';
     END IF;
 
     IF v_credit IS NOT NULL AND v_credit <= 0 THEN
-        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `credit` field must be greater than zero.';
+        SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `credit` field must be greater than zero.';
     END IF;
 
     -- Check all the transaction's leg's sum to zero
@@ -59,7 +59,8 @@ END;
 
     IF FOUND_ROWS() > 0 THEN
         SET @msg= CONCAT('Sum of transaction amounts must be 0, got ', transaction_sum);
-        SIGNAL SQLSTATE '45000' SET
+        SIGNAL SQLSTATE '23000' SET
+        MYSQL_ERRNO = 1048,
         MESSAGE_TEXT = @msg;
     END IF;
 
