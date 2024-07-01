@@ -405,8 +405,8 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
         currency_exchange(
             source=cad_cash,
             source_amount=Money(120, "CAD"),
-            destination=usd_cash,
             destination_amount=Money(100, "USD"),
+            destination=usd_cash,
             trading_account=trading,
             fee_destination=banking_fees,
             fee_amount=Money(1.50, "USD"),

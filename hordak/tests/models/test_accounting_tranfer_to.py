@@ -160,8 +160,8 @@ class AccountingTransferToTestCase(DataProvider, DbTransactionTestCase):
 
         debit = Leg.objects.debits().get()
         credit = Leg.objects.credits().get()
-        self.assertEqual(debit.account, src)
-        self.assertEqual(credit.account, dst)
+        self.assertEqual(debit.account, dst)
+        self.assertEqual(credit.account, src)
 
     def test_account_balance_after_income_to_income(self):
         src = self.account()

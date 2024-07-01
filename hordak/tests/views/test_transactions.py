@@ -244,10 +244,10 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         leg_in = transaction.legs.get(account=self.bank_account)
         leg_out = transaction.legs.get(account=self.income_account)
 
-        self.assertEqual(leg_in.amount, Money("-100.16", "EUR"))
+        self.assertEqual(leg_in.debit, Money("100.16", "EUR"))
         self.assertEqual(leg_in.account, self.bank_account)
 
-        self.assertEqual(leg_out.amount, Money("100.16", "EUR"))
+        self.assertEqual(leg_out.credit, Money("100.16", "EUR"))
         self.assertEqual(leg_out.account, self.income_account)
 
         self.assertNotIn("leg_formset", response.context)
@@ -287,8 +287,8 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         leg_in = transaction.legs.get(account=self.bank_account)
         leg_out = transaction.legs.get(account=self.income_account)
 
-        self.assertEqual(leg_in.amount, Money("-100.16", "GBP"))
-        self.assertEqual(leg_out.amount, Money("100.16", "GBP"))
+        self.assertEqual(leg_in.debit, Money("100.16", "GBP"))
+        self.assertEqual(leg_out.credit, Money("100.16", "GBP"))
 
     def test_post_reconcile_valid_two(self):
         self.create_statement_import()
