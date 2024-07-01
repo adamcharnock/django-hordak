@@ -207,12 +207,12 @@ def currency_exchange(
 
         # Source currency into trading account
         Leg.objects.create(
-            transaction=transaction, account=source, amount=source_amount
+            transaction=transaction, account=source, credit=source_amount
         )
         Leg.objects.create(
             transaction=transaction,
             account=trading_account,
-            amount=-(
+            debit=(
                 (source_amount - fee_amount) if charge_fee_at_source else source_amount
             ),
         )
@@ -222,7 +222,7 @@ def currency_exchange(
             Leg.objects.create(
                 transaction=transaction,
                 account=fee_destination,
-                amount=-fee_amount,
+                debit=fee_amount,
                 description="Fees",
             )
 
@@ -230,14 +230,14 @@ def currency_exchange(
         Leg.objects.create(
             transaction=transaction,
             account=trading_account,
-            amount=(
+            credit=(
                 destination_amount
                 if charge_fee_at_source
                 else destination_amount + fee_amount
             ),
         )
         Leg.objects.create(
-            transaction=transaction, account=destination, amount=-destination_amount
+            transaction=transaction, account=destination, debit=destination_amount
         )
 
     return transaction

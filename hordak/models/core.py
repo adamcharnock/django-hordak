@@ -26,7 +26,8 @@ from datetime import date
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import F, JSONField
+from django.db.models import DecimalField, F, JSONField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
@@ -197,6 +198,7 @@ class Account(MPTTModel):
                 "is_bank_account",
                 "currencies",
             ]
+
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
 
         if connection.vendor == "mysql":
@@ -384,12 +386,13 @@ class Account(MPTTModel):
             direction = 1
 
         transaction = Transaction.objects.create(**transaction_kwargs)
-        Leg.objects.create(
-            transaction=transaction, account=self, amount=+amount * direction
-        )
-        Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-amount * direction
-        )
+        leg_amount = +amount * direction
+        # UGLY: But about to be removed as soon as we merge this code
+        kwarg = {"credit" if leg_amount.amount > 0 else "debit": abs(leg_amount)}
+        Leg.objects.create(transaction=transaction, account=self, **kwarg)
+        leg_amount = -amount * direction
+        kwarg = {"credit" if leg_amount.amount > 0 else "debit": abs(leg_amount)}
+        Leg.objects.create(transaction=transaction, account=to_account, **kwarg)
         return transaction
 
     @db_transaction.atomic()
@@ -511,8 +514,12 @@ class Transaction(models.Model):
 class LegQuerySet(models.QuerySet):
     def sum_to_balance(self):
         """Sum the Legs of the QuerySet to get a `Balance`_ object"""
-        result = self.values("amount_currency").annotate(total=models.Sum("amount"))
-        return Balance([Money(r["total"], r["amount_currency"]) for r in result])
+        # TODO: Some work on signage required here
+        result = self.values("currency").annotate(
+            total=Coalesce(models.Sum("credit"), 0, output_field=DecimalField())
+            - Coalesce(models.Sum("debit"), 0, output_field=DecimalField())
+        )
+        return Balance([Money(r["total"], r["currency"]) for r in result])
 
 
 class LegManager(models.Manager):
@@ -520,12 +527,12 @@ class LegManager(models.Manager):
         return self.get(uuid=uuid)
 
     def debits(self):
-        """Filter for legs that were debits"""
-        return self.filter(amount__gt=0)
+        """Filter for legs that are debits"""
+        return self.filter(debit__isnull=False)
 
     def credits(self):
-        """Filter for legs that were credits"""
-        return self.filter(amount__lt=0)
+        """Filter for legs that are credits"""
+        return self.filter(credit__isnull=False)
 
 
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
@@ -592,11 +599,18 @@ class Leg(models.Model):
     objects = CustomLegManager()
 
     def __str__(self):
-        return f"{self.type.title()} {self.account.name} ({self.account.full_code}) {self.amount}"
+        return (
+            f"{self.type.title()} {self.account.name} "
+            f"({self.account.full_code}) {self.amount} {self.type_short}"
+        )
 
     def save(self, *args, **kwargs):
-        if self.amount.amount == 0:
-            raise exceptions.ZeroAmountError()
+        if self.credit is not None and self.credit.amount == 0:
+            raise exceptions.ZeroAmountError("Cannot credit account by zero")
+        if self.debit is not None and self.debit.amount == 0:
+            raise exceptions.ZeroAmountError("Cannot debit account by zero")
+        if self.debit is None and self.credit is None:
+            raise exceptions.ZeroAmountError("Either credit or debit must be set")
 
         leg = super(Leg, self).save(*args, **kwargs)
         mysql_simulate_trigger("check_leg", self.transaction_id)
@@ -614,7 +628,7 @@ class Leg(models.Model):
         else:
             # This should have been caught earlier by the database integrity check.
             # If you are seeing this then something is wrong with your DB checks.
-            raise exceptions.ZeroAmountError()
+            raise exceptions.InvalidOrMissingAccountTypeError()
 
     @property
     def type_short(self):
@@ -813,10 +827,10 @@ class StatementLine(models.Model):
 
         transaction = Transaction.objects.create()
         Leg.objects.create(
-            transaction=transaction, account=from_account, amount=+(self.amount * -1)
+            transaction=transaction, account=from_account, debit=self.amount
         )
         Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-(self.amount * -1)
+            transaction=transaction, account=to_account, credit=self.amount
         )
 
         transaction.date = self.date

@@ -133,6 +133,16 @@ class LegForm(forms.ModelForm):
 
         return amount
 
+    def save(self, commit=True):
+        inst: Leg = super().save(commit=False)
+        if self.cleaned_data["amount"].amount > 0:
+            inst.credit = self.cleaned_data["amount"]
+        else:
+            inst.debit = self.cleaned_data["amount"]
+
+        if commit:
+            inst.save()
+
 
 class BaseLegFormSet(BaseInlineFormSet):
     def __init__(self, **kwargs):

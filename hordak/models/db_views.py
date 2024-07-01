@@ -84,34 +84,60 @@ class LegView(models.Model):
     )
 
     date = models.DateField(
+        editable=False,
         help_text="The date on which this transaction leg occurred",
         verbose_name=_("date"),
     )
     amount = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
-        default_currency=get_internal_currency,
+        currency_field_name="currency",
         verbose_name=_("amount"),
     )
+    legacy_amount = MoneyField(
+        editable=False,
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        currency_field_name="currency",
+        verbose_name=_("legacy amount"),
+        help_text=(
+            "The leg amount, credits are positive, debit are negative "
+            "(Legacy for Hordak 1.0 compatability)"
+        ),
+    )
     type = models.CharField(
+        editable=False,
         max_length=2,
         help_text="Type of this transaction leg: debit or credit",
         verbose_name=_("type"),
         choices=LegType.choices,
     )
-    credit = models.DecimalField(
+    credit = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Amount of this credit, or NULL if not a credit",
+        currency_field_name="currency",
         verbose_name=_("credit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
-    debit = models.DecimalField(
+    debit = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Amount of this debit, or NULL if not a debit",
+        default_currency=get_internal_currency,
+        currency_field_name="currency",
         verbose_name=_("debit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
     account_balance = models.DecimalField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text=(
@@ -121,9 +147,11 @@ class LegView(models.Model):
         verbose_name=_("account balance"),
     )
     leg_description = models.TextField(
+        editable=False,
         verbose_name=_("leg description"),
     )
     transaction_description = models.TextField(
+        editable=False,
         verbose_name=_("transaction description"),
     )
 

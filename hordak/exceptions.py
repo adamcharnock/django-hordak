@@ -85,3 +85,9 @@ class NoMoreAccountCodesAvailableInSequence(HordakError):
     """
 
     pass
+
+
+class InvalidOrMissingAccountTypeError(Exception):
+    """When an unexpected account type is encountered"""
+
+    pass

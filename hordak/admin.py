@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.db.models import Q, Sum
+from django.db.models import DecimalField, Q, Sum
+from django.db.models.functions import Coalesce
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
@@ -51,8 +52,12 @@ class AccountAdmin(MPTTModelAdmin):
             super()
             .get_queryset(*args, **kwargs)
             .annotate(
-                balance_sum=Sum("legs__amount"),
-                income=Sum("legs__amount", filter=Q(legs__credit__isnull=False)),
+                # TODO: I think this needs some sign-changing work
+                balance_sum=Sum(
+                    Coalesce("legs__credit", 0, output_field=DecimalField())
+                    - Coalesce("legs__debit", 0, output_field=DecimalField())
+                ),
+                income=Sum("legs__credit", filter=Q(legs__credit__isnull=False)),
             )
         )
 
@@ -186,6 +191,8 @@ class LegViewAdmin(admin.ModelAdmin):
 
 
 def _fmt_admin_decimal(v):
+    if hasattr(v, "amount"):
+        v = v.amount
     if v is None:
         v = "-"
     else:

@@ -1,6 +1,3 @@
--- TODO: Trigger to ensure that only credit or debit is set
--- TODO: Trigger to ensure that credit/debit is > 0
-
 CREATE OR REPLACE FUNCTION check_leg()
     RETURNS trigger AS
 $$
@@ -15,18 +12,17 @@ BEGIN
     END IF;
 
 
-    SELECT ABS(SUM(amount)) AS total, amount_currency AS currency
+    SELECT ABS(SUM(COALESCE(debit, 0) - COALESCE(credit, 0))) AS total, currency
         INTO non_zero
         FROM hordak_leg
         WHERE transaction_id = tx_id
-        GROUP BY amount_currency
-        HAVING (SUM(debit) - SUM(credit)) != 0
+        GROUP BY currency
+        HAVING ABS(SUM(COALESCE(debit, 0) - COALESCE(credit, 0))) != 0
         LIMIT 1;
 
     IF FOUND THEN
         -- TODO: Include transaction id in exception message below (see #93)
-        RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency %% has non-zero total %%',
-            non_zero.currency, non_zero.total;
+        RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency % has non-zero total %', non_zero.currency, non_zero.total USING ERRCODE = 23514;
     END IF;
 
     RETURN NEW;
@@ -58,7 +54,7 @@ LANGUAGE plpgsql;
         IF FOUND THEN
             -- TODO: Include transaction id in exception message below (see #93)
             RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency %% has non-zero total %%',
-                non_zero.currency, non_zero.total;
+                non_zero.currency, non_zero.total USING ERRCODE = 23514;
         END IF;
 
         RETURN NEW;
@@ -66,33 +62,8 @@ LANGUAGE plpgsql;
     $$
     LANGUAGE plpgsql;
 ------
-
-create view hordak_leg_view as (SELECT
-    L.id,
-    L.uuid,
-    transaction_id,
-    account_id,
-    A.full_code as account_full_code,
-    A.name as account_name,
-    A.type as account_type,
-    T.date as date,
-    L.credit,
-    L.debit,
-    COALESCE(L.debit, L.credit) as amount,
-    L.currency,
-    (CASE WHEN L.debit IS NULL THEN 'CR' ELSE 'DR' END) AS type,
-    (
-        CASE WHEN A.lft = A.rght - 1
-        THEN SUM(amount) OVER (PARTITION BY account_id, amount_currency ORDER BY T.date, L.id)
-        END
-    ) AS account_balance,
-    T.description as transaction_description,
-    L.description as leg_description
-FROM hordak_leg L
-INNER JOIN hordak_transaction T on L.transaction_id = T.id
-INNER JOIN hordak_account A on A.id = L.account_id
-order by T.date desc, id desc);
--- - reverse:
+drop view hordak_leg_view;
+--- reverse:
     create view hordak_leg_view as (SELECT
         L.id,
         L.uuid,
@@ -120,7 +91,39 @@ order by T.date desc, id desc);
     order by T.date desc, id desc);
 
 ------
-create view hordak_transaction_view AS (SELECT
+
+create view hordak_leg_view as (SELECT
+    L.id,
+    L.uuid,
+    transaction_id,
+    account_id,
+    A.full_code as account_full_code,
+    A.name as account_name,
+    A.type as account_type,
+    T.date as date,
+    L.credit,
+    L.debit,
+    COALESCE(L.debit, L.credit) as amount,
+    L.currency,
+    COALESCE(L.debit * -1, L.credit) as legacy_amount,
+    (CASE WHEN L.debit IS NULL THEN 'CR' ELSE 'DR' END) AS type,
+    (
+        CASE WHEN A.lft = A.rght - 1
+        THEN SUM(COALESCE(credit, 0)::DECIMAL - COALESCE(debit, 0)::DECIMAL) OVER (PARTITION BY account_id, currency ORDER BY T.date, L.id)
+        END
+    ) AS account_balance,
+    T.description as transaction_description,
+    L.description as leg_description
+FROM hordak_leg L
+INNER JOIN hordak_transaction T on L.transaction_id = T.id
+INNER JOIN hordak_account A on A.id = L.account_id
+order by T.date desc, id desc);
+--- reverse:
+drop view hordak_leg_view;
+
+------
+
+create or replace view hordak_transaction_view AS (SELECT
     T.*,
     -- Get ID and names of credited accounts
     -- Note that this gets unique IDs and names. If there is a
@@ -164,7 +167,7 @@ INNER JOIN LATERAL (
 GROUP BY T.id, T.uuid, T.timestamp, T.date, T.description
 ORDER BY T.id DESC);
 --- reverse:
-    create view hordak_transaction_view AS (SELECT
+    create or replace view hordak_transaction_view AS (SELECT
         T.*,
         -- Get ID and names of credited accounts
         -- Note that this gets unique IDs and names. If there is a
@@ -200,10 +203,198 @@ ORDER BY T.id DESC);
         hordak_transaction T
     -- Get LEG amounts for each currency in the transaction
     INNER JOIN LATERAL (
-        SELECT SUM(amount) AS amount, amount_currency AS currency
+        SELECT SUM(amount) AS amount, currency
         FROM hordak_leg L
         WHERE L.transaction_id = T.id AND L.amount > 0
-        GROUP BY amount_currency
+        GROUP BY currency
         ) L ON True
     GROUP BY T.id, T.uuid, T.timestamp, T.date, T.description
     ORDER BY T.id DESC);
+
+------
+
+CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
+    RETURNS trigger AS
+$$
+DECLARE
+    account RECORD;
+BEGIN
+
+    IF (TG_OP = 'DELETE') THEN
+        RETURN OLD;
+    END IF;
+
+    PERFORM * FROM hordak_account WHERE id = NEW.account_id AND currencies::jsonb @> to_jsonb(ARRAY[NEW.currency]::text[]);
+
+    IF NOT FOUND THEN
+        SELECT * INTO account FROM hordak_account WHERE id = NEW.account_id;
+
+        RAISE EXCEPTION 'Destination Account#% does not support currency %. Account currencies: %', account.id, NEW.currency, account.currencies USING ERRCODE = 23514;
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+--- reverse:
+
+    CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
+        RETURNS trigger AS
+    $$
+    DECLARE
+        account RECORD;
+    BEGIN
+
+        IF (TG_OP = 'DELETE') THEN
+            RETURN OLD;
+        END IF;
+
+        PERFORM * FROM hordak_account WHERE id = NEW.account_id AND currencies::jsonb @> to_jsonb(ARRAY[NEW.amount_currency]::text[]);
+
+        IF NOT FOUND THEN
+            SELECT * INTO account FROM hordak_account WHERE id = NEW.account_id;
+
+            RAISE EXCEPTION 'Destination Account#% does not support currency %. Account currencies: %', account.id, NEW.amount_currency, account.currencies USING ERRCODE = 23514;
+        END IF;
+
+        RETURN NEW;
+    END;
+    $$
+    LANGUAGE plpgsql;
+
+------
+
+ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check;
+--- reverse:
+ALTER TABLE hordak_leg ADD CONSTRAINT zero_amount_check CHECK (amount != 0);
+
+------
+
+ALTER TABLE hordak_leg ADD CONSTRAINT zero_amount_check_credit CHECK (credit != 0);
+--- reverse:
+ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check_credit;
+
+------
+
+ALTER TABLE hordak_leg ADD CONSTRAINT zero_amount_check_debit CHECK (debit != 0);
+--- reverse:
+ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check_debit;
+
+
+------
+CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL)
+    RETURNS TABLE (amount DECIMAL, currency VARCHAR) AS
+$$
+DECLARE
+    account_lft int;
+    account_rght int;
+    account_tree_id int;
+BEGIN
+    -- Get the account's information
+    SELECT
+        lft,
+        rght,
+        tree_id
+    INTO
+        account_lft,
+        account_rght,
+        account_tree_id
+    FROM hordak_account
+    WHERE id = account_id;
+    -- TODO: OPTIMISATION: Crate get_balance_table_simple() for use when this is a leaf account,
+    --       and defer to it when lft + 1 = rght
+
+    IF as_of IS NOT NULL THEN
+        -- If `as_of` is specified then we need an extra join onto the
+        -- transactions table to get the transaction date
+        RETURN QUERY
+            SELECT
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) as amount,
+                L.currency as currency
+            FROM hordak_account A2
+            INNER JOIN hordak_leg L on L.account_id = A2.id
+            INNER JOIN hordak_transaction T on L.transaction_id = T.id
+            WHERE
+                -- We want to include this account and all of its children
+                A2.lft >= account_lft AND
+                A2.rght <= account_rght AND
+                A2.tree_id = account_tree_id AND
+                -- Also respect the as_of parameter
+                T.date <= as_of
+            GROUP BY L.currency;
+    ELSE
+        RETURN QUERY
+            SELECT
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) as amount,
+                L.currency as currency
+            FROM hordak_account A2
+            INNER JOIN hordak_leg L on L.account_id = A2.id
+            WHERE
+                -- We want to include this account and all of its children
+                A2.lft >= account_lft AND
+                A2.rght <= account_rght AND
+                A2.tree_id = account_tree_id
+            GROUP BY L.currency;
+    END IF;
+END;
+$$
+LANGUAGE plpgsql;
+--- reverse:
+    CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL)
+        RETURNS TABLE (amount DECIMAL, currency VARCHAR) AS
+    $$
+    DECLARE
+        account_lft int;
+        account_rght int;
+        account_tree_id int;
+    BEGIN
+        -- Get the account's information
+        SELECT
+            lft,
+            rght,
+            tree_id
+        INTO
+            account_lft,
+            account_rght,
+            account_tree_id
+        FROM hordak_account
+        WHERE id = account_id;
+        -- TODO: OPTIMISATION: Crate get_balance_table_simple() for use when this is a leaf account,
+        --       and defer to it when lft + 1 = rght
+
+        IF as_of IS NOT NULL THEN
+            -- If `as_of` is specified then we need an extra join onto the
+            -- transactions table to get the transaction date
+            RETURN QUERY
+                SELECT
+                    COALESCE(SUM(L.amount), 0.0) as amount,
+                    L.amount_currency as currency
+                FROM hordak_account A2
+                INNER JOIN hordak_leg L on L.account_id = A2.id
+                INNER JOIN hordak_transaction T on L.transaction_id = T.id
+                WHERE
+                    -- We want to include this account and all of its children
+                    A2.lft >= account_lft AND
+                    A2.rght <= account_rght AND
+                    A2.tree_id = account_tree_id AND
+                    -- Also respect the as_of parameter
+                    T.date <= as_of
+                GROUP BY L.amount_currency;
+        ELSE
+            RETURN QUERY
+                SELECT
+                    COALESCE(SUM(L.amount), 0.0) as amount,
+                    L.amount_currency as currency
+                FROM hordak_account A2
+                INNER JOIN hordak_leg L on L.account_id = A2.id
+                WHERE
+                    -- We want to include this account and all of its children
+                    A2.lft >= account_lft AND
+                    A2.rght <= account_rght AND
+                    A2.tree_id = account_tree_id
+                GROUP BY L.amount_currency;
+        END IF;
+    END;
+    $$
+    LANGUAGE plpgsql;
