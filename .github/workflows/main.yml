@@ -92,7 +92,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: created-migrations-${{ github.job }}
+          name: created-migrations-${{ github.run_id }}
           path: hordak/migrations
 
       - name: Testing (PostgreSQL)
