@@ -20,7 +20,7 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
-
+import warnings
 from datetime import date
 
 from django.db import connection, models
@@ -603,6 +603,25 @@ class Leg(models.Model):
             f"{self.type.title()} {self.account.name} "
             f"({self.account.full_code}) {self.amount} {self.type_short}"
         )
+
+    def __init__(self, *args, amount: Money = None, **kwargs):
+        if amount is not None:
+            warnings.warn(
+                "Specifying `amount` when creating an Account is deprecated. "
+                "Instead specify either the `credit` argument (for what would would previously be "
+                "a positive amount) or `debit` (for what would previously be a negative amount). "
+                "Both these arguments should be positive `Money` values. This warning will become an "
+                "error in Hordak 3.0.",
+                DeprecationWarning,
+            )
+            if amount.amount > 0:
+                kwargs["credit"] = amount
+                kwargs["debit"] = None
+            else:
+                kwargs["credit"] = None
+                kwargs["debit"] = abs(amount)
+
+        super().__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if self.credit is not None and self.credit.amount == 0:

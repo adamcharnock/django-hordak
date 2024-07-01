@@ -4,6 +4,7 @@ import warnings
 from datetime import date
 from decimal import Decimal
 
+from django.db import transaction
 from django.db import transaction as db_transaction
 from django.db.utils import DatabaseError, IntegrityError, OperationalError
 from django.test import TestCase, override_settings
@@ -37,6 +38,51 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def tearDown(self):
         activate(self.orig_locale)
+
+    def test_legacy_creation_save(self):
+        """Check legs can be created when specifying the legacy `amount` argument.
+
+        To be removed in Hordak 2.0
+        """
+        leg = Leg(amount=Money(100, "GBP"))
+        self.assertEqual(leg.credit, Money(100, "GBP"))
+        self.assertEqual(leg.debit, None)
+
+        leg = Leg(amount=-Money(100, "GBP"))
+        self.assertEqual(leg.debit, Money(100, "GBP"))
+        self.assertEqual(leg.credit, None)
+
+    def test_legacy_creation_create_via_manager(self):
+        """Check legs can be created when specifying the legacy `amount` argument.
+
+        To be removed in Hordak 2.0
+        """
+        account1 = self.account(name="Account 1", currencies=["GBP"])
+        account2 = self.account(name="Account 2", currencies=["GBP"])
+        with transaction.atomic():
+            trans = Transaction.objects.create()
+
+            leg = Leg.objects.create(
+                amount=Money(100, "GBP"), transaction=trans, account=account1
+            )
+            leg.refresh_from_db()
+            self.assertEqual(leg.credit, Money(100, "GBP"))
+            self.assertEqual(leg.debit, None)
+
+            leg = Leg.objects.create(
+                amount=-Money(100, "GBP"), transaction=trans, account=account2
+            )
+            leg.refresh_from_db()
+            self.assertEqual(leg.debit, Money(100, "GBP"))
+            self.assertEqual(leg.credit, None)
+
+    def test_legacy_creation_warning(self):
+        """Check warning is shown when using legacy `amount` argument.
+
+        To be removed in Hordak 2.0
+        """
+        with self.assertWarns(DeprecationWarning):
+            Leg(amount=-Money(100, "GBP"))
 
     def test_str_root(self):
         # Account code should not be rendered as we should not
