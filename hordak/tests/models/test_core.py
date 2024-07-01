@@ -814,6 +814,47 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(exceptions.ZeroAmountError):
             leg4.save()
 
+    def test_model_credit_debit_set(self):
+        """Check the model ensures non-zero leg amounts"""
+        account1 = self.account()
+        account2 = self.account()
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=account1, credit=100)
+            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+
+        leg3 = Leg(transaction=transaction, account=account2, credit=None, debit=None)
+        with self.assertRaises(exceptions.NeitherCreditNorDebitPresentError):
+            leg3.save()
+
+        leg4 = Leg(
+            transaction=transaction,
+            account=account2,
+            credit=Money(1, "EUR"),
+            debit=Money(1, "EUR"),
+        )
+        with self.assertRaises(exceptions.BothCreditAndDebitPresentError):
+            leg4.save()
+
+    def test_model_credit_debit_negative(self):
+        """Check the model ensures non-zero leg amounts"""
+        account1 = self.account()
+        account2 = self.account()
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=account1, credit=100)
+            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+
+        leg3 = Leg(transaction=transaction, account=account2, credit=Money(-1, "EUR"))
+        with self.assertRaises(exceptions.CreditOrDebitIsNegativeError):
+            leg3.save()
+
+        leg4 = Leg(transaction=transaction, account=account2, debit=Money(-1, "EUR"))
+        with self.assertRaises(exceptions.CreditOrDebitIsNegativeError):
+            leg4.save()
+
     @postgres_only(
         "Only postgres can enforce transaction-level checks in the way we need"
     )
@@ -844,6 +885,43 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
             Leg.objects.filter(pk=leg1.pk).update(debit=Money(0.0000001, "EUR"))
+
+    @postgres_only(
+        "Only postgres can enforce transaction-level checks in the way we need"
+    )
+    def test_db_credit_debit_set(self):
+        account1 = self.account()
+        account2 = self.account()
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=account1, credit=100)
+            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+
+        with self.assertRaises(IntegrityError):
+            Leg.objects.filter(transaction=transaction).update(debit=None, credit=None)
+
+        with self.assertRaises(IntegrityError):
+            Leg.objects.filter(transaction=transaction).update(
+                debit=Money(1, "EUR"), credit=Money(1, "EUR")
+            )
+
+    @postgres_only(
+        "Only postgres can enforce transaction-level checks in the way we need"
+    )
+    def test_db_credit_debit_negative(self):
+        account1 = self.account()
+        account2 = self.account()
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(transaction=transaction, account=account1, credit=100)
+            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+
+        with self.assertRaises(IntegrityError):
+            Leg.objects.filter(transaction=transaction).update(
+                debit=Money(-1, "EUR"), credit=Money(-1, "EUR")
+            )
 
     def test_debits(self):
         src = self.account(type=AccountType.asset)

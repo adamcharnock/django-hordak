@@ -629,7 +629,21 @@ class Leg(models.Model):
         if self.debit is not None and self.debit.amount == 0:
             raise exceptions.ZeroAmountError("Cannot debit account by zero")
         if self.debit is None and self.credit is None:
-            raise exceptions.ZeroAmountError("Either credit or debit must be set")
+            raise exceptions.NeitherCreditNorDebitPresentError(
+                "Either credit or debit must be set"
+            )
+        if self.debit is not None and self.credit is not None:
+            raise exceptions.BothCreditAndDebitPresentError(
+                "Either credit or debit must be set"
+            )
+        if self.credit is not None and self.credit.amount < 0:
+            raise exceptions.CreditOrDebitIsNegativeError(
+                f"Credit is negative: {self.credit} "
+            )
+        if self.debit is not None and self.debit.amount < 0:
+            raise exceptions.CreditOrDebitIsNegativeError(
+                f"Debit is negative: {self.debit} "
+            )
 
         leg = super(Leg, self).save(*args, **kwargs)
         mysql_simulate_trigger("check_leg", self.id, self.transaction_id)
