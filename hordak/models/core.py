@@ -44,6 +44,7 @@ from hordak.defaults import (
 )
 from hordak.utilities.currency import Balance
 from hordak.utilities.db_functions import GetBalance
+from hordak.utilities.dreprecation import deprecated
 
 
 #: Debit
@@ -368,6 +369,13 @@ class Account(MPTTModel):
         Leg.objects.create(transaction=transaction, account=to_account, amount=-amount)
 
         return transaction
+
+    @deprecated(
+        "accounting_transfer_to() has been renamed to transfer_to(). Update your "
+        "code to call transfer_to() directly. This will become an error in Hordak 3."
+    )
+    def accounting_transfer_to(self, *args, **kwargs):
+        return self.transfer_to(*args, **kwargs)
 
 
 class TransactionManager(models.Manager):
