@@ -240,17 +240,17 @@ class CurrencyTradeForm(forms.Form):
             description=self.cleaned_data.get("description")
         )
         Leg.objects.create(
-            transaction=transaction, account=source_account, amount=source_amount
+            transaction=transaction, account=source_account, credit=source_amount
         )
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=-source_amount
+            transaction=transaction, account=trading_account, debit=source_amount
         )
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=destination_amount
+            transaction=transaction, account=trading_account, credit=destination_amount
         )
         Leg.objects.create(
             transaction=transaction,
             account=destination_account,
-            amount=-destination_amount,
+            debit=destination_amount,
         )
         return transaction

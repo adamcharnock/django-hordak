@@ -429,8 +429,8 @@ class Account(MPTTModel):
 
         transaction = Transaction.objects.create(**transaction_kwargs)
 
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount)
+        Leg.objects.create(transaction=transaction, account=self, credit=amount)
+        Leg.objects.create(transaction=transaction, account=to_account, debit=amount)
 
         return transaction
 
@@ -563,12 +563,27 @@ class Leg(models.Model):
         on_delete=models.CASCADE,
         verbose_name=_("account"),
     )
-    amount = MoneyField(
+    credit = MoneyField(
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
-        help_text="Record debits as positive, credits as negative",
+        help_text="Amount of this credit, or NULL if not a credit",
         default_currency=get_internal_currency,
-        verbose_name=_("amount"),
+        currency_field_name="currency",
+        verbose_name=_("credit amount"),
+        default=None,
+        null=True,
+        blank=True,
+    )
+    debit = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        help_text="Amount of this debit, or NULL if not a debit",
+        default_currency=get_internal_currency,
+        currency_field_name="currency",
+        verbose_name=_("debit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
     description = models.TextField(
         default="", blank=True, verbose_name=_("description")
@@ -592,14 +607,25 @@ class Leg(models.Model):
 
     @property
     def type(self):
-        if self.amount.amount < 0:
+        if self.debit:
             return DEBIT
-        elif self.amount.amount > 0:
+        elif self.credit:
             return CREDIT
         else:
             # This should have been caught earlier by the database integrity check.
             # If you are seeing this then something is wrong with your DB checks.
             raise exceptions.ZeroAmountError()
+
+    @property
+    def type_short(self):
+        if self.type == DEBIT:
+            return "DR"
+        else:
+            return "CR"
+
+    @property
+    def amount(self) -> Money:
+        return self.credit or self.debit
 
     def is_debit(self):
         return self.type == DEBIT

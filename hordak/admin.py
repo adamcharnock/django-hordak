@@ -52,7 +52,7 @@ class AccountAdmin(MPTTModelAdmin):
             .get_queryset(*args, **kwargs)
             .annotate(
                 balance_sum=Sum("legs__amount"),
-                income=Sum("legs__amount", filter=Q(legs__amount__gt=0)),
+                income=Sum("legs__amount", filter=Q(legs__credit__isnull=False)),
             )
         )
 
