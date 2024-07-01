@@ -88,6 +88,13 @@ jobs:
           pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
+      - name: Archive Created Migrations
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: created-migrations
+          path: hordak/migrations
+
       - name: Testing (PostgreSQL)
         run: |
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
