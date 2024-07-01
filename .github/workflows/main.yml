@@ -92,7 +92,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: created-migrations-${{ matrix.python-version }}-${{ matrix.DJANGO_VERSION }}-${{ matrix.import-export }}
+          name: created-migrations-${{ github.job }}
           path: hordak/migrations
 
       - name: Testing (PostgreSQL)
