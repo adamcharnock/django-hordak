@@ -2,7 +2,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
 
-from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, get_internal_currency
+from hordak.defaults import (
+    DECIMAL_PLACES,
+    MAX_DIGITS,
+    default_currency,
+    get_internal_currency,
+)
 from hordak.models import Account, AccountType, Transaction
 from hordak.utilities.db import BalanceField
 
@@ -92,6 +97,7 @@ class LegView(models.Model):
         editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
+        default_currency=default_currency,
         currency_field_name="currency",
         verbose_name=_("amount"),
     )

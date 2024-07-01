@@ -83,9 +83,6 @@ jobs:
 
       - name: Check All Migrations Exist
         run: |
-          pip install "py-moneyed<3" --upgrade
-          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
-          pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
       - name: Create missing migrations

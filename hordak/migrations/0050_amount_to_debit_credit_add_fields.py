@@ -27,6 +27,21 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="leg",
+            name="debit",
+            field=djmoney.models.fields.MoneyField(
+                blank=True,
+                currency_field_name="currency",
+                decimal_places=6,
+                default=None,
+                default_currency="EUR",
+                help_text="Amount of this debit, or NULL if not a debit",
+                max_digits=20,
+                null=True,
+                verbose_name="debit amount",
+            ),
+        ),
+        migrations.AddField(
+            model_name="leg",
             name="currency",
             field=djmoney.models.fields.CurrencyField(
                 choices=[
@@ -342,21 +357,6 @@ class Migration(migrations.Migration):
                 editable=False,
                 max_length=3,
                 null=True,
-            ),
-        ),
-        migrations.AddField(
-            model_name="leg",
-            name="debit",
-            field=djmoney.models.fields.MoneyField(
-                blank=True,
-                currency_field_name="currency",
-                decimal_places=6,
-                default=None,
-                default_currency="EUR",
-                help_text="Amount of this debit, or NULL if not a debit",
-                max_digits=20,
-                null=True,
-                verbose_name="debit amount",
             ),
         ),
     ]
