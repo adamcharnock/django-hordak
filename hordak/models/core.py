@@ -632,7 +632,7 @@ class Leg(models.Model):
             raise exceptions.ZeroAmountError("Either credit or debit must be set")
 
         leg = super(Leg, self).save(*args, **kwargs)
-        mysql_simulate_trigger("check_leg", self.transaction_id)
+        mysql_simulate_trigger("check_leg", self.id, self.transaction_id)
         return leg
 
     def natural_key(self):
@@ -756,7 +756,7 @@ class StatementLineManager(models.Manager):
 
 
 class StatementLine(models.Model):
-    """Records an single imported bank statement line
+    """Records a single imported bank statement line
 
     A StatementLine is purely a utility to aid in the creation of transactions
     (in the process known as reconciliation). StatementLines have no impact on
@@ -771,7 +771,7 @@ class StatementLine(models.Model):
         timestamp (datetime): The datetime when the object was created.
         date (date): The date given by the statement line
         statement_import (StatementImport): The import to which the line belongs
-        amount (Decimal): The amount for the statement line, positive or nagative.
+        amount (Decimal): The amount for the statement line, positive or negative.
         description (str): Any description/memo information provided
         transaction (Transaction): Optionally, the transaction created for this statement line. This normally
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
@@ -845,12 +845,20 @@ class StatementLine(models.Model):
         from_account = self.statement_import.bank_account
 
         transaction = Transaction.objects.create()
-        Leg.objects.create(
-            transaction=transaction, account=from_account, debit=self.amount
-        )
-        Leg.objects.create(
-            transaction=transaction, account=to_account, credit=self.amount
-        )
+        if self.amount > 0:
+            Leg.objects.create(
+                transaction=transaction, account=from_account, debit=self.amount
+            )
+            Leg.objects.create(
+                transaction=transaction, account=to_account, credit=self.amount
+            )
+        else:
+            Leg.objects.create(
+                transaction=transaction, account=from_account, credit=abs(self.amount)
+            )
+            Leg.objects.create(
+                transaction=transaction, account=to_account, debit=abs(self.amount)
+            )
 
         transaction.date = self.date
         transaction.save()

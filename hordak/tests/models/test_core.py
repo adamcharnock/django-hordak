@@ -26,6 +26,7 @@ from hordak.models import (
 )
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
+from hordak.utilities.test import postgres_only
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -813,6 +814,9 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(exceptions.ZeroAmountError):
             leg4.save()
 
+    @postgres_only(
+        "Only postgres can enforce transaction-level checks in the way we need"
+    )
     def test_db_zero_check(self):
         """Check the DB ensures non-zero leg amounts"""
         account1 = self.account()

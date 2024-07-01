@@ -1,17 +1,40 @@
 CREATE OR REPLACE FUNCTION check_leg()
-    RETURNS trigger AS
+    RETURNS TRIGGER AS
 $$
 DECLARE
     tx_id INT;
     non_zero RECORD;
 BEGIN
+    IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+        -- TODO: Test
+        IF NEW.debit IS NULL AND NEW.credit IS NULL THEN
+            RAISE EXCEPTION 'Either the debit or credit field must be specified. Record ID: %', NEW.id USING ERRCODE = 23514;
+        END IF;
+
+        -- TODO: Test
+        IF NEW.debit IS NOT NULL AND NEW.credit IS NOT NULL THEN
+            RAISE EXCEPTION 'Only the debit or credit field must be specified, not both. Record ID: %', NEW.id USING ERRCODE = 23514;
+        END IF;
+
+        -- TODO: Test
+        IF NEW.debit IS NOT NULL AND NOT (NEW.debit > 0) THEN
+            RAISE EXCEPTION 'The `debit` field must be greater than zero. Was: %. Record ID %', NEW.debit, NEW.id USING ERRCODE = 23514;
+        END IF;
+
+        -- TODO: Test
+        IF NEW.credit IS NOT NULL AND NOT (NEW.credit > 0) THEN
+            RAISE EXCEPTION 'The `credit` field must be greater than zero. Was: %. Record ID %', NEW.credit, NEW.id USING ERRCODE = 23514;
+        END IF;
+    END IF;
+
+    -- Get the transaction for this leg
     IF (TG_OP = 'DELETE') THEN
         tx_id := OLD.transaction_id;
     ELSE
         tx_id := NEW.transaction_id;
     END IF;
 
-
+    -- Check all the transaction's leg's sum to zero
     SELECT ABS(SUM(COALESCE(debit, 0) - COALESCE(credit, 0))) AS total, currency
         INTO non_zero
         FROM hordak_leg

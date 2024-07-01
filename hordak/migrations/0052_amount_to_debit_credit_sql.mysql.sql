@@ -1,21 +1,45 @@
-CREATE OR REPLACE PROCEDURE check_leg(_transaction_id INT)
+CREATE OR REPLACE PROCEDURE check_leg(IN _leg_id INT, IN _transaction_id INT)
 BEGIN
-DECLARE transaction_sum DECIMAL(13, 2);
-DECLARE transaction_currency VARCHAR(3);
+    DECLARE v_debit DECIMAL(10,2);
+    DECLARE v_credit DECIMAL(10,2);
+    DECLARE v_currency VARCHAR(10);
+    DECLARE v_total DECIMAL(10,2);
+    DECLARE has_non_zero INT DEFAULT 0;
 
-SELECT ABS(SUM(amount)) AS total, amount_currency AS currency
-    INTO transaction_sum, transaction_currency
+    -- Fetch the leg details
+    SELECT debit, credit INTO v_debit, v_credit FROM hordak_leg WHERE id = _leg_id;
+
+    -- Check conditions
+    -- Note: Error 45000 / 1048 becomes an integrity error in the mysqlDB library, and therefore in Django.
+    --       That is the apropriate error for this case.
+    IF v_debit IS NULL AND v_credit IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Either the debit or credit field must be specified.';
+    END IF;
+
+    IF v_debit IS NOT NULL AND v_credit IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'Only the debit or credit field must be specified, not both.';
+    END IF;
+
+    IF v_debit IS NOT NULL AND v_debit <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `debit` field must be greater than zero.';
+    END IF;
+
+    IF v_credit IS NOT NULL AND v_credit <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = 'The `credit` field must be greater than zero.';
+    END IF;
+
+    -- Check all the transaction's leg's sum to zero
+    SELECT currency, ABS(SUM(COALESCE(debit, 0) - COALESCE(credit, 0))) INTO v_currency, v_total
     FROM hordak_leg
     WHERE transaction_id = _transaction_id
-    GROUP BY amount_currency
-    HAVING (SUM(debit) - SUM(credit)) != 0
+    GROUP BY currency
+    HAVING ABS(SUM(COALESCE(debit, 0) - COALESCE(credit, 0))) != 0
     LIMIT 1;
 
-IF FOUND_ROWS() > 0 THEN
-    SET @msg= CONCAT('Sum of transaction amounts must be 0, got ', transaction_sum);
-    SIGNAL SQLSTATE '45000' SET
-    MESSAGE_TEXT = @msg;
-END IF;
+    IF FOUND_ROWS() > 0 THEN
+        set @message_text = CONCAT('Sum of transaction amounts in each currency must be 0. Sum was: ', v_total, ' in ', v_currency);
+        SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1048, MESSAGE_TEXT = @message_text;
+    END IF;
 
 END;
 
@@ -40,9 +64,10 @@ END;
     END IF;
 
     END;
+
 -- ----
 
-create view hordak_leg_view as (SELECT
+create or replace view hordak_leg_view as (SELECT
     L.id,
     L.uuid,
     transaction_id,
@@ -59,7 +84,7 @@ create view hordak_leg_view as (SELECT
     (CASE WHEN L.debit IS NULL THEN 'CR' ELSE 'DR' END) AS type,
     (
         CASE WHEN A.lft = A.rght - 1
-        THEN SUM(amount) OVER (PARTITION BY account_id, amount_currency ORDER BY T.date, L.id)
+        THEN SUM(COALESCE(credit, 0) - COALESCE(debit, 0)) OVER (PARTITION BY account_id, currency ORDER BY T.date, L.id)
         END
     ) AS account_balance,
     T.description as transaction_description,
@@ -69,7 +94,7 @@ INNER JOIN hordak_transaction T on L.transaction_id = T.id
 INNER JOIN hordak_account A on A.id = L.account_id
 order by T.date desc, id desc);
 -- - reverse:
-    create view hordak_leg_view as (SELECT
+    CREATE OR REPLACE VIEW hordak_leg_view as (SELECT
         L.id,
         L.uuid,
         transaction_id,
@@ -97,44 +122,8 @@ order by T.date desc, id desc);
 
 
 -- ----
-CREATE VIEW hordak_transaction_view AS
-SELECT
-    T.*,
-    (
-        SELECT JSON_ARRAYAGG(account_id)
-        FROM hordak_leg
-        WHERE transaction_id = T.id AND amount > 0
-    ) AS credit_account_ids,
-    (
-        SELECT JSON_ARRAYAGG(account_id)
-        FROM hordak_leg
-        WHERE transaction_id = T.id AND amount < 0
-    ) AS debit_account_ids,
-    (
-        SELECT JSON_ARRAYAGG(name)
-        FROM hordak_leg JOIN hordak_account A ON A.id = hordak_leg.account_id
-        WHERE transaction_id = T.id AND amount > 0
-    ) AS credit_account_names,
-    (
-        SELECT JSON_ARRAYAGG(name)
-        FROM hordak_leg JOIN hordak_account A ON A.id = hordak_leg.account_id
-        WHERE transaction_id = T.id AND amount < 0
-    ) AS debit_account_names,
-    (
-        SELECT
-            -- TODO: MYSQL LIMITATION: Cannot handle amount calculation for multi-currency transactions
-            CASE WHEN COUNT(DISTINCT amount_currency) < 2 THEN CONCAT('[', JSON_OBJECT('amount', SUM(amount), 'currency', amount_currency), ']') END
-        FROM hordak_leg
-        WHERE transaction_id = T.id AND amount > 0
-    ) AS amount
-FROM
-    hordak_transaction T
-GROUP BY T.id, T.uuid, T.timestamp, T.date, T.description
-ORDER BY T.id DESC;
 
--- ----
-
-CREATE VIEW hordak_transaction_view AS
+CREATE OR REPLACE VIEW hordak_transaction_view AS
 SELECT
     T.*,
     (
@@ -160,7 +149,7 @@ SELECT
     (
         SELECT
             -- TODO: MYSQL LIMITATION: Cannot handle amount calculation for multi-currency transactions
-            CASE WHEN COUNT(DISTINCT amount_currency) < 2 THEN CONCAT('[', JSON_OBJECT('amount', SUM(credit), 'currency', currency), ']') END
+            CASE WHEN COUNT(DISTINCT currency) < 2 THEN CONCAT('[', JSON_OBJECT('amount', SUM(credit), 'currency', currency), ']') END
         FROM hordak_leg
         WHERE transaction_id = T.id AND credit IS NOT NULL
     ) AS amount
@@ -171,7 +160,7 @@ ORDER BY T.id DESC;
 
 -- - reverse:
 
-    CREATE VIEW hordak_transaction_view AS
+    CREATE OR REPLACE VIEW hordak_transaction_view AS
     SELECT
         T.*,
         (
@@ -244,7 +233,7 @@ END;
 
 -- ----
 
-CREATE FUNCTION get_balance(account_id BIGINT, as_of DATE)
+CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE)
 RETURNS JSON
 BEGIN
     DECLARE account_lft INT;
@@ -299,7 +288,7 @@ END;
 
 -- - reverse:
 
-    CREATE FUNCTION get_balance(account_id BIGINT, as_of DATE)
+    CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE)
     RETURNS JSON
     BEGIN
         DECLARE account_lft INT;

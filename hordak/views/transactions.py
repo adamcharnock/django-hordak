@@ -144,7 +144,7 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
             bank_account = self.object.statement_import.bank_account
 
             if self.object.amount < 0:
-                credit = self.object.amount
+                credit = abs(self.object.amount)
                 debit = None
             else:
                 credit = None

@@ -395,6 +395,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
         response = self.client.post(
             self.view_url,
             data={
+                # Amount of this line is negative
                 "reconcile": self.line2.uuid,
                 "description": "Test transaction",
                 "legs-INITIAL_FORMS": "0",

@@ -80,7 +80,7 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
     def test_account_balance_leaf(self):
         self.create_transaction(Money(100, "USD"))
         self.create_transaction(Money(20, "USD"))
-        self.create_transaction(Money(-10, "USD"))
+        self.create_transaction(Money(10, "USD"))
 
         # First transaction is for 100
         leg_view = LegView.objects.filter(account=self.account1).first()
@@ -91,10 +91,10 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
 
         # Then we have + 20 - 10
         leg_view = LegView.objects.filter(account=self.account1).last()
-        self.assertEqual(leg_view.account_balance, Decimal(110))
+        self.assertEqual(leg_view.account_balance, Decimal(130))
 
         leg_view = LegView.objects.filter(account=self.account2).last()
-        self.assertEqual(leg_view.account_balance, Decimal(-110))
+        self.assertEqual(leg_view.account_balance, Decimal(-130))
 
     def test_account_balance_parent(self):
         self.create_transaction(

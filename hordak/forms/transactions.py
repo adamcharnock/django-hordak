@@ -138,7 +138,7 @@ class LegForm(forms.ModelForm):
         if self.cleaned_data["amount"].amount > 0:
             inst.credit = self.cleaned_data["amount"]
         else:
-            inst.debit = self.cleaned_data["amount"]
+            inst.debit = abs(self.cleaned_data["amount"])
 
         if commit:
             inst.save()
