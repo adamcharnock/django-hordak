@@ -19,8 +19,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
     def test_valid_data(self):
         form = SimpleTransactionForm(
             dict(
-                from_account=self.from_account.uuid,
-                to_account=self.to_account.uuid,
+                debit_account=self.from_account.uuid,
+                credit_account=self.to_account.uuid,
                 description="A test simple transaction",
                 amount_0="50.00",
                 amount_1="EUR",
@@ -36,23 +36,23 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
         self.assertEqual(transaction.legs.count(), 2)
 
         # Account balances changed
-        self.assertEqual(self.from_account.balance(), Balance(-50, "EUR"))
-        self.assertEqual(self.to_account.balance(), Balance(50, "EUR"))
+        self.assertEqual(self.from_account.balance(), Balance(50, "EUR"))
+        self.assertEqual(self.to_account.balance(), Balance(-50, "EUR"))
 
         # Check transaction legs have amounts set as expected
         from_leg = transaction.legs.get(account=self.from_account)
         to_leg = transaction.legs.get(account=self.to_account)
 
-        self.assertEqual(from_leg.debit, Money(50, "EUR"))
-        self.assertEqual(to_leg.credit, Money(50, "EUR"))
+        self.assertEqual(from_leg.credit, Money(50, "EUR"))
+        self.assertEqual(to_leg.debit, Money(50, "EUR"))
 
     def test_transfer_from_bank_to_income(self):
         """If we move money out of the bank and into an income account, we expect both values to go up"""
 
         form = SimpleTransactionForm(
             dict(
-                from_account=self.bank.uuid,
-                to_account=self.income.uuid,
+                debit_account=self.bank.uuid,
+                credit_account=self.income.uuid,
                 description="A test simple transaction",
                 amount_0="50.00",
                 amount_1="EUR",
@@ -61,14 +61,14 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
         )
         self.assertTrue(form.is_valid())
         form.save()
-        self.assertEqual(self.bank.balance(), Balance(50, "EUR"))
-        self.assertEqual(self.income.balance(), Balance(50, "EUR"))
+        self.assertEqual(self.bank.balance(), Balance(-50, "EUR"))
+        self.assertEqual(self.income.balance(), Balance(-50, "EUR"))
 
     def test_no_from_account(self):
         form = SimpleTransactionForm(
             dict(
-                from_account="",
-                to_account=self.to_account.uuid,
+                debit_account="",
+                credit_account=self.to_account.uuid,
                 description="A test simple transaction",
                 amount_0="50.00",
                 amount_1="EUR",
@@ -80,8 +80,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
     def test_no_to_account(self):
         form = SimpleTransactionForm(
             dict(
-                from_account=self.from_account.uuid,
-                to_account="",
+                debit_account=self.from_account.uuid,
+                credit_account="",
                 description="A test simple transaction",
                 amount_0="50.00",
                 amount_1="EUR",
@@ -93,8 +93,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
     def test_no_description_account(self):
         form = SimpleTransactionForm(
             dict(
-                from_account=self.from_account.uuid,
-                to_account=self.to_account.uuid,
+                debit_account=self.from_account.uuid,
+                credit_account=self.to_account.uuid,
                 description="",
                 amount_0="50.00",
                 amount_1="EUR",
@@ -107,8 +107,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
     def test_no_amount(self):
         form = SimpleTransactionForm(
             dict(
-                from_account=self.from_account.uuid,
-                to_account=self.to_account.uuid,
+                debit_account=self.from_account.uuid,
+                credit_account=self.to_account.uuid,
                 description="A test simple transaction",
                 amount_0="",
                 amount_1="",

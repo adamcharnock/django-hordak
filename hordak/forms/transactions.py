@@ -21,17 +21,17 @@ class SimpleTransactionForm(forms.ModelForm):
         * :meth:`hordak.models.Account.transfer_to()`.
     """
 
-    from_account = TreeNodeChoiceField(
+    debit_account = TreeNodeChoiceField(
         queryset=Account.objects.all(), to_field_name="uuid"
     )
-    to_account = TreeNodeChoiceField(
+    credit_account = TreeNodeChoiceField(
         queryset=Account.objects.all(), to_field_name="uuid"
     )
     amount = MoneyField(max_digits=MAX_DIGITS, decimal_places=DECIMAL_PLACES)
 
     class Meta:
         model = Transaction
-        fields = ["amount", "from_account", "to_account", "date", "description"]
+        fields = ["amount", "debit_account", "credit_account", "date", "description"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,12 +49,12 @@ class SimpleTransactionForm(forms.ModelForm):
         self.fields["amount"].initial[1] = default_currency
 
     def save(self, commit=True):
-        from_account = self.cleaned_data.get("from_account")
-        to_account = self.cleaned_data.get("to_account")
+        debit_account = self.cleaned_data.get("debit_account")
+        credit_account = self.cleaned_data.get("credit_account")
         amount = self.cleaned_data.get("amount")
 
-        return from_account.transfer_to(
-            to_account=to_account,
+        return debit_account.transfer_to(
+            to_account=credit_account,
             amount=amount,
             description=self.cleaned_data.get("description"),
             date=self.cleaned_data.get("date"),

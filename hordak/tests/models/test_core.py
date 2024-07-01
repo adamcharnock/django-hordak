@@ -368,19 +368,6 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(income.simple_balance(), Balance(100, "EUR"))
         self.assertEqual(bank.simple_balance(), Balance(100, "EUR"))
 
-    def test_net_balance(self):
-        bank = self.account(type=AccountType.asset)
-        account1 = self.account(type=AccountType.income)
-        account2 = self.account(type=AccountType.income)
-
-        bank.transfer_to(account1, Money(100, "EUR"))
-        bank.transfer_to(account2, Money(50, "EUR"))
-
-        self.assertEqual(
-            Account.objects.filter(type=AccountType.income).net_balance(),
-            Balance(150, "EUR"),
-        )
-
     def test_zero_balance_single(self):
         account = self.account(currencies=["GBP"])._zero_balance()
         self.assertEqual(account, Balance("0", "GBP"))
@@ -393,69 +380,10 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account = self.account(currencies=[])._zero_balance()
         self.assertEqual(account, Balance())
 
-    def test_transfer_to(self):
-        account1 = self.account(type=AccountType.income)
-        account2 = self.account(type=AccountType.income)
-        transaction = account1.transfer_to(account2, Money(500, "EUR"))
-        self.assertEqual(transaction.legs.count(), 2)
-        self.assertEqual(account1.balance(), Balance(-500, "EUR"))
-        self.assertEqual(account2.balance(), Balance(500, "EUR"))
-
     def test_transfer_to_not_money(self):
         account1 = self.account(type=AccountType.income)
         with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
             account1.transfer_to(account1, 500)
-
-    def test_transfer_pos_to_pos(self):
-        src = self.account(type=AccountType.income)
-        dst = self.account(type=AccountType.income)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_pos_to_neg(self):
-        src = self.account(type=AccountType.income)
-        dst = self.account(type=AccountType.asset)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_neg_to_pos(self):
-        src = self.account(type=AccountType.asset)
-        dst = self.account(type=AccountType.income)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_neg_to_neg(self):
-        src = self.account(type=AccountType.asset)
-        dst = self.account(type=AccountType.asset)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_liability_to_expense(self):
-        # When doing this it is probably safe to assume we want to the
-        # liability account to contribute to an expense, therefore both should decrease
-        src = self.account(type=AccountType.liability)
-        dst = self.account(type=AccountType.expense)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
-        Account.validate_accounting_equation()
-
-    def test_transfer_expense_to_liability(self):
-        # This should perform the reverse action to that in the above test_transfer_liability_to_expense()
-        src = self.account(type=AccountType.expense)
-        dst = self.account(type=AccountType.liability)
-        src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
-        Account.validate_accounting_equation()
 
     def test_currency_exchange(self):
         src = self.account(type=AccountType.asset, currencies=["GBP"])
@@ -600,10 +528,10 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.account().transfer_to(self.account(), Money(50, "EUR"))
 
         src = Account.objects.filter(type=AccountType.liability).with_balances().get()
-        self.assertEqual(src.balance, Balance([Money("-110", "EUR")]))
+        self.assertEqual(src.balance, Balance([Money("110", "EUR")]))
 
         dst = Account.objects.filter(type=AccountType.expense).with_balances().get()
-        self.assertEqual(dst.balance, Balance([Money("110", "EUR")]))
+        self.assertEqual(dst.balance, Balance([Money("-110", "EUR")]))
 
     def test_with_balances_child_accounts(self):
         """Ensure with_balances() returns a valid value for child accounts"""
@@ -617,7 +545,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.account().transfer_to(self.account(), Money(50, "EUR"))
 
         parent = Account.objects.filter(name="Parent").with_balances().get()
-        self.assertEqual(parent.balance, Balance([Money("-100", "EUR")]))
+        self.assertEqual(parent.balance, Balance([Money("100", "EUR")]))
 
     def test_with_balances_as_of(self):
         src = self.account(type=AccountType.liability)
@@ -633,7 +561,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             .with_balances(as_of="2000-01-15")
             .get()
         )
-        self.assertEqual(src.balance, Balance([Money("-100", "EUR")]))
+        self.assertEqual(src.balance, Balance([Money("100", "EUR")]))
 
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
@@ -933,7 +861,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(debit.account, dst)
         self.assertEqual(credit.account, src)
 
-    def test_account_balance_after(self):
+    def test_account_balance_after_simple(self):
         src = self.account()
         dst = self.account()
         src.transfer_to(dst, Money(100, "EUR"))
@@ -941,7 +869,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(50, "EUR"))
         dst.transfer_to(src, Money(70, "EUR"))
 
-        legs = Leg.objects.filter(account=dst).order_by("pk").all()
+        legs = Leg.objects.filter(account=src).order_by("pk").all()
         self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
         self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
         self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
@@ -958,7 +886,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-01")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
         self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
         self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
         self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
@@ -977,7 +905,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
         self.assertEqual(legs[0].account_balance_after(), Balance("110", "EUR"))
         self.assertEqual(legs[1].account_balance_after(), Balance("210", "EUR"))
         self.assertEqual(legs[2].account_balance_after(), Balance("260", "EUR"))
@@ -996,7 +924,7 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
         self.assertEqual(legs[0].account_balance_before(), Balance("0", "EUR"))
         self.assertEqual(legs[1].account_balance_before(), Balance("110", "EUR"))
         self.assertEqual(legs[2].account_balance_before(), Balance("210", "EUR"))
@@ -1138,17 +1066,6 @@ class TestQueryAccount(DataProvider, TestCase):
 
         self.assertIn(account1, Account.objects.filter(currencies__contains=["EUR"]))
         self.assertIn(account3, Account.objects.filter(currencies__contains=["MYR"]))
-
-
-class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
-    def test_transfer_to_deprecation(self):
-        src = self.account(type=AccountType.income)
-        dst = self.account(type=AccountType.asset)
-
-        with self.assertWarns(DeprecationWarning) as warning_cm:
-            src.transfer_to(dst, Money(100, "EUR"))
-
-        self.assertIn("transfer_to() has been deprecated.", str(warning_cm.warning))
 
 
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
