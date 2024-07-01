@@ -133,6 +133,16 @@ class LegForm(forms.ModelForm):
 
         return amount
 
+    def save(self, commit=True):
+        inst: Leg = super().save(commit=False)
+        if self.cleaned_data["amount"].amount > 0:
+            inst.credit = self.cleaned_data["amount"]
+        else:
+            inst.debit = abs(self.cleaned_data["amount"])
+
+        if commit:
+            inst.save()
+
 
 class BaseLegFormSet(BaseInlineFormSet):
     def __init__(self, **kwargs):
@@ -240,17 +250,17 @@ class CurrencyTradeForm(forms.Form):
             description=self.cleaned_data.get("description")
         )
         Leg.objects.create(
-            transaction=transaction, account=source_account, amount=source_amount
+            transaction=transaction, account=source_account, credit=source_amount
         )
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=-source_amount
+            transaction=transaction, account=trading_account, debit=source_amount
         )
         Leg.objects.create(
-            transaction=transaction, account=trading_account, amount=destination_amount
+            transaction=transaction, account=trading_account, credit=destination_amount
         )
         Leg.objects.create(
             transaction=transaction,
             account=destination_account,
-            amount=-destination_amount,
+            debit=destination_amount,
         )
         return transaction

@@ -19,11 +19,9 @@ class AdminTestCase(DataProvider, TestCase):
             is_bank_account=False, type=AccountType.income
         )
         transaction = Transaction.objects.create()
+        Leg.objects.create(debit=10, account=self.bank_account, transaction=transaction)
         Leg.objects.create(
-            amount=-10, account=self.bank_account, transaction=transaction
-        )
-        Leg.objects.create(
-            amount=10, account=self.income_account, transaction=transaction
+            credit=10, account=self.income_account, transaction=transaction
         )
 
     def test_account_list(self):
@@ -45,7 +43,7 @@ class AdminTestCase(DataProvider, TestCase):
         self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
         self.assertContains(res, '<td class="field-type_">Asset</td>', html=True)
 
-    def test_search_query(self):
+    def test_account_search_query(self):
         """Test that search query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -59,7 +57,7 @@ class AdminTestCase(DataProvider, TestCase):
         )
         self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
 
-    def test_filter_query(self):
+    def test_account_filter_query(self):
         """Test that filter query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -73,7 +71,7 @@ class AdminTestCase(DataProvider, TestCase):
         )
         self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
 
-    def test_filter_query_liability(self):
+    def test_account_filter_query_liability(self):
         """Test that filter query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -108,10 +106,10 @@ class AdminTestCase(DataProvider, TestCase):
         for _ in range(0, 50):
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                amount=-10, account=self.bank_account, transaction=transaction
+                debit=10, account=self.bank_account, transaction=transaction
             )
             Leg.objects.create(
-                amount=10, account=self.income_account, transaction=transaction
+                credit=10, account=self.income_account, transaction=transaction
             )
 
         superuser = get_user_model().objects.create_superuser(username="superuser")

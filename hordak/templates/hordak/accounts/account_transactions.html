@@ -34,8 +34,8 @@
                         {% endif %}
                     </td>
                     <td>{{ leg.transaction.description }}</td>
-                    <td>{% if leg.is_debit %}{{ leg.amount|abs }}{% endif %}</td>
-                    <td>{% if leg.is_credit %}{{ leg.amount|abs }}{% endif %}</td>
+                    <td>{% if leg.is_debit %}{{ leg.debit }}{% endif %}</td>
+                    <td>{% if leg.is_credit %}{{ leg.credit }}{% endif %}</td>
                     <td>{{ leg.account_balance_after }}</td>
                     <td>
                         <a href="{% url 'hordak:transactions_delete' leg.transaction.uuid %}" class="btn btn-xs btn-danger">Delete</a>

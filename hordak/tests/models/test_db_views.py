@@ -28,13 +28,13 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
             leg1 = Leg.objects.create(
                 transaction=transaction,
                 account=account1 or self.account1,
-                amount=amount,
+                credit=amount,
                 description="Leg 1 description",
             )
             leg2 = Leg.objects.create(
                 transaction=transaction,
                 account=account2 or self.account2,
-                amount=-amount,
+                debit=amount,
                 description="Leg 2 description",
             )
         return transaction, leg1, leg2
@@ -49,8 +49,10 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(leg_view.account, self.account1)
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
         self.assertEqual(leg_view.type, "CR")
-        self.assertEqual(leg_view.credit, Decimal(100))
+        self.assertEqual(leg_view.credit, Money(100, "USD"))
         self.assertEqual(leg_view.debit, None)
+        self.assertEqual(leg_view.amount, Money(100, "USD"))
+        self.assertEqual(leg_view.legacy_amount, Money(100, "USD"))
         self.assertEqual(leg_view.account_balance, Decimal(100))
         self.assertEqual(leg_view.leg_description, "Leg 1 description")
         self.assertEqual(leg_view.transaction_description, "Transaction description")
@@ -65,7 +67,9 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
         self.assertEqual(leg_view.type, "DR")
         self.assertEqual(leg_view.credit, None)
-        self.assertEqual(leg_view.debit, Decimal(100))
+        self.assertEqual(leg_view.debit, Money(100, "USD"))
+        self.assertEqual(leg_view.amount, Money(100, "USD"))
+        self.assertEqual(leg_view.legacy_amount, -Money(100, "USD"))
         self.assertEqual(leg_view.account_balance, Decimal(-100))
         self.assertEqual(leg_view.leg_description, "Leg 2 description")
         self.assertEqual(leg_view.transaction_description, "Transaction description")
@@ -76,7 +80,7 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
     def test_account_balance_leaf(self):
         self.create_transaction(Money(100, "USD"))
         self.create_transaction(Money(20, "USD"))
-        self.create_transaction(Money(-10, "USD"))
+        self.create_transaction(Money(10, "USD"))
 
         # First transaction is for 100
         leg_view = LegView.objects.filter(account=self.account1).first()
@@ -87,10 +91,10 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
 
         # Then we have + 20 - 10
         leg_view = LegView.objects.filter(account=self.account1).last()
-        self.assertEqual(leg_view.account_balance, Decimal(110))
+        self.assertEqual(leg_view.account_balance, Decimal(130))
 
         leg_view = LegView.objects.filter(account=self.account2).last()
-        self.assertEqual(leg_view.account_balance, Decimal(-110))
+        self.assertEqual(leg_view.account_balance, Decimal(-130))
 
     def test_account_balance_parent(self):
         self.create_transaction(
@@ -116,12 +120,12 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.credit_account,
-                amount=Money(5, "USD"),
+                credit=Money(5, "USD"),
             )
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.debit_account,
-                amount=Money(-5, "USD"),
+                debit=Money(5, "USD"),
             )
 
         with db_transaction.atomic():
@@ -131,12 +135,12 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.credit_account,
-                amount=Money(100, "USD"),
+                credit=Money(100, "USD"),
             )
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.debit_account,
-                amount=Money(-100, "USD"),
+                debit=Money(100, "USD"),
             )
 
     def test_join_from_transaction_model(self):
@@ -165,12 +169,12 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.credit_account_eur,
-                amount=Money(90, "EUR"),
+                credit=Money(90, "EUR"),
             )
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.debit_account_eur,
-                amount=Money(-90, "EUR"),
+                debit=Money(90, "EUR"),
             )
         view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, Balance([Money(100, "USD"), Money(90, "EUR")]))
@@ -185,12 +189,12 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.credit_account_eur,
-                amount=Money(90, "EUR"),
+                credit=Money(90, "EUR"),
             )
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.debit_account_eur,
-                amount=Money(-90, "EUR"),
+                debit=Money(90, "EUR"),
             )
         view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, None)
@@ -200,12 +204,12 @@ class TransactionViewTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.credit_account,
-                amount=Money(100, "USD"),
+                credit=Money(100, "USD"),
             )
             Leg.objects.create(
                 transaction=self.transaction,
                 account=self.debit_account,
-                amount=Money(-100, "USD"),
+                debit=Money(100, "USD"),
             )
         view: TransactionView = TransactionView.objects.latest("pk")
         self.assertEqual(view.amount, Money(200, "USD"))

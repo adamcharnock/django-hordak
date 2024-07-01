@@ -142,13 +142,21 @@ class TransactionsReconcileView(LoginRequiredMixin, ListView):
 
             # Create the inbound transaction leg
             bank_account = self.object.statement_import.bank_account
-            amount = self.object.amount * -1
+
+            if self.object.amount < 0:
+                credit = abs(self.object.amount)
+                debit = None
+            else:
+                credit = None
+                debit = self.object.amount
+
             Leg.objects.create(
                 transaction=transaction,
                 account=bank_account,
-                amount=amount,
+                debit=debit,
+                credit=credit,
                 # Note that bank accounts can only have one currency
-                amount_currency=bank_account.currencies[0],
+                currency=bank_account.currencies[0],
             )
 
             # We need to create a new leg formset in order to pass in the

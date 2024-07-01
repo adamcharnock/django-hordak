@@ -155,7 +155,7 @@ class UtilityBillTestCase(DataProvider, TestCase):
 
         # We receive the actual bill (we are moving a negative amount of money,
         # as this is an outgoing)
-        self.gas_payable.transfer_to(self.cash, Money(-300, "EUR"))
+        self.cash.transfer_to(self.gas_payable, Money(300, "EUR"))
 
         # We are now 300 overdrawn, but the payable account has been cleared
         self.assertEqual(self.cash.balance(), Balance(-300, "EUR"))
@@ -251,16 +251,16 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-01-31")
             Leg.objects.create(
-                transaction=transaction, account=self.inc_housemate_1, amount=-620
+                transaction=transaction, account=self.inc_housemate_1, debit=620
             )
             Leg.objects.create(
-                transaction=transaction, account=self.ex_rent, amount=500
+                transaction=transaction, account=self.ex_rent, credit=500
             )
-            Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
+            Leg.objects.create(transaction=transaction, account=self.ex_elec, credit=20)
             Leg.objects.create(
-                transaction=transaction, account=self.ex_rates, amount=30
+                transaction=transaction, account=self.ex_rates, credit=30
             )
-            Leg.objects.create(transaction=transaction, account=self.ex_food, amount=70)
+            Leg.objects.create(transaction=transaction, account=self.ex_food, credit=70)
 
             line1.transaction = transaction
             line1.save()
@@ -269,16 +269,16 @@ class CommunalHouseholdTestCase(DataProvider, BalanceUtils, TestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-01-31")
             Leg.objects.create(
-                transaction=transaction, account=self.inc_housemate_2, amount=-620
+                transaction=transaction, account=self.inc_housemate_2, debit=620
             )
             Leg.objects.create(
-                transaction=transaction, account=self.ex_rent, amount=500
+                transaction=transaction, account=self.ex_rent, credit=500
             )
-            Leg.objects.create(transaction=transaction, account=self.ex_elec, amount=20)
+            Leg.objects.create(transaction=transaction, account=self.ex_elec, credit=20)
             Leg.objects.create(
-                transaction=transaction, account=self.ex_rates, amount=30
+                transaction=transaction, account=self.ex_rates, credit=30
             )
-            Leg.objects.create(transaction=transaction, account=self.ex_food, amount=70)
+            Leg.objects.create(transaction=transaction, account=self.ex_food, credit=70)
 
             line2.transaction = transaction
             line2.save()

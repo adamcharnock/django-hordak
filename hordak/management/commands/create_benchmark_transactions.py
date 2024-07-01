@@ -101,6 +101,6 @@ def _transfer_no_commit(
 
     transaction = Transaction()
     legs = []
-    legs.append(Leg(transaction=transaction, account=debit, amount=-amount))
-    legs.append(Leg(transaction=transaction, account=credit, amount=amount))
+    legs.append(Leg(transaction=transaction, account=debit, debit=amount))
+    legs.append(Leg(transaction=transaction, account=credit, credit=amount))
     return transaction, legs
