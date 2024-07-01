@@ -20,6 +20,7 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
+
 import warnings
 from datetime import date
 
