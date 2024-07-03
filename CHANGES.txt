@@ -1,9 +1,21 @@
 Version 2.0.0 (unreleased)
 ==========================
 
-* **Breaking**: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies (trading accounts should be the only accounts with multiple currencies).
+**Important:** It is strongly recommended that you
+**upgrade to Hordak 1.16 before upgrading to Hordak 2.0**. Update your code
+to address any depreciation warnings in 1.16 before upgrading to Hordak 2.0.
+
+* **Breaking**: ``to_account()`` was deprecated in 1.16. This old implementation has now been removed
+  and the newer ``to_account_accounting()`` has been renamed to take its place.
+  Existing uses of ``to_account_accounting()`` should be updated to
+  point to ``to_account()``. This change standardises the behaviour of this method on industry norms.
+* **Breaking**: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies
+  (trading accounts should be the only accounts with multiple currencies).
 * **Breaking**: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
-* **Breaking**: Removed use of ``django-model-utils``. Model choices have the same values, but the data structures have changed to use the Django-native ``models.TextChoices``:
+* **Breaking**: Removed use of ``django-model-utils``. Model choices have the same values, but the data
+structures have changed to use the Django-native ``models.TextChoices``:
+
+  * TODO: MAKE THIS AVAILABLE IN A BACKWARDS COMPATIBLE WAY
 
   * ``Account.TYPES`` is now ``AccountType``
   * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
