@@ -550,7 +550,7 @@ class Leg(models.Model):
     def __init__(self, *args, amount: Money = None, **kwargs):
         if amount is not None:
             warnings.warn(
-                "Specifying `amount` when creating an Account is deprecated. "
+                "Specifying `amount` when creating a Leg is deprecated. "
                 "Instead specify either the `credit` argument (for what would would previously be "
                 "a positive amount) or `debit` (for what would previously be a negative amount). "
                 "Both these arguments should be positive `Money` values. This warning will become an "
