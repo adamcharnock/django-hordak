@@ -43,4 +43,5 @@ INNER JOIN LATERAL (
 GROUP BY T.id, T.uuid, T.timestamp, T.date, T.description
 ORDER BY T.id DESC);
 --- reverse:
-drop view hordak_transaction_view;
+-- can be implicitly dropped by migration 0050
+drop view if exists hordak_transaction_view;
