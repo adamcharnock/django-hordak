@@ -76,7 +76,7 @@ LANGUAGE plpgsql;
 
         IF FOUND THEN
             -- TODO: Include transaction id in exception message below (see #93)
-            RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency %% has non-zero total %%',
+            RAISE EXCEPTION 'Sum of transaction amounts in each currency must be 0. Currency % has non-zero total %',
                 non_zero.currency, non_zero.total USING ERRCODE = 23514;
         END IF;
 
