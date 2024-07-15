@@ -129,6 +129,9 @@ class Account(MPTTModel):
 
     """
 
+    # Warning: Will be removed in Hordak 3. Use AccountType directly instead.
+    TYPES = AccountType
+
     uuid = models.UUIDField(
         default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )

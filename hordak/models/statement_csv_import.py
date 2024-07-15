@@ -17,6 +17,9 @@ class TransactionCsvImportState(models.TextChoices):
 
 
 class TransactionCsvImport(models.Model):
+    # Warning: Will be removed in Hordak 3. Use TransactionCsvImportState directly instead.
+    STATES = TransactionCsvImportState
+
     uuid = models.UUIDField(
         default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
     )
@@ -120,6 +123,9 @@ class TransactionCsvImportColumn(models.Model):
     Stores information regarding how we map to the data in the column
     to our hordak.StatementLine models.
     """
+
+    # Warning: Will be removed in Hordak 3. Use ToField directly instead.
+    TO_FIELDS = ToField
 
     transaction_import = models.ForeignKey(
         TransactionCsvImport,

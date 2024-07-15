@@ -13,9 +13,7 @@ to address any depreciation warnings in 1.16 before upgrading to Hordak 2.0.
   (trading accounts should be the only accounts with multiple currencies).
 * **Breaking**: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
 * **Breaking**: Removed use of ``django-model-utils``. Model choices have the same values, but the data
-structures have changed to use the Django-native ``models.TextChoices``:
-
-  * TODO: MAKE THIS AVAILABLE IN A BACKWARDS COMPATIBLE WAY
+  structures have changed to use the Django-native ``models.TextChoices``. The old syntax will continue to work until Hordak 3.0:
 
   * ``Account.TYPES`` is now ``AccountType``
   * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
