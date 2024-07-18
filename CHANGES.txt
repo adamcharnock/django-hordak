@@ -5,10 +5,10 @@ Version 2.0.0 (unreleased)
 **upgrade to Hordak 1.16 before upgrading to Hordak 2.0**. Update your code
 to address any depreciation warnings in 1.16 before upgrading to Hordak 2.0.
 
-* **Breaking**: ``to_account()`` was deprecated in 1.16. This old implementation has now been removed
-  and the newer ``to_account_accounting()`` has been renamed to take its place.
-  Existing uses of ``to_account_accounting()`` should be updated to
-  point to ``to_account()``. This change standardises the behaviour of this method on industry norms.
+* **Breaking**: ``transfer_to()`` was deprecated in 1.16. This old implementation has now been removed
+  and the newer ``transfer_to_accounting()`` has been renamed to take its place.
+  Existing uses of ``transfer_to_accounting()`` should be updated to
+  point to ``transfer_to()``. This change standardises the behaviour of this method on industry norms.
 * **Breaking**: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies
   (trading accounts should be the only accounts with multiple currencies).
 * **Breaking**: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
