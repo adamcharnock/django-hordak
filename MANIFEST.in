@@ -2,6 +2,7 @@ include *.txt
 include *.rst
 recursive-include docs *
 include VERSION
+include hordak/migrations/*.sql
 
 # added by check_manifest.py
 include *.py
