@@ -527,6 +527,26 @@ class LegQuerySet(models.QuerySet):
         else:
             return credits - debits
 
+    def with_account_balance_after(self):
+        """Get the balance of the account associated with each leg following the transaction"""
+        return self.annotate(
+            account_balance_after=GetBalance(
+                F("account_id"),
+                as_of=F("transaction__date"),
+                as_of_transaction_id=F("transaction_id"),
+            )
+        )
+
+    def with_account_balance_before(self):
+        """Get the balance of the account associated with each leg before the transaction"""
+        return self.annotate(
+            account_balance_after=GetBalance(
+                F("account_id"),
+                as_of=F("transaction__date"),
+                as_of_transaction_id=F("transaction_id") - 1,
+            )
+        )
+
 
 class LegManager(models.Manager):
     def get_by_natural_key(self, uuid):
@@ -685,29 +705,6 @@ class Leg(models.Model):
 
     def is_credit(self):
         return self.type == CREDIT
-
-    def account_balance_after(self):
-        """Get the balance of the account associated with this leg following the transaction"""
-        account = (
-            Account.objects.filter(pk=self.account.pk)
-            .with_balances(
-                as_of=self.transaction.date, as_of_transaction_id=self.transaction.pk
-            )
-            .get()
-        )
-        return account.balance
-
-    def account_balance_before(self):
-        """Get the balance of the account associated with this leg before the transaction"""
-        account = (
-            Account.objects.filter(pk=self.account.pk)
-            .with_balances(
-                as_of=self.transaction.date,
-                as_of_transaction_id=self.transaction.pk - 1,
-            )
-            .get()
-        )
-        return account.balance
 
     class Meta:
         verbose_name = _("Leg")
