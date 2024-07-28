@@ -1,7 +1,7 @@
 .. _api_models:
 
 Models (Core)
-============
+=============
 
 .. contents::
 

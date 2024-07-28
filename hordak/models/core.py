@@ -327,10 +327,14 @@ class Account(MPTTModel):
     def get_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
 
+        .. note::
+
+            Note that we recommend using :meth:`AccountQuerySet.with_balances()` where possible
+            as it will almost certainly be more performant when fetching balances
+            for multiple accounts.
+
         Args:
             as_of (Date): Only include transactions on or before this date
-            raw (bool): If true the returned balance should not have its sign
-                        adjusted for display purposes.
             kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
@@ -526,7 +530,7 @@ class LegQuerySet(models.QuerySet):
         return credits, debits
 
     def sum_to_balance(self, account_type=None):
-        """Sum the Legs of the QuerySet to get a single `Balance`_ object
+        """Sum the Legs of the QuerySet to get a single :class:`Balance` object
 
         Specifying ``account_type`` for the account will ensure the resulting
         balance is signed (ie +/-) correctly. Otherwise this method

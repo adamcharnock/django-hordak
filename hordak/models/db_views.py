@@ -184,12 +184,14 @@ class TransactionView(models.Model):
     You can also improve query performance (in Postgresql) by deferring unneeded
     fields. For example:
 
-        HordakLegView.objects.defer(
-            'credit_account_ids',
-            'debit_account_ids',
-            'credit_account_names',
-            'debit_account_names',
-        )
+        .. code-block:: python
+
+            HordakLegView.objects.defer(
+                'credit_account_ids',
+                'debit_account_ids',
+                'credit_account_names',
+                'debit_account_names',
+            )
     """
 
     parent = models.OneToOneField(
