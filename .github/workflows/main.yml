@@ -83,10 +83,19 @@ jobs:
 
       - name: Check All Migrations Exist
         run: |
-          pip install "py-moneyed<3" --upgrade
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
-          pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
-          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
+
+      - name: Create missing migrations
+        if: ${{ failure() }}
+        run: |
+          PYTHONPATH=`pwd` ./manage.py makemigrations hordak
+
+      - name: Archive created migrations for debugging
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: created-migrations
+          path: hordak/migrations
 
       - name: Testing (PostgreSQL)
         run: |

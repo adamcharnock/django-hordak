@@ -7,3 +7,4 @@ psycopg2
 mysqlclient
 psycopg2-binary>=2.6.2
 setuptools
+parameterized

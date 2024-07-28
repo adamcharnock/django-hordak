@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
@@ -16,10 +16,10 @@ class AccountAdmin(MPTTModelAdmin):
         "code_",
         "type_",
         "currencies",
-        "balance_sum",
-        "income",
+        "balance",
+        "credits",
+        "debits",
     )
-    readonly_fields = ("balance",)
     raw_id_fields = ("parent",)
     search_fields = (
         "code",
@@ -28,31 +28,34 @@ class AccountAdmin(MPTTModelAdmin):
     )
     list_filter = ("type",)
 
-    @admin.display(ordering="balance_sum")
+    @admin.display(ordering="balance")
     def balance(self, obj):
-        return obj.balance()
+        if obj.balance is None:
+            return "-"
+        return obj.balance
 
-    @admin.display(ordering="balance_sum")
-    def balance_sum(self, obj):
-        if obj.balance_sum:
-            return -obj.balance_sum
-        return "-"
+    balance.admin_order_field = "balance"
 
-    balance_sum.admin_order_field = "balance_sum"
+    @admin.display(ordering="credits")
+    def credits(self, obj):
+        if obj.credits is None:
+            return "-"
+        return obj.credits
 
-    @admin.display(ordering="income")
-    def income(self, obj):
-        if obj.income:
-            return -obj.income
-        return "-"
+    @admin.display(ordering="debits")
+    def debits(self, obj):
+        if obj.debits is None:
+            return "-"
+        return obj.debits
 
     def get_queryset(self, *args, **kwargs):
         return (
             super()
             .get_queryset(*args, **kwargs)
+            .with_balances_orm()
             .annotate(
-                balance_sum=Sum("legs__amount"),
-                income=Sum("legs__amount", filter=Q(legs__amount__gt=0)),
+                credits=Sum("legs__credit"),
+                debits=Sum("legs__debit"),
             )
         )
 
@@ -186,6 +189,8 @@ class LegViewAdmin(admin.ModelAdmin):
 
 
 def _fmt_admin_decimal(v):
+    if hasattr(v, "amount"):
+        v = v.amount
     if v is None:
         v = "-"
     else:

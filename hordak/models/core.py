@@ -21,12 +21,15 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
+import warnings
 from datetime import date
+from typing import Tuple
 
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import F, JSONField
+from django.db.models import Case, DecimalField, F, JSONField, Sum, When
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
@@ -62,20 +65,56 @@ def get_currency_choices():
 
 
 class AccountQuerySet(models.QuerySet):
-    def net_balance(self, raw=False):
-        return sum((account.balance(raw) for account in self), Balance())
+    """Utilities available to querysets of Accounts"""
 
-    def with_balances(self, as_of: date = None):
+    def net_balance(self):
+        """Get the total balance of all accounts in this queryset"""
+        # TODO: Do aggregation of JSONB balance structures in custom db function.
+        #       Will avoid having to pull all accounts back.
+        return sum((account.balance for account in self.with_balances()), Balance())
+
+    def with_balances(
+        self,
+        to_field_name="balance",
+        as_of: date = None,
+        as_of_leg_id: int = None,
+    ):
         """Annotate the account queryset with account balances
 
         This is a much more performant way to calculate account balances,
         especially when calculating balances for a lot of accounts.
 
-        Note that you will get better performance by setting the `as_of`
-        to `None`. This is because the underlying custom database function
+        You can get the balance at a particular point in time by specifying
+        ``as_of`` and (optionally) ``as_of_leg_id``.
+
+        Note that you will get better performance by setting the ``as_of``
+        to ``None`` (the default). This is because the underlying custom database function
         can avoid a join.
+
+        Example:
+
+            >>> # Will execute in a single database query
+            >>> for account in Account.objects.with_balances():
+            >>>     print(account.balance)
         """
-        return self.annotate(balance=GetBalance(F("id"), as_of=as_of))
+        field = GetBalance(F("id"), as_of=as_of, as_of_leg_id=as_of_leg_id)
+        return self.annotate(
+            **{
+                to_field_name: field,
+            }
+        )
+
+    def with_balances_orm(self, to_field_name="balance"):
+        calculation = Sum(
+            Coalesce("legs__credit", 0, output_field=DecimalField())
+            - Coalesce("legs__debit", 0, output_field=DecimalField())
+        )
+        sign = Case(When(type__in=("AS", "EX"), then=-1), default=1)
+        return self.annotate(
+            **{
+                to_field_name: calculation * sign,
+            }
+        )
 
 
 class AccountManager(TreeManager):
@@ -117,15 +156,20 @@ class Account(MPTTModel):
         uuid (UUID): UUID for account. Use to prevent leaking of IDs (if desired).
         name (str): Name of the account. Required.
         parent (Account|None): Parent account, nonen if root account
+        balance (Balance): Account balance, only populated when account is queried using
+            ``Account.objects.with_balances()``
         code (str): Account code. Must combine with account codes of parent
             accounts to get fully qualified account code.
-        type (str): Type of account as defined by `AccountType`. Can only be set on
+        type (str): Type of account as defined by ``AccountType``. Can only be set on
             root accounts. Child accounts are assumed to have the same time as their parent.
         is_bank_account (bool): Is this a bank account. This implies we can import bank statements into
             it and that it only supports a single currency.
 
 
     """
+
+    # Warning: Will be removed in Hordak 3. Use AccountType directly instead.
+    TYPES = AccountType
 
     uuid = models.UUIDField(
         default=UUID_DEFAULT, editable=False, verbose_name=_("uuid")
@@ -197,6 +241,7 @@ class Account(MPTTModel):
                 "is_bank_account",
                 "currencies",
             ]
+
         super(Account, self).save(*args, update_fields=update_fields, **kwargs)
 
         if connection.vendor == "mysql":
@@ -225,9 +270,9 @@ class Account(MPTTModel):
     @classmethod
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
-        balances = [
-            account.balance(raw=True) for account in Account.objects.root_nodes()
-        ]
+        accounts = Account.objects.root_nodes().with_balances()
+        balances = [a.balance * a.sign for a in accounts]
+
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
                 "Account balances do not sum to zero. They sum to {}".format(
@@ -239,7 +284,7 @@ class Account(MPTTModel):
         name = self.name or "Unnamed Account"
         if self.is_leaf_node():
             try:
-                balance = self.balance()
+                balance = self.get_balance()
             except (ValueError, CurrencyDoesNotExist):
                 if self.full_code:
                     return "{} {}".format(self.full_code, name)
@@ -279,28 +324,36 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (AccountType.asset, AccountType.expense) else 1
 
-    def balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def get_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
+
+        .. note::
+
+            Note that we recommend using :meth:`AccountQuerySet.with_balances()` where possible
+            as it will almost certainly be more performant when fetching balances
+            for multiple accounts.
 
         Args:
             as_of (Date): Only include transactions on or before this date
-            raw (bool): If true the returned balance should not have its sign
-                        adjusted for display purposes.
             kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
             Balance
 
         See Also:
-            :meth:`simple_balance()`
+            :meth:`get_simple_balance()`
         """
+        if "raw" in kwargs:
+            raise DeprecationWarning(
+                "The `raw` parameter to Account.get_balance() is no longer available."
+            )
         balances = [
-            account.simple_balance(as_of=as_of, raw=raw, leg_query=leg_query, **kwargs)
+            account.get_simple_balance(as_of=as_of, leg_query=leg_query, **kwargs)
             for account in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
 
-    def simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def get_simple_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
@@ -308,12 +361,16 @@ class Account(MPTTModel):
             raw (bool): If true the returned balance should not have its sign
                         adjusted for display purposes.
             leg_query (models.Q): Django Q-expression, will be used to filter the transaction legs.
-                                  allows for more complex filtering than that provided by **kwargs.
+                                  allows for more complex filtering than that provided by ``**kwargs``.
             kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
             Balance
         """
+        if "raw" in kwargs:
+            raise DeprecationWarning(
+                "The `raw` parameter to Account.get_simple_balance() is no longer available."
+            )
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
@@ -322,7 +379,7 @@ class Account(MPTTModel):
             leg_query = leg_query or models.Q()
             legs = legs.filter(leg_query, **kwargs)
 
-        return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
+        return legs.sum_to_balance(account_type=self.type) + self._zero_balance()
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
@@ -330,12 +387,12 @@ class Account(MPTTModel):
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
-        """Create a transaction which credits self and debits `to_account`.
+        """Create a transaction which credits self and debits ``to_account``.
 
         See https://en.wikipedia.org/wiki/Double-entry_bookkeeping.
 
         This is a shortcut utility method which simplifies the process of
-        transferring where `self` is Cr and `to_account` is Dr.
+        transferring where ``self`` is Cr and ``to_account`` is Dr.
 
         For example:
 
@@ -345,28 +402,30 @@ class Account(MPTTModel):
 
         .. note::
 
-                    LHS                         RHS
-            ``{asset | expense} <-> {income | liability | equity}``
+            .. code-block::
 
-            Transfers LHS (A) -> RHS (B) will decrease A and increase B
-            Transfers LHS (A) -> LHS (B) will decrease A and increase B
-            Transfers RHS (A) -> LHS (B) will increase A and increase B
-            Transfers RHS (A) -> RHS (B) will increase A and decrease B
+                      LHS                          RHS
+                {asset | expense} <-> {income | liability | equity}
+
+                Transfers LHS (A) -> RHS (B) will decrease A and increase B
+                Transfers LHS (A) -> LHS (B) will decrease A and increase B
+                Transfers RHS (A) -> LHS (B) will increase A and increase B
+                Transfers RHS (A) -> RHS (B) will increase A and decrease B
 
         Args:
 
             to_account (Account): The destination account.
             amount (Money): The amount to be transferred.
             transaction_kwargs: Passed through to transaction creation. Useful for setting the
-                transaction `description` field.
+                transaction ``description`` or ``date`` fields.
         """
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
 
         transaction = Transaction.objects.create(**transaction_kwargs)
 
-        Leg.objects.create(transaction=transaction, account=self, amount=+amount)
-        Leg.objects.create(transaction=transaction, account=to_account, amount=-amount)
+        Leg.objects.create(transaction=transaction, account=self, credit=amount)
+        Leg.objects.create(transaction=transaction, account=to_account, debit=amount)
 
         return transaction
 
@@ -444,7 +503,7 @@ class Transaction(models.Model):
         get_latest_by = "date"
         verbose_name = _("transaction")
 
-    def balance(self):
+    def get_balance(self):
         return self.legs.sum_to_balance()
 
     def natural_key(self):
@@ -452,23 +511,115 @@ class Transaction(models.Model):
 
 
 class LegQuerySet(models.QuerySet):
-    def sum_to_balance(self):
-        """Sum the Legs of the QuerySet to get a `Balance`_ object"""
-        result = self.values("amount_currency").annotate(total=models.Sum("amount"))
-        return Balance([Money(r["total"], r["amount_currency"]) for r in result])
+    """Utilities available to querysets of Legs"""
+
+    def sum_to_debit_and_credit(self) -> Tuple[Balance, Balance]:
+        """Sum the Legs of the QuerySet to get balance objects for both credits and debits
+
+        Example:
+
+            >>> total_debits, total_credits = Leg.objects.sum_to_debit_and_credit()
+        """
+        result = self.values("currency").annotate(
+            total_credit=Coalesce(models.Sum("credit"), 0, output_field=DecimalField()),
+            total_debit=Coalesce(models.Sum("debit"), 0, output_field=DecimalField()),
+        )
+        credits = Balance([Money(r["total_credit"], r["currency"]) for r in result])
+        debits = Balance([Money(r["total_debit"], r["currency"]) for r in result])
+
+        return credits, debits
+
+    def sum_to_balance(self, account_type=None):
+        """Sum the Legs of the QuerySet to get a single :class:`Balance` object
+
+        Specifying ``account_type`` for the account will ensure the resulting
+        balance is signed (ie +/-) correctly. Otherwise this method
+        will perform an additional database query to determine the account
+        type as best it can (and will issue a warning if it fails).
+
+        Example:
+
+            >>> balance = Leg.objects.sum_to_balance()
+        """
+        credits, debits = self.sum_to_debit_and_credit()
+
+        if not account_type:
+            results = self.order_by().values("account__type").distinct()
+            account_types = [AccountType(r["account__type"]) for r in results]
+            if len(account_types) == 1:
+                account_type = account_types[0]
+
+        if not account_type and credits != debits:
+            # If we cannot determine an account type and the result is non-zero
+            # then we should warn the user that they may get an unexpected sign
+            warnings.warn(
+                f"Could not auto-determine account type for the current queryset in sum_to_balance() "
+                f"(we found account types {account_types} for the selected legs). "
+                f"This may result in an unexpected sign on the returned balance. We recommend you "
+                f"provide sum_to_balance(account_type=...) to avoid this ambiguity."
+            )
+
+        if account_type in (AccountType.asset, AccountType.expense):
+            return debits - credits
+        else:
+            return credits - debits
+
+    def with_account_balance_after(self):
+        """Get the balance of the account associated with each leg following the transaction
+
+        Annotate the queryset with the `account_balance_after` property. This is the account
+        balance following after the leg happened. Useful for rendering account statements.
+
+        Example:
+
+            >>> legs = my_account.legs.with_account_balance_after()
+            >>> for leg in legs:
+            >>>     print(f"{leg.transaction.date} {leg.type_short} {leg.amount} {leg.balance_after}")
+            2000-01-01 CR €100.00 €100.00
+            2000-01-01 CR €10.00 €110.00
+        """
+        return self.annotate(
+            account_balance_after=GetBalance(
+                F("account_id"),
+                as_of=F("transaction__date"),
+                as_of_leg_id=F("id"),
+            )
+        )
+
+    def with_account_balance_before(self):
+        """Get the balance of the account associated with each leg prior to the transaction
+
+        Annotate the queryset with the `account_balance_before` property. This is the account
+        balance before after the leg happened.
+
+        Example:
+
+            >>> legs = my_account.legs.with_account_balance_before()
+            >>> for leg in legs:
+            >>>     print(f"{leg.transaction.date} {leg.type_short} {leg.amount} {leg.balance_before}")
+            2000-01-01 CR €100.00 €0.00
+            2000-01-01 CR €10.00 €100.00
+        """
+        return self.annotate(
+            account_balance_before=GetBalance(
+                F("account_id"),
+                as_of=F("transaction__date"),
+                as_of_leg_id=F("id") - 1,
+            )
+        )
+
+    def debits(self):
+        """Filter for legs that are debits"""
+        return self.filter(debit__isnull=False)
+
+    def credits(self):
+        """Filter for legs that are credits"""
+        return self.filter(credit__isnull=False)
 
 
 class LegManager(models.Manager):
     def get_by_natural_key(self, uuid):
         return self.get(uuid=uuid)
-
-    def debits(self):
-        """Filter for legs that were debits"""
-        return self.filter(amount__gt=0)
-
-    def credits(self):
-        """Filter for legs that were credits"""
-        return self.filter(amount__lt=0)
 
 
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
@@ -488,7 +639,10 @@ class Leg(models.Model):
         amount (Money): The amount being transferred
         description (str): Optional user-provided description
         type (str): :attr:`hordak.models.DEBIT` or :attr:`hordak.models.CREDIT`.
-
+        account_balance_after (Balance): The account balance before this transaction.
+            Only populated when account is queried using `Leg.objects.with_account_balance_after()`
+        account_balance_before (Balance): The account balance after this transaction.
+            Only populated when account is queried using `Leg.objects.with_account_balance_before()`
     """
 
     uuid = models.UUIDField(
@@ -506,12 +660,27 @@ class Leg(models.Model):
         on_delete=models.CASCADE,
         verbose_name=_("account"),
     )
-    amount = MoneyField(
+    credit = MoneyField(
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
-        help_text="Record debits as positive, credits as negative",
+        help_text="Amount of this credit, or NULL if not a credit",
         default_currency=get_internal_currency,
-        verbose_name=_("amount"),
+        currency_field_name="currency",
+        verbose_name=_("credit amount"),
+        default=None,
+        null=True,
+        blank=True,
+    )
+    debit = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        help_text="Amount of this debit, or NULL if not a debit",
+        default_currency=get_internal_currency,
+        currency_field_name="currency",
+        verbose_name=_("debit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
     description = models.TextField(
         default="", blank=True, verbose_name=_("description")
@@ -520,14 +689,54 @@ class Leg(models.Model):
     objects = CustomLegManager()
 
     def __str__(self):
-        return f"{self.type.title()} {self.account.name} ({self.account.full_code}) {self.amount}"
+        return (
+            f"{self.type.title()} {self.account.name} "
+            f"({self.account.full_code}) {self.amount} {self.type_short}"
+        )
+
+    def __init__(self, *args, amount: Money = None, **kwargs):
+        if amount is not None:
+            warnings.warn(
+                "Specifying `amount` when creating a Leg is deprecated. "
+                "Instead specify either the `credit` argument (for what would would previously be "
+                "a positive amount) or `debit` (for what would previously be a negative amount). "
+                "Both these arguments should be positive `Money` values. This warning will become an "
+                "error in Hordak 3.0.",
+                DeprecationWarning,
+            )
+            if amount.amount > 0:
+                kwargs["credit"] = amount
+                kwargs["debit"] = None
+            else:
+                kwargs["credit"] = None
+                kwargs["debit"] = abs(amount)
+
+        super().__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        if self.amount.amount == 0:
-            raise exceptions.ZeroAmountError()
+        if self.credit is not None and self.credit.amount == 0:
+            raise exceptions.ZeroAmountError("Cannot credit account by zero")
+        if self.debit is not None and self.debit.amount == 0:
+            raise exceptions.ZeroAmountError("Cannot debit account by zero")
+        if self.debit is None and self.credit is None:
+            raise exceptions.NeitherCreditNorDebitPresentError(
+                "Either credit or debit must be set"
+            )
+        if self.debit is not None and self.credit is not None:
+            raise exceptions.BothCreditAndDebitPresentError(
+                "Either credit or debit must be set"
+            )
+        if self.credit is not None and self.credit.amount < 0:
+            raise exceptions.CreditOrDebitIsNegativeError(
+                f"Credit is negative: {self.credit} "
+            )
+        if self.debit is not None and self.debit.amount < 0:
+            raise exceptions.CreditOrDebitIsNegativeError(
+                f"Debit is negative: {self.debit} "
+            )
 
         leg = super(Leg, self).save(*args, **kwargs)
-        mysql_simulate_trigger("check_leg", self.transaction_id)
+        mysql_simulate_trigger("check_leg", self.id, self.transaction_id)
         return leg
 
     def natural_key(self):
@@ -535,52 +744,31 @@ class Leg(models.Model):
 
     @property
     def type(self):
-        if self.amount.amount < 0:
+        if self.debit:
             return DEBIT
-        elif self.amount.amount > 0:
+        elif self.credit:
             return CREDIT
         else:
             # This should have been caught earlier by the database integrity check.
             # If you are seeing this then something is wrong with your DB checks.
-            raise exceptions.ZeroAmountError()
+            raise exceptions.InvalidOrMissingAccountTypeError()
+
+    @property
+    def type_short(self):
+        if self.type == DEBIT:
+            return "DR"
+        else:
+            return "CR"
+
+    @property
+    def amount(self) -> Money:
+        return self.credit or self.debit
 
     def is_debit(self):
         return self.type == DEBIT
 
     def is_credit(self):
         return self.type == CREDIT
-
-    def account_balance_after(self):
-        """Get the balance of the account associated with this leg following the transaction"""
-        # TODO: Consider moving to annotation,
-        #       particularly once we can count on Django 1.11's subquery support
-        #       Or use the new LegView.
-        transaction_date = self.transaction.date
-        return self.account.balance(
-            leg_query=(
-                models.Q(transaction__date__lt=transaction_date)
-                | (
-                    models.Q(transaction__date=transaction_date)
-                    & models.Q(transaction_id__lte=self.transaction_id)
-                )
-            )
-        )
-
-    def account_balance_before(self):
-        """Get the balance of the account associated with this leg before the transaction"""
-        # TODO: Consider moving to annotation,
-        #       particularly once we can count on Django 1.11's subquery support.
-        #       Or use the new LegView.
-        transaction_date = self.transaction.date
-        return self.account.balance(
-            leg_query=(
-                models.Q(transaction__date__lt=transaction_date)
-                | (
-                    models.Q(transaction__date=transaction_date)
-                    & models.Q(transaction_id__lt=self.transaction_id)
-                )
-            )
-        )
 
     class Meta:
         verbose_name = _("Leg")
@@ -642,7 +830,7 @@ class StatementLineManager(models.Manager):
 
 
 class StatementLine(models.Model):
-    """Records an single imported bank statement line
+    """Records a single imported bank statement line
 
     A StatementLine is purely a utility to aid in the creation of transactions
     (in the process known as reconciliation). StatementLines have no impact on
@@ -657,7 +845,7 @@ class StatementLine(models.Model):
         timestamp (datetime): The datetime when the object was created.
         date (date): The date given by the statement line
         statement_import (StatementImport): The import to which the line belongs
-        amount (Decimal): The amount for the statement line, positive or nagative.
+        amount (Decimal): The amount for the statement line, positive or negative.
         description (str): Any description/memo information provided
         transaction (Transaction): Optionally, the transaction created for this statement line. This normally
             occurs during reconciliation. See also :meth:`StatementLine.create_transaction()`.
@@ -731,12 +919,20 @@ class StatementLine(models.Model):
         from_account = self.statement_import.bank_account
 
         transaction = Transaction.objects.create()
-        Leg.objects.create(
-            transaction=transaction, account=from_account, amount=+(self.amount * -1)
-        )
-        Leg.objects.create(
-            transaction=transaction, account=to_account, amount=-(self.amount * -1)
-        )
+        if self.amount > 0:
+            Leg.objects.create(
+                transaction=transaction, account=from_account, debit=self.amount
+            )
+            Leg.objects.create(
+                transaction=transaction, account=to_account, credit=self.amount
+            )
+        else:
+            Leg.objects.create(
+                transaction=transaction, account=from_account, credit=abs(self.amount)
+            )
+            Leg.objects.create(
+                transaction=transaction, account=to_account, debit=abs(self.amount)
+            )
 
         transaction.date = self.date
         transaction.save()

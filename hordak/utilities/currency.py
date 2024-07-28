@@ -130,10 +130,10 @@ def currency_exchange(
 
         We should now find that:
 
-         1. ``cad_cash.balance()`` has decreased by ``CAD 120``
-         2. ``usd_cash.balance()`` has increased by ``USD 100``
-         3. ``banking_fees.balance()`` is ``CAD 1.50``
-         4. ``trading_account.balance()`` is ``USD 100, CAD -120``
+         1. ``cad_cash.get_balance()`` has decreased by ``CAD 120``
+         2. ``usd_cash.get_balance()`` has increased by ``USD 100``
+         3. ``banking_fees.get_balance()`` is ``CAD 1.50``
+         4. ``trading_account.get_balance()`` is ``USD 100, CAD -120``
 
         You can perform ``trading_account.normalise()`` to discover your unrealised gains/losses
         on currency traded through that account.
@@ -207,12 +207,12 @@ def currency_exchange(
 
         # Source currency into trading account
         Leg.objects.create(
-            transaction=transaction, account=source, amount=source_amount
+            transaction=transaction, account=source, credit=source_amount
         )
         Leg.objects.create(
             transaction=transaction,
             account=trading_account,
-            amount=-(
+            debit=(
                 (source_amount - fee_amount) if charge_fee_at_source else source_amount
             ),
         )
@@ -222,7 +222,7 @@ def currency_exchange(
             Leg.objects.create(
                 transaction=transaction,
                 account=fee_destination,
-                amount=-fee_amount,
+                debit=fee_amount,
                 description="Fees",
             )
 
@@ -230,14 +230,14 @@ def currency_exchange(
         Leg.objects.create(
             transaction=transaction,
             account=trading_account,
-            amount=(
+            credit=(
                 destination_amount
                 if charge_fee_at_source
                 else destination_amount + fee_amount
             ),
         )
         Leg.objects.create(
-            transaction=transaction, account=destination, amount=-destination_amount
+            transaction=transaction, account=destination, debit=destination_amount
         )
 
     return transaction

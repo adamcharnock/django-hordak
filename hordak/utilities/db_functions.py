@@ -8,6 +8,7 @@ from django.db.models.expressions import Combinable, Value
 from djmoney.models.fields import MoneyField
 from moneyed import Money
 
+from hordak import defaults
 from hordak.utilities.currency import Balance
 
 
@@ -20,6 +21,7 @@ class GetBalance(Func):
         self,
         account_id: Union[Combinable, int],
         as_of: Union[Combinable, date, str] = None,
+        as_of_leg_id: Union[Combinable, int] = None,
         output_field=None,
         **extra
     ):
@@ -43,14 +45,21 @@ class GetBalance(Func):
             if not isinstance(as_of, Combinable):
                 as_of = Value(as_of)
 
+        if as_of is None and as_of_leg_id is not None:
+            raise ValueError("as_of cannot be None when specifying as_of_leg_id")
+
         output_field = output_field or MoneyField()
-        super().__init__(account_id, as_of, output_field=output_field, **extra)
+        super().__init__(
+            account_id, as_of, as_of_leg_id, output_field=output_field, **extra
+        )
 
     @cached_property
     def convert_value(self):
         # Convert the JSON output into a Balance object. Example of a JSON response:
         #    [{"amount": 100.00, "currency": "EUR"}]
         def convertor(value, expression, connection):
+            if not value:
+                return Balance([Money("0", defaults.DEFAULT_CURRENCY)])
             value = json.loads(value)
             return Balance([Money(v["amount"], v["currency"]) for v in value])
 
