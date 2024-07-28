@@ -336,35 +336,35 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
 
         # Put CAD 200 into cad_cash
         initial_capital.transfer_to(cad_cash, Money(200, "CAD"))
-        self.assertEqual(initial_capital.balance(), Balance(200, "CAD"))
-        self.assertEqual(cad_cash.balance(), Balance(200, "CAD"))
+        self.assertEqual(initial_capital.get_balance(), Balance(200, "CAD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(200, "CAD"))
 
         # Exchange CAD 120 to USD 100 (1 USD = 1.20 CAD)
         currency_exchange(
             cad_cash, Money(120, "CAD"), usd_cash, Money(100, "USD"), trading
         )
-        self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
-        self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
-        self.assertEqual(trading.balance(), Balance(100, "USD", -120, "CAD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(80, "CAD"))
+        self.assertEqual(usd_cash.get_balance(), Balance(100, "USD"))
+        self.assertEqual(trading.get_balance(), Balance(100, "USD", -120, "CAD"))
 
         # Buy food (1 USD = 1.30 CAD)
         currency_exchange(usd_cash, Money(40, "USD"), food, Money(52, "CAD"), trading)
-        self.assertEqual(usd_cash.balance(), Balance(60, "USD"))
-        self.assertEqual(food.balance(), Balance(52, "CAD"))
-        self.assertEqual(trading.balance(), Balance(60, "USD", -68, "CAD"))
+        self.assertEqual(usd_cash.get_balance(), Balance(60, "USD"))
+        self.assertEqual(food.get_balance(), Balance(52, "CAD"))
+        self.assertEqual(trading.get_balance(), Balance(60, "USD", -68, "CAD"))
 
         # Exchange all USD back to CAD (1 USD = 1.25 CAD)
         currency_exchange(
             usd_cash, Money(60, "USD"), cad_cash, Money(75, "CAD"), trading
         )
-        self.assertEqual(cad_cash.balance(), Balance(155, "CAD"))
-        self.assertEqual(usd_cash.balance(), Balance(0, "USD"))
-        self.assertEqual(trading.balance(), Balance(0, "USD", 7, "CAD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(155, "CAD"))
+        self.assertEqual(usd_cash.get_balance(), Balance(0, "USD"))
+        self.assertEqual(trading.get_balance(), Balance(0, "USD", 7, "CAD"))
 
         # Buy food in CAD
         cad_cash.transfer_to(food, Money(20, "CAD"))
-        self.assertEqual(cad_cash.balance(), Balance(135, "CAD"))
-        self.assertEqual(food.balance(), Balance(72, "CAD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(135, "CAD"))
+        self.assertEqual(food.get_balance(), Balance(72, "CAD"))
 
     def test_fees_source_currency(self):
         cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
@@ -383,9 +383,9 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
             fee_destination=banking_fees,
             fee_amount=Money(1.50, "CAD"),
         )
-        self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
-        self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
-        self.assertEqual(banking_fees.balance(), Balance(1.50, "CAD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(80, "CAD"))
+        self.assertEqual(usd_cash.get_balance(), Balance(100, "USD"))
+        self.assertEqual(banking_fees.get_balance(), Balance(1.50, "CAD"))
 
     def test_fees_destination_currency(self):
         cad_cash = self.account(type=Account.TYPES.asset, currencies=["CAD"])
@@ -404,6 +404,6 @@ class CurrencyExchangeTestCase(DataProvider, BalanceUtils, TestCase):
             fee_destination=banking_fees,
             fee_amount=Money(1.50, "USD"),
         )
-        self.assertEqual(cad_cash.balance(), Balance(80, "CAD"))
-        self.assertEqual(usd_cash.balance(), Balance(100, "USD"))
-        self.assertEqual(banking_fees.balance(), Balance(1.50, "USD"))
+        self.assertEqual(cad_cash.get_balance(), Balance(80, "CAD"))
+        self.assertEqual(usd_cash.get_balance(), Balance(100, "USD"))
+        self.assertEqual(banking_fees.get_balance(), Balance(1.50, "USD"))

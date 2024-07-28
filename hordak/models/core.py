@@ -62,7 +62,7 @@ def get_currency_choices():
 
 class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
-        return sum((account.balance(raw) for account in self), Balance())
+        return sum((account.get_balance(raw) for account in self), Balance())
 
 
 class AccountManager(TreeManager):
@@ -208,7 +208,7 @@ class Account(MPTTModel):
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
         balances = [
-            account.balance(raw=True) for account in Account.objects.root_nodes()
+            account.get_balance(raw=True) for account in Account.objects.root_nodes()
         ]
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
@@ -221,7 +221,7 @@ class Account(MPTTModel):
         name = self.name or "Unnamed Account"
         if self.is_leaf_node():
             try:
-                balance = self.balance()
+                balance = self.get_balance()
             except (ValueError, CurrencyDoesNotExist):
                 if self.full_code:
                     return "{} {}".format(self.full_code, name)
@@ -277,14 +277,16 @@ class Account(MPTTModel):
             :meth:`simple_balance()`
         """
         balances = [
-            account.simple_balance(as_of=as_of, raw=raw, leg_query=leg_query, **kwargs)
+            account.get_simple_balance(
+                as_of=as_of, raw=raw, leg_query=leg_query, **kwargs
+            )
             for account in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
 
     def balance(self, *args, **kwargs):
         warnings.warn(
-            "Account.balance() is deprecated and will be removed in "
+            "Account.get_balance() is deprecated and will be removed in "
             "Hordak 2.0, use Account.get_balance() instead",
             DeprecationWarning,
         )
@@ -316,7 +318,7 @@ class Account(MPTTModel):
 
     def simple_balance(self, *args, **kwargs):
         warnings.warn(
-            "Account.simple_balance() is deprecated and will be removed in "
+            "Account.get_simple_balance() is deprecated and will be removed in "
             "Hordak 2.0, use Account.get_simple_balance() instead",
             DeprecationWarning,
         )
@@ -532,7 +534,7 @@ class Transaction(models.Model):
 
     def balance(self):
         warnings.warn(
-            "Transaction.balance() is deprecated and will be removed in "
+            "Transaction.get_balance() is deprecated and will be removed in "
             "Hordak 2.0, use Transaction.get_balance() instead",
             DeprecationWarning,
         )
@@ -646,7 +648,7 @@ class Leg(models.Model):
         # TODO: Consider moving to annotation,
         # particularly once we can count on Django 1.11's subquery support
         transaction_date = self.transaction.date
-        return self.account.balance(
+        return self.account.get_balance(
             leg_query=(
                 models.Q(transaction__date__lt=transaction_date)
                 | (
@@ -661,7 +663,7 @@ class Leg(models.Model):
         # TODO: Consider moving to annotation,
         # particularly once we can count on Django 1.11's subquery support
         transaction_date = self.transaction.date
-        return self.account.balance(
+        return self.account.get_balance(
             leg_query=(
                 models.Q(transaction__date__lt=transaction_date)
                 | (

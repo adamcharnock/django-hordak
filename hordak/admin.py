@@ -38,7 +38,7 @@ class AccountAdmin(MPTTModelAdmin):
 
     @admin.display(ordering="balance_sum")
     def balance(self, obj):
-        return obj.balance()
+        return obj.get_balance()
 
     @admin.display(ordering="balance_sum")
     def balance_sum(self, obj):

@@ -175,8 +175,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account2, amount=Money(-100, "EUR")
             )
 
-        self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
-        self.assertEqual(account2.simple_balance(), Balance(-100, "EUR"))
+        self.assertEqual(account1.get_simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(account2.get_simple_balance(), Balance(-100, "EUR"))
 
     def test_balance_3legs(self):
         account1 = self.account()
@@ -195,9 +195,9 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account3, amount=Money(-60, "EUR")
             )
 
-        self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
-        self.assertEqual(account2.simple_balance(), Balance(-40, "EUR"))
-        self.assertEqual(account3.simple_balance(), Balance(-60, "EUR"))
+        self.assertEqual(account1.get_simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(account2.get_simple_balance(), Balance(-40, "EUR"))
+        self.assertEqual(account3.get_simple_balance(), Balance(-60, "EUR"))
 
     def test_balance_simple_as_of(self):
         account1 = self.account()
@@ -221,27 +221,27 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             )
 
         self.assertEqual(
-            account1.simple_balance(as_of="2016-01-01"), Balance(0, "EUR")
+            account1.get_simple_balance(as_of="2016-01-01"), Balance(0, "EUR")
         )  # before any transactions
         self.assertEqual(
-            account1.simple_balance(as_of="2016-06-01"), Balance(100, "EUR")
+            account1.get_simple_balance(as_of="2016-06-01"), Balance(100, "EUR")
         )  # same date as first transaction
         self.assertEqual(
-            account1.simple_balance(as_of="2016-06-10"), Balance(100, "EUR")
+            account1.get_simple_balance(as_of="2016-06-10"), Balance(100, "EUR")
         )  # between two transactions
         self.assertEqual(
-            account1.simple_balance(as_of="2016-06-15"), Balance(150, "EUR")
+            account1.get_simple_balance(as_of="2016-06-15"), Balance(150, "EUR")
         )  # same date as second transaction
         self.assertEqual(
-            account1.simple_balance(as_of="2020-01-01"), Balance(150, "EUR")
+            account1.get_simple_balance(as_of="2020-01-01"), Balance(150, "EUR")
         )  # after transactions
 
     def test_balance_simple_zero(self):
         account1 = self.account()
         account2 = self.account()
 
-        self.assertEqual(account1.simple_balance(), Balance(0, "EUR"))
-        self.assertEqual(account2.simple_balance(), Balance(0, "EUR"))
+        self.assertEqual(account1.get_simple_balance(), Balance(0, "EUR"))
+        self.assertEqual(account2.get_simple_balance(), Balance(0, "EUR"))
 
     def test_balance_kwargs(self):
         account1 = self.account()
@@ -277,7 +277,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             )
 
         self.assertEqual(
-            account1.balance(transaction__date__gte="2016-06-15"), Balance(50, "EUR")
+            account1.get_balance(transaction__date__gte="2016-06-15"),
+            Balance(50, "EUR"),
         )
 
     def test_balance(self):
@@ -306,7 +307,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
                 amount_currency="EUR",
             )
 
-        self.assertEqual(account1.balance(), Balance(100, "EUR"))
+        self.assertEqual(account1.get_balance(), Balance(100, "EUR"))
 
     def test_net_balance(self):
         bank = self.account(type=Account.TYPES.asset)
@@ -338,8 +339,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2 = self.account(type=Account.TYPES.income)
         transaction = account1.transfer_to(account2, Money(500, "EUR"))
         self.assertEqual(transaction.legs.count(), 2)
-        self.assertEqual(account1.balance(), Balance(-500, "EUR"))
-        self.assertEqual(account2.balance(), Balance(500, "EUR"))
+        self.assertEqual(account1.get_balance(), Balance(-500, "EUR"))
+        self.assertEqual(account2.get_balance(), Balance(500, "EUR"))
 
     def test_transfer_to_not_money(self):
         account1 = self.account(type=Account.TYPES.income)
@@ -350,32 +351,32 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_pos_to_neg(self):
         src = self.account(type=Account.TYPES.income)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_neg_to_pos(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.income)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_neg_to_neg(self):
         src = self.account(type=Account.TYPES.asset)
         dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_liability_to_expense(self):
@@ -384,8 +385,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         src = self.account(type=Account.TYPES.liability)
         dst = self.account(type=Account.TYPES.expense)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(-100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(-100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_transfer_expense_to_liability(self):
@@ -393,8 +394,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         src = self.account(type=Account.TYPES.expense)
         dst = self.account(type=Account.TYPES.liability)
         src.transfer_to(dst, Money(100, "EUR"))
-        self.assertEqual(src.balance(), Balance(100, "EUR"))
-        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        self.assertEqual(src.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.get_balance(), Balance(100, "EUR"))
         Account.validate_accounting_equation()
 
     def test_currency_exchange(self):
@@ -403,9 +404,9 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         dst = self.account(type=Account.TYPES.asset, currencies=["EUR"])
         src.transfer_to(trading, Money("100", "GBP"))
         trading.transfer_to(dst, Money("110", "EUR"))
-        self.assertEqual(src.balance(), Balance("-100", "GBP"))
-        self.assertEqual(trading.balance(), Balance("-100", "GBP", "110", "EUR"))
-        self.assertEqual(dst.balance(), Balance("110", "EUR"))
+        self.assertEqual(src.get_balance(), Balance("-100", "GBP"))
+        self.assertEqual(trading.get_balance(), Balance("-100", "GBP", "110", "EUR"))
+        self.assertEqual(dst.get_balance(), Balance("110", "EUR"))
 
     def test_full_code(self):
         """
@@ -816,11 +817,11 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=self.account2, amount=-100
             )
 
-        self.assertEqual(transaction.balance(), 0)
+        self.assertEqual(transaction.get_balance(), 0)
 
     def test_balance_no_legs(self):
         transaction = Transaction.objects.create()
-        self.assertEqual(transaction.balance(), 0)
+        self.assertEqual(transaction.get_balance(), 0)
 
 
 class StatementLineTestCase(DataProvider, DbTransactionTestCase):
@@ -889,8 +890,8 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         transaction = line.create_transaction(self.sales)
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(transaction.date, date(2016, 1, 1))
-        self.assertEqual(self.bank.balance(), Balance(100, "EUR"))
-        self.assertEqual(self.sales.balance(), Balance(100, "EUR"))
+        self.assertEqual(self.bank.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(self.sales.get_balance(), Balance(100, "EUR"))
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()
@@ -905,8 +906,8 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         transaction = line.create_transaction(self.expenses)
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(transaction.date, date(2016, 1, 1))
-        self.assertEqual(self.bank.balance(), Balance(-100, "EUR"))
-        self.assertEqual(self.expenses.balance(), Balance(100, "EUR"))
+        self.assertEqual(self.bank.get_balance(), Balance(-100, "EUR"))
+        self.assertEqual(self.expenses.get_balance(), Balance(100, "EUR"))
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()

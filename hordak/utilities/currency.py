@@ -130,10 +130,10 @@ def currency_exchange(
 
         We should now find that:
 
-         1. ``cad_cash.balance()`` has decreased by ``CAD 120``
-         2. ``usd_cash.balance()`` has increased by ``USD 100``
-         3. ``banking_fees.balance()`` is ``CAD 1.50``
-         4. ``trading_account.balance()`` is ``USD 100, CAD -120``
+         1. ``cad_cash.get_balance()`` has decreased by ``CAD 120``
+         2. ``usd_cash.get_balance()`` has increased by ``USD 100``
+         3. ``banking_fees.get_balance()`` is ``CAD 1.50``
+         4. ``trading_account.get_balance()`` is ``USD 100, CAD -120``
 
         You can perform ``trading_account.normalise()`` to discover your unrealised gains/losses
         on currency traded through that account.
