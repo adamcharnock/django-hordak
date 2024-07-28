@@ -16,7 +16,7 @@ class AccountAdmin(MPTTModelAdmin):
         "code_",
         "type_",
         "currencies",
-        "balance_sum",
+        "balance",
         "credits",
         "debits",
     )
@@ -28,13 +28,13 @@ class AccountAdmin(MPTTModelAdmin):
     )
     list_filter = ("type",)
 
-    @admin.display(ordering="balance_sum")
-    def balance_sum(self, obj):
-        if obj.balance_sum is None:
+    @admin.display(ordering="balance")
+    def balance(self, obj):
+        if obj.balance is None:
             return "-"
-        return obj.balance_sum
+        return obj.balance
 
-    balance_sum.admin_order_field = "balance_sum"
+    balance.admin_order_field = "balance"
 
     @admin.display(ordering="credits")
     def credits(self, obj):
@@ -52,7 +52,7 @@ class AccountAdmin(MPTTModelAdmin):
         return (
             super()
             .get_queryset(*args, **kwargs)
-            .with_balances_orm(to_field_name="balance_sum")
+            .with_balances_orm()
             .annotate(
                 credits=Sum("legs__credit"),
                 debits=Sum("legs__debit"),
