@@ -23,11 +23,12 @@ Additionally, there are models which related to the import of external bank stat
 
 import warnings
 from datetime import date
+from typing import Tuple
 
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import DecimalField, F, JSONField
+from django.db.models import Case, DecimalField, F, JSONField, Sum, When
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -67,17 +68,34 @@ class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
         return sum((account.balance(raw) for account in self), Balance())
 
-    def with_balances(self, as_of: date = None):
+    def with_balances(self, to_field_name="balance", as_of: date = None):
         """Annotate the account queryset with account balances
 
         This is a much more performant way to calculate account balances,
         especially when calculating balances for a lot of accounts.
 
         Note that you will get better performance by setting the `as_of`
-        to `None`. This is because the underlying custom database function
+        to `None` (the default). This is because the underlying custom database function
         can avoid a join.
         """
-        return self.annotate(balance=GetBalance(F("id"), as_of=as_of))
+        field = GetBalance(F("id"), as_of=as_of)
+        return self.annotate(
+            **{
+                to_field_name: field,
+            }
+        )
+
+    def with_balances_orm(self, to_field_name="balance"):
+        calculation = Sum(
+            Coalesce("legs__credit", 0, output_field=DecimalField())
+            - Coalesce("legs__debit", 0, output_field=DecimalField())
+        )
+        sign = Case(When(type__in=("AS", "EX"), then=-1), default=1)
+        return self.annotate(
+            **{
+                to_field_name: calculation * sign,
+            }
+        )
 
 
 class AccountManager(TreeManager):
@@ -458,14 +476,39 @@ class Transaction(models.Model):
 
 
 class LegQuerySet(models.QuerySet):
-    def sum_to_balance(self):
-        """Sum the Legs of the QuerySet to get a `Balance`_ object"""
-        # TODO: Some work on signage required here
+    def sum_to_debit_and_credit(self) -> Tuple[Balance, Balance]:
+        """Sum the Legs of the QuerySet to get balance objects for credits and debits"""
         result = self.values("currency").annotate(
-            total=Coalesce(models.Sum("credit"), 0, output_field=DecimalField())
-            - Coalesce(models.Sum("debit"), 0, output_field=DecimalField())
+            total_credit=Coalesce(models.Sum("credit"), 0, output_field=DecimalField()),
+            total_debit=Coalesce(models.Sum("debit"), 0, output_field=DecimalField()),
         )
-        return Balance([Money(r["total"], r["currency"]) for r in result])
+        credits = Balance([Money(r["total_credit"], r["currency"]) for r in result])
+        debits = Balance([Money(r["total_debit"], r["currency"]) for r in result])
+
+        return credits, debits
+
+    def sum_to_balance(self, account_type=None):
+        """Sum the Legs of the QuerySet to get a `Balance`_ object"""
+        credits, debits = self.sum_to_debit_and_credit()
+
+        if not account_type:
+            results = self.order_by().values("account__type").distinct()
+            account_types = [AccountType(r["account__type"]) for r in results]
+            if len(account_types) == 1:
+                account_type = account_types[0]
+
+        if not account_type:
+            warnings.warn(
+                "Could not auto-determine account type for the current queryset in sum_to_balance() "
+                "(we found {account_type} account types for the selected legs)."
+                "This may result in an unexpected sign on the returned balance. We recommend you "
+                "provide sum_to_balance(account_type=...) to avoid this ambiguity."
+            )
+
+        if account_type in (AccountType.asset, AccountType.expense):
+            return debits - credits
+        else:
+            return credits - debits
 
 
 class LegManager(models.Manager):

@@ -1,6 +1,5 @@
 from django.contrib import admin
-from django.db.models import DecimalField, Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import Sum
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from mptt.admin import MPTTModelAdmin
@@ -18,7 +17,8 @@ class AccountAdmin(MPTTModelAdmin):
         "type_",
         "currencies",
         "balance_sum",
-        "income",
+        "credits",
+        "debits",
     )
     readonly_fields = ("balance",)
     raw_id_fields = ("parent",)
@@ -30,34 +30,33 @@ class AccountAdmin(MPTTModelAdmin):
     list_filter = ("type",)
 
     @admin.display(ordering="balance_sum")
-    def balance(self, obj):
-        return obj.balance()
-
-    @admin.display(ordering="balance_sum")
     def balance_sum(self, obj):
-        if obj.balance_sum:
-            return -obj.balance_sum
-        return "-"
+        if obj.balance_sum is None:
+            return "-"
+        return obj.balance_sum
 
     balance_sum.admin_order_field = "balance_sum"
 
-    @admin.display(ordering="income")
-    def income(self, obj):
-        if obj.income:
-            return -obj.income
-        return "-"
+    @admin.display(ordering="credits")
+    def credits(self, obj):
+        if obj.credits is None:
+            return "-"
+        return obj.credits
+
+    @admin.display(ordering="debits")
+    def debits(self, obj):
+        if obj.debits is None:
+            return "-"
+        return obj.debits
 
     def get_queryset(self, *args, **kwargs):
         return (
             super()
             .get_queryset(*args, **kwargs)
+            .with_balances_orm(to_field_name="balance_sum")
             .annotate(
-                # TODO: I think this needs some sign-changing work
-                balance_sum=Sum(
-                    Coalesce("legs__credit", 0, output_field=DecimalField())
-                    - Coalesce("legs__debit", 0, output_field=DecimalField())
-                ),
-                income=Sum("legs__credit", filter=Q(legs__credit__isnull=False)),
+                credits=Sum("legs__credit"),
+                debits=Sum("legs__debit"),
             )
         )
 

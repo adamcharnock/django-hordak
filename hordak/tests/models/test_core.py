@@ -590,8 +590,8 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
     def test_manager(self):
-        account1 = self.account(currencies=["USD"])
-        account2 = self.account(currencies=["USD"])
+        account1 = self.account(currencies=["USD"], type=AccountType.liability)
+        account2 = self.account(currencies=["USD"], type=AccountType.asset)
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
@@ -605,12 +605,33 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account2, debit=Money(20.06, "USD")
             )
 
-        self.assertEqual(Leg.objects.sum_to_balance(), Balance())
+        with self.assertWarns(Warning):
+            # Ambiguous account signing
+            self.assertEqual(Leg.objects.sum_to_balance(), Balance())
+
+        # Multiple account types, but signing disambiguated by passing account_type
         self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("100.12", "USD")])
+            Leg.objects.sum_to_balance(account_type=account1.type), Balance()
+        )
+
+        # Single account types
+        self.assertEqual(
+            account1.legs.sum_to_balance(account_type=account1.type),
+            Balance([Money("100.12", "USD")]),
         )
         self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")])
+            account2.legs.sum_to_balance(account_type=account2.type),
+            Balance([Money("100.12", "USD")]),
+        )
+
+        # Account type auto-detected
+        self.assertEqual(
+            account1.legs.sum_to_balance(account_type=None),
+            Balance([Money("100.12", "USD")]),
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(account_type=None),
+            Balance([Money("100.12", "USD")]),
         )
 
     def test_bulk_create(self):

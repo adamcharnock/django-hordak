@@ -38,7 +38,8 @@ class AdminTestCase(DataProvider, TestCase):
         self.assertContains(
             res, '<td class="field-balance_sum">10.000000</td>', html=True
         )
-        self.assertContains(res, '<td class="field-balance_sum">-</td>', html=True)
+
+        self.assertContains(res, '<td class="field-balance_sum">0</td>', html=True)
         self.assertContains(res, '<td class="field-type_">-</td>', html=True)
         self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
         self.assertContains(res, '<td class="field-type_">Asset</td>', html=True)
