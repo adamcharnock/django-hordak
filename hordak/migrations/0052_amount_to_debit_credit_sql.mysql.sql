@@ -234,7 +234,7 @@ END;
 
 -- ----
 
-CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE)
+CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE, as_of_leg_id BIGINT)
 RETURNS JSON
 BEGIN
     DECLARE account_lft INT;
@@ -243,6 +243,13 @@ BEGIN
     DECLARE result_json JSON;
     DECLARE account_type TEXT;
     DECLARE account_sign INT;
+
+    IF as_of IS NULL AND as_of_leg_id IS NOT NULL THEN
+        SET @msg= 'get_balance_table(): You must specify the as_of parameter if also specifying the as_of_leg_id parameter';
+        SIGNAL SQLSTATE '23000' SET
+        MYSQL_ERRNO = 1048,
+        MESSAGE_TEXT = @msg;
+    end if;
 
     -- Fetch the account's hierarchical information
     SELECT lft, rght, tree_id, type INTO account_lft, account_rght, account_tree_id, account_type
@@ -269,7 +276,15 @@ BEGIN
                 FROM hordak_account A2
                 JOIN hordak_leg L ON L.account_id = A2.id
                 JOIN hordak_transaction T ON L.transaction_id = T.id
-                WHERE A2.lft >= account_lft AND A2.rght <= account_rght AND A2.tree_id = account_tree_id AND T.date <= as_of
+                WHERE
+                    A2.lft >= account_lft
+                    AND A2.rght <= account_rght
+                    AND A2.tree_id = account_tree_id
+                    AND (
+                        T.date < as_of
+                            OR
+                        T.date = as_of AND (CASE WHEN as_of_leg_id IS NOT NULL THEN L.id <= as_of_leg_id ELSE TRUE END)
+                    )
                 GROUP BY L.currency
             ) AS sub
         );

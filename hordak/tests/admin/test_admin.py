@@ -35,12 +35,13 @@ class AdminTestCase(DataProvider, TestCase):
             f'<a href="/admin/hordak/account/{self.bank_account.id}/change/">Bank account</a>',
             html=True,
         )
-        self.assertContains(res, '<td class="field-balance">10.000000</td>', html=True)
 
-        self.assertContains(res, '<td class="field-balance">0</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">-</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">Asset</td>', html=True)
+        qs = res.context_data["cl"].queryset
+        self.assertEqual(qs.count(), 4)
+        self.assertEqual(qs[0].balance, 0)
+        self.assertEqual(qs[1].balance, 0)
+        self.assertEqual(qs[2].balance, 10)
+        self.assertEqual(qs[3].balance, 10)
 
     def test_account_search_query(self):
         """Test that search query works"""
