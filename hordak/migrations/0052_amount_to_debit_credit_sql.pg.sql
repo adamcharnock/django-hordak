@@ -333,7 +333,7 @@ BEGIN
         -- transactions table to get the transaction date
         RETURN QUERY
             SELECT
-                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) as amount,
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * (CASE WHEN A2.type IN ('EX', 'AS') THEN -1 ELSE 1 END) as amount,
                 L.currency as currency
             FROM hordak_account A2
             INNER JOIN hordak_leg L on L.account_id = A2.id
@@ -345,11 +345,11 @@ BEGIN
                 A2.tree_id = account_tree_id AND
                 -- Also respect the as_of parameter
                 T.date <= as_of
-            GROUP BY L.currency;
+            GROUP BY A2.type, L.currency;
     ELSE
         RETURN QUERY
             SELECT
-                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) as amount,
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * (CASE WHEN A2.type IN ('EX', 'AS') THEN -1 ELSE 1 END) as amount,
                 L.currency as currency
             FROM hordak_account A2
             INNER JOIN hordak_leg L on L.account_id = A2.id
@@ -358,7 +358,7 @@ BEGIN
                 A2.lft >= account_lft AND
                 A2.rght <= account_rght AND
                 A2.tree_id = account_tree_id
-            GROUP BY L.currency;
+            GROUP BY A2.type, L.currency;
     END IF;
 END;
 $$

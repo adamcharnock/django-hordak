@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
+from parameterized import parameterized
 
 import hordak.defaults
 from hordak import exceptions
@@ -530,9 +531,6 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         src = Account.objects.filter(type=AccountType.liability).with_balances().get()
         self.assertEqual(src.balance, Balance([Money("110", "EUR")]))
 
-        dst = Account.objects.filter(type=AccountType.expense).with_balances().get()
-        self.assertEqual(dst.balance, Balance([Money("-110", "EUR")]))
-
     def test_with_balances_child_accounts(self):
         """Ensure with_balances() returns a valid value for child accounts"""
         parent = self.account(type=AccountType.liability, name="Parent")
@@ -562,6 +560,32 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             .get()
         )
         self.assertEqual(src.balance, Balance([Money("100", "EUR")]))
+
+    @parameterized.expand(
+        [
+            (None, AccountType.expense),
+            ("2000-01-30", AccountType.expense),
+            (None, AccountType.asset),
+            ("2000-01-30", AccountType.asset),
+        ]
+    )
+    def test_with_balances_expense_sign(self, as_of, type):
+        """Expense & asset accounts should have their sign flipped"""
+        src = self.account(type=AccountType.liability)
+        dst = self.account(type=type)
+
+        src.transfer_to(dst, Money(100, "EUR"), date="2000-01-15")
+        src.transfer_to(dst, Money(10, "EUR"), date="2000-01-16")
+
+        # Just some other transaction that should be ignored
+        self.account().transfer_to(self.account(), Money(50, "EUR"))
+
+        src = Account.objects.filter(pk=src.pk).with_balances(as_of=as_of).get()
+        self.assertEqual(src.balance, Balance([Money("110", "EUR")]))
+
+        dst = Account.objects.filter(pk=dst.pk).with_balances().get()
+        # Balance is positive, not negative
+        self.assertEqual(dst.balance, Balance([Money("110", "EUR")]))
 
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
