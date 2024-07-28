@@ -1,3 +1,9 @@
+Version 1.17.0 (unreleased)
+===========================
+
+* Deprecated Account.balance() in favor of the new Account.get_balance().
+  The `balance` property can now be pre-populated using `Account.objects.with_balances()`.
+
 Version 1.16.0, Fri, 25 June 2024
 =================================
 
