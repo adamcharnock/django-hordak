@@ -20,6 +20,11 @@ class LegType(models.TextChoices):
 class LegView(models.Model):
     """An accounting view onto the Legs table
 
+    .. warning::
+
+        Hordak's database views are still experimental and may change or be
+        removed in a future version.
+
     This provides a number of features on top of the raw Legs table:
 
     1. Shows the leg type (debit/credit)
@@ -173,6 +178,11 @@ class LegView(models.Model):
 
 class TransactionView(models.Model):
     """An accounting view onto the Transaction table
+
+    .. warning::
+
+        Hordak's database views are still experimental and may change or be
+        removed in a future version.
 
     This provides a number of features on top of the raw Transaction table:
 
