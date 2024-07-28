@@ -188,7 +188,7 @@ class TransferToTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-01")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date", "pk").all()
         self.assertEqual(legs[0].account_balance_after(), Balance("-100", "EUR"))
         self.assertEqual(legs[1].account_balance_after(), Balance("-200", "EUR"))
         self.assertEqual(legs[2].account_balance_after(), Balance("-250", "EUR"))
@@ -207,7 +207,7 @@ class TransferToTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date", "pk").all()
         self.assertEqual(legs[0].account_balance_after(), Balance("-110", "EUR"))
         self.assertEqual(legs[1].account_balance_after(), Balance("-210", "EUR"))
         self.assertEqual(legs[2].account_balance_after(), Balance("-260", "EUR"))
@@ -226,7 +226,7 @@ class TransferToTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date", "pk").all()
         self.assertEqual(legs[0].account_balance_before(), Balance("0", "EUR"))
         self.assertEqual(legs[1].account_balance_before(), Balance("-110", "EUR"))
         self.assertEqual(legs[2].account_balance_before(), Balance("-210", "EUR"))

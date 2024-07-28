@@ -68,7 +68,12 @@ class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
         return sum((account.get_balance(raw) for account in self), Balance())
 
-    def with_balances(self, to_field_name="balance", as_of: date = None):
+    def with_balances(
+        self,
+        to_field_name="balance",
+        as_of: date = None,
+        as_of_transaction_id: int = None,
+    ):
         """Annotate the account queryset with account balances
 
         This is a much more performant way to calculate account balances,
@@ -78,7 +83,9 @@ class AccountQuerySet(models.QuerySet):
         to `None` (the default). This is because the underlying custom database function
         can avoid a join.
         """
-        field = GetBalance(F("id"), as_of=as_of)
+        field = GetBalance(
+            F("id"), as_of=as_of, as_of_transaction_id=as_of_transaction_id
+        )
         return self.annotate(
             **{
                 to_field_name: field,
@@ -505,10 +512,12 @@ class LegQuerySet(models.QuerySet):
             if len(account_types) == 1:
                 account_type = account_types[0]
 
-        if not account_type:
+        if not account_type and credits != debits:
+            # If we cannot determine an account type and the result is non-zero
+            # then we should warn the user that they may get an unexpected sign
             warnings.warn(
                 f"Could not auto-determine account type for the current queryset in sum_to_balance() "
-                f"(we found account types {account_type} for the selected legs)."
+                f"(we found account types {account_types} for the selected legs). "
                 f"This may result in an unexpected sign on the returned balance. We recommend you "
                 f"provide sum_to_balance(account_type=...) to avoid this ambiguity."
             )
@@ -679,35 +688,26 @@ class Leg(models.Model):
 
     def account_balance_after(self):
         """Get the balance of the account associated with this leg following the transaction"""
-        # TODO: Consider moving to annotation,
-        #       particularly once we can count on Django 1.11's subquery support
-        #       Or use the new LegView.
-        transaction_date = self.transaction.date
-        return self.account.get_balance(
-            leg_query=(
-                models.Q(transaction__date__lt=transaction_date)
-                | (
-                    models.Q(transaction__date=transaction_date)
-                    & models.Q(transaction_id__lte=self.transaction_id)
-                )
+        account = (
+            Account.objects.filter(pk=self.account.pk)
+            .with_balances(
+                as_of=self.transaction.date, as_of_transaction_id=self.transaction.pk
             )
+            .get()
         )
+        return account.balance
 
     def account_balance_before(self):
         """Get the balance of the account associated with this leg before the transaction"""
-        # TODO: Consider moving to annotation,
-        #       particularly once we can count on Django 1.11's subquery support.
-        #       Or use the new LegView.
-        transaction_date = self.transaction.date
-        return self.account.get_balance(
-            leg_query=(
-                models.Q(transaction__date__lt=transaction_date)
-                | (
-                    models.Q(transaction__date=transaction_date)
-                    & models.Q(transaction_id__lt=self.transaction_id)
-                )
+        account = (
+            Account.objects.filter(pk=self.account.pk)
+            .with_balances(
+                as_of=self.transaction.date,
+                as_of_transaction_id=self.transaction.pk - 1,
             )
+            .get()
         )
+        return account.balance
 
     class Meta:
         verbose_name = _("Leg")

@@ -306,7 +306,7 @@ ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check_debit;
 
 
 ------
-CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL)
+CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL, as_of_transaction_id BIGINT = NULL)
     RETURNS TABLE (amount DECIMAL, currency VARCHAR) AS
 $$
 DECLARE
@@ -338,6 +338,10 @@ BEGIN
         account_sign := 1;
     END IF;
 
+    IF as_of IS NULL AND as_of_transaction_id IS NOT NULL THEN
+        RAISE EXCEPTION 'get_balance_table(): You must specify the as_of parameter if also specifying the as_of_transaction_id parameter';
+    end if;
+
     IF as_of IS NOT NULL THEN
         -- If `as_of` is specified then we need an extra join onto the
         -- transactions table to get the transaction date
@@ -354,7 +358,11 @@ BEGIN
                 A2.rght <= account_rght AND
                 A2.tree_id = account_tree_id AND
                 -- Also respect the as_of parameter
-                T.date <= as_of
+                (
+                    T.date < as_of
+                        OR
+                    T.date = as_of AND (CASE WHEN as_of_transaction_id IS NOT NULL THEN T.id <= as_of_transaction_id ELSE TRUE END)
+                )
             GROUP BY L.currency;
     ELSE
         RETURN QUERY
@@ -431,3 +439,38 @@ LANGUAGE plpgsql;
     END;
     $$
     LANGUAGE plpgsql;
+
+------
+DROP FUNCTION get_balance;
+--- reverse:
+
+    CREATE FUNCTION get_balance(account_id BIGINT, as_of DATE = NULL)
+        RETURNS JSONB AS
+    $$
+    BEGIN
+        -- Convert our balance table into JSONB in the form:
+        --     [{"amount": 100.00, "currency": "EUR"}]
+        RETURN
+            (SELECT jsonb_agg(jsonb_build_object('amount', amount, 'currency', currency)))
+            FROM get_balance_table(account_id, as_of);
+    END;
+    $$
+    LANGUAGE plpgsql;
+
+------
+
+CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE = NULL, as_of_transaction_id BIGINT = NULL)
+    RETURNS JSONB AS
+$$
+BEGIN
+    -- Convert our balance table into JSONB in the form:
+    --     [{"amount": 100.00, "currency": "EUR"}]
+    RETURN
+        (SELECT jsonb_agg(jsonb_build_object('amount', amount, 'currency', currency)))
+        FROM get_balance_table(account_id, as_of, as_of_transaction_id);
+END;
+$$
+LANGUAGE plpgsql;
+
+--- reverse:
+    DROP FUNCTION get_balance;

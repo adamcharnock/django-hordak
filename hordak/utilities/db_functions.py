@@ -21,6 +21,7 @@ class GetBalance(Func):
         self,
         account_id: Union[Combinable, int],
         as_of: Union[Combinable, date, str] = None,
+        as_of_transaction_id: Union[Combinable, int] = None,
         output_field=None,
         **extra
     ):
@@ -44,8 +45,15 @@ class GetBalance(Func):
             if not isinstance(as_of, Combinable):
                 as_of = Value(as_of)
 
+        if as_of is None and as_of_transaction_id is not None:
+            raise ValueError(
+                "as_of cannot be None when specifying as_of_transaction_id"
+            )
+
         output_field = output_field or MoneyField()
-        super().__init__(account_id, as_of, output_field=output_field, **extra)
+        super().__init__(
+            account_id, as_of, as_of_transaction_id, output_field=output_field, **extra
+        )
 
     @cached_property
     def convert_value(self):

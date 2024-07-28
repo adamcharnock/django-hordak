@@ -606,10 +606,6 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account2, debit=Money(20.06, "USD")
             )
 
-        with self.assertWarns(Warning):
-            # Ambiguous account signing
-            self.assertEqual(Leg.objects.sum_to_balance(), Balance())
-
         # Multiple account types, but signing disambiguated by passing account_type
         self.assertEqual(
             Leg.objects.sum_to_balance(account_type=account1.type), Balance()
