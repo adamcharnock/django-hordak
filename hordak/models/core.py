@@ -20,6 +20,7 @@ Additionally, there are models which related to the import of external bank stat
 - ``StatementLine`` - Represents a statement line. ``StatementLine.create_transaction()`` may be called to
   create a transaction for the statement line.
 """
+import warnings
 
 from django.db import connection, models
 from django.db import transaction
@@ -260,7 +261,7 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (Account.TYPES.asset, Account.TYPES.expense) else 1
 
-    def balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def get_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
 
         Args:
@@ -281,7 +282,15 @@ class Account(MPTTModel):
         ]
         return sum(balances, Balance())
 
-    def simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def balance(self, *args, **kwargs):
+        warnings.warn(
+            "Account.balance() is deprecated and will be removed in "
+            "Hordak 2.0, use Account.get_balance() instead",
+            DeprecationWarning,
+        )
+        return self.get_balance(*args, **kwargs)
+
+    def get_simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
@@ -304,6 +313,14 @@ class Account(MPTTModel):
             legs = legs.filter(leg_query, **kwargs)
 
         return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
+
+    def simple_balance(self, *args, **kwargs):
+        warnings.warn(
+            "Account.simple_balance() is deprecated and will be removed in "
+            "Hordak 2.0, use Account.get_simple_balance() instead",
+            DeprecationWarning,
+        )
+        return self.get_simple_balance(*args, **kwargs)
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
@@ -510,8 +527,16 @@ class Transaction(models.Model):
         get_latest_by = "date"
         verbose_name = _("transaction")
 
-    def balance(self):
+    def get_balance(self):
         return self.legs.sum_to_balance()
+
+    def balance(self):
+        warnings.warn(
+            "Transaction.balance() is deprecated and will be removed in "
+            "Hordak 2.0, use Transaction.get_balance() instead",
+            DeprecationWarning,
+        )
+        return self.get_balance()
 
     def natural_key(self):
         return (self.uuid,)

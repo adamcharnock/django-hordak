@@ -1,8 +1,9 @@
 Version 1.17.0 (unreleased)
 ===========================
 
-* Deprecated Account.balance() in favor of the new Account.get_balance().
-  The `balance` property can now be pre-populated using `Account.objects.with_balances()`.
+* Deprecated Account.balance(), now renamed to Account.get_balance().
+  The `balance` property can be pre-populated in Hordak 2.0 using `Account.objects.with_balances()`.
+* Deprecated Transaction.balance(), now renamed to Transaction.get_balance().
 
 Version 1.16.0, Fri, 25 June 2024
 =================================
