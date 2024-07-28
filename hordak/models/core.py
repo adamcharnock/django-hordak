@@ -65,8 +65,13 @@ def get_currency_choices():
 
 
 class AccountQuerySet(models.QuerySet):
-    def net_balance(self, raw=False):
-        return sum((account.get_balance(raw) for account in self), Balance())
+    """Utilities available to querysets of Accounts"""
+
+    def net_balance(self):
+        """Get the total balance of all accounts in this queryset"""
+        # TODO: Do aggregation of JSONB balance structures in custom db function.
+        #       Will avoid having to pull all accounts back.
+        return sum((account.balance for account in self.with_balances()), Balance())
 
     def with_balances(
         self,
@@ -79,9 +84,18 @@ class AccountQuerySet(models.QuerySet):
         This is a much more performant way to calculate account balances,
         especially when calculating balances for a lot of accounts.
 
-        Note that you will get better performance by setting the `as_of`
-        to `None` (the default). This is because the underlying custom database function
+        You can get the balance at a particular point in time by specifying
+        ``as_of`` and (optionally) ``as_of_leg_id``.
+
+        Note that you will get better performance by setting the ``as_of``
+        to ``None`` (the default). This is because the underlying custom database function
         can avoid a join.
+
+        Example:
+
+            >>> # Will execute in a single database query
+            >>> for account in Account.objects.with_balances():
+            >>>     print(account.balance)
         """
         field = GetBalance(F("id"), as_of=as_of, as_of_leg_id=as_of_leg_id)
         return self.annotate(
@@ -142,9 +156,11 @@ class Account(MPTTModel):
         uuid (UUID): UUID for account. Use to prevent leaking of IDs (if desired).
         name (str): Name of the account. Required.
         parent (Account|None): Parent account, nonen if root account
+        balance (Balance): Account balance, only populated when account is queried using
+            ``Account.objects.with_balances()``
         code (str): Account code. Must combine with account codes of parent
             accounts to get fully qualified account code.
-        type (str): Type of account as defined by `AccountType`. Can only be set on
+        type (str): Type of account as defined by ``AccountType``. Can only be set on
             root accounts. Child accounts are assumed to have the same time as their parent.
         is_bank_account (bool): Is this a bank account. This implies we can import bank statements into
             it and that it only supports a single currency.
@@ -321,7 +337,7 @@ class Account(MPTTModel):
             Balance
 
         See Also:
-            :meth:`simple_balance()`
+            :meth:`get_simple_balance()`
         """
         if "raw" in kwargs:
             raise DeprecationWarning(
@@ -341,7 +357,7 @@ class Account(MPTTModel):
             raw (bool): If true the returned balance should not have its sign
                         adjusted for display purposes.
             leg_query (models.Q): Django Q-expression, will be used to filter the transaction legs.
-                                  allows for more complex filtering than that provided by **kwargs.
+                                  allows for more complex filtering than that provided by ``**kwargs``.
             kwargs (dict): Will be used to filter the transaction legs
 
         Returns:
@@ -367,12 +383,12 @@ class Account(MPTTModel):
 
     @db_transaction.atomic()
     def transfer_to(self, to_account, amount, **transaction_kwargs):
-        """Create a transaction which credits self and debits `to_account`.
+        """Create a transaction which credits self and debits ``to_account``.
 
         See https://en.wikipedia.org/wiki/Double-entry_bookkeeping.
 
         This is a shortcut utility method which simplifies the process of
-        transferring where `self` is Cr and `to_account` is Dr.
+        transferring where ``self`` is Cr and ``to_account`` is Dr.
 
         For example:
 
@@ -382,20 +398,22 @@ class Account(MPTTModel):
 
         .. note::
 
-                    LHS                         RHS
-            ``{asset | expense} <-> {income | liability | equity}``
+            .. code-block::
 
-            Transfers LHS (A) -> RHS (B) will decrease A and increase B
-            Transfers LHS (A) -> LHS (B) will decrease A and increase B
-            Transfers RHS (A) -> LHS (B) will increase A and increase B
-            Transfers RHS (A) -> RHS (B) will increase A and decrease B
+                      LHS                          RHS
+                {asset | expense} <-> {income | liability | equity}
+
+                Transfers LHS (A) -> RHS (B) will decrease A and increase B
+                Transfers LHS (A) -> LHS (B) will decrease A and increase B
+                Transfers RHS (A) -> LHS (B) will increase A and increase B
+                Transfers RHS (A) -> RHS (B) will increase A and decrease B
 
         Args:
 
             to_account (Account): The destination account.
             amount (Money): The amount to be transferred.
             transaction_kwargs: Passed through to transaction creation. Useful for setting the
-                transaction `description` field.
+                transaction ``description`` or ``date`` fields.
         """
         if not isinstance(amount, Money):
             raise TypeError("amount must be of type Money")
@@ -489,8 +507,15 @@ class Transaction(models.Model):
 
 
 class LegQuerySet(models.QuerySet):
+    """Utilities available to querysets of Legs"""
+
     def sum_to_debit_and_credit(self) -> Tuple[Balance, Balance]:
-        """Sum the Legs of the QuerySet to get balance objects for credits and debits"""
+        """Sum the Legs of the QuerySet to get balance objects for both credits and debits
+
+        Example:
+
+            >>> total_debits, total_credits = Leg.objects.sum_to_debit_and_credit()
+        """
         result = self.values("currency").annotate(
             total_credit=Coalesce(models.Sum("credit"), 0, output_field=DecimalField()),
             total_debit=Coalesce(models.Sum("debit"), 0, output_field=DecimalField()),
@@ -501,7 +526,17 @@ class LegQuerySet(models.QuerySet):
         return credits, debits
 
     def sum_to_balance(self, account_type=None):
-        """Sum the Legs of the QuerySet to get a `Balance`_ object"""
+        """Sum the Legs of the QuerySet to get a single `Balance`_ object
+
+        Specifying ``account_type`` for the account will ensure the resulting
+        balance is signed (ie +/-) correctly. Otherwise this method
+        will perform an additional database query to determine the account
+        type as best it can (and will issue a warning if it fails).
+
+        Example:
+
+            >>> balance = Leg.objects.sum_to_balance()
+        """
         credits, debits = self.sum_to_debit_and_credit()
 
         if not account_type:
@@ -526,7 +561,19 @@ class LegQuerySet(models.QuerySet):
             return credits - debits
 
     def with_account_balance_after(self):
-        """Get the balance of the account associated with each leg following the transaction"""
+        """Get the balance of the account associated with each leg following the transaction
+
+        Annotate the queryset with the `account_balance_after` property. This is the account
+        balance following after the leg happened. Useful for rendering account statements.
+
+        Example:
+
+            >>> legs = my_account.legs.with_account_balance_after()
+            >>> for leg in legs:
+            >>>     print(f"{leg.transaction.date} {leg.type_short} {leg.amount} {leg.balance_after}")
+            2000-01-01 CR €100.00 €100.00
+            2000-01-01 CR €10.00 €110.00
+        """
         return self.annotate(
             account_balance_after=GetBalance(
                 F("account_id"),
@@ -536,7 +583,19 @@ class LegQuerySet(models.QuerySet):
         )
 
     def with_account_balance_before(self):
-        """Get the balance of the account associated with each leg before the transaction"""
+        """Get the balance of the account associated with each leg prior to the transaction
+
+        Annotate the queryset with the `account_balance_before` property. This is the account
+        balance before after the leg happened.
+
+        Example:
+
+            >>> legs = my_account.legs.with_account_balance_before()
+            >>> for leg in legs:
+            >>>     print(f"{leg.transaction.date} {leg.type_short} {leg.amount} {leg.balance_before}")
+            2000-01-01 CR €100.00 €0.00
+            2000-01-01 CR €10.00 €100.00
+        """
         return self.annotate(
             account_balance_before=GetBalance(
                 F("account_id"),
@@ -545,11 +604,6 @@ class LegQuerySet(models.QuerySet):
             )
         )
 
-
-class LegManager(models.Manager):
-    def get_by_natural_key(self, uuid):
-        return self.get(uuid=uuid)
-
     def debits(self):
         """Filter for legs that are debits"""
         return self.filter(debit__isnull=False)
@@ -557,6 +611,11 @@ class LegManager(models.Manager):
     def credits(self):
         """Filter for legs that are credits"""
         return self.filter(credit__isnull=False)
+
+
+class LegManager(models.Manager):
+    def get_by_natural_key(self, uuid):
+        return self.get(uuid=uuid)
 
 
 CustomLegManager = LegManager.from_queryset(LegQuerySet)
@@ -576,7 +635,10 @@ class Leg(models.Model):
         amount (Money): The amount being transferred
         description (str): Optional user-provided description
         type (str): :attr:`hordak.models.DEBIT` or :attr:`hordak.models.CREDIT`.
-
+        account_balance_after (Balance): The account balance before this transaction.
+            Only populated when account is queried using `Leg.objects.with_account_balance_after()`
+        account_balance_before (Balance): The account balance after this transaction.
+            Only populated when account is queried using `Leg.objects.with_account_balance_before()`
     """
 
     uuid = models.UUIDField(
