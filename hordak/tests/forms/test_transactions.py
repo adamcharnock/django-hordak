@@ -36,8 +36,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
         self.assertEqual(transaction.legs.count(), 2)
 
         # Account balances changed
-        self.assertEqual(self.from_account.balance(), Balance(50, "EUR"))
-        self.assertEqual(self.to_account.balance(), Balance(-50, "EUR"))
+        self.assertEqual(self.from_account.get_balance(), Balance(50, "EUR"))
+        self.assertEqual(self.to_account.get_balance(), Balance(-50, "EUR"))
 
         # Check transaction legs have amounts set as expected
         from_leg = transaction.legs.get(account=self.from_account)
@@ -61,8 +61,8 @@ class SimpleTransactionFormTestCase(DataProvider, TestCase):
         )
         self.assertTrue(form.is_valid())
         form.save()
-        self.assertEqual(self.bank.balance(), Balance(-50, "EUR"))
-        self.assertEqual(self.income.balance(), Balance(-50, "EUR"))
+        self.assertEqual(self.bank.get_balance(), Balance(-50, "EUR"))
+        self.assertEqual(self.income.get_balance(), Balance(-50, "EUR"))
 
     def test_no_from_account(self):
         form = SimpleTransactionForm(
@@ -158,11 +158,11 @@ class CurrencyTradeFormTestCase(DataProvider, TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        self.assertEqual(self.account_gbp.balance(), Balance("-100", "GBP"))
+        self.assertEqual(self.account_gbp.get_balance(), Balance("-100", "GBP"))
         self.assertEqual(
-            self.trading_gbp_eur.balance(), Balance("-100", "GBP", "110", "EUR")
+            self.trading_gbp_eur.get_balance(), Balance("-100", "GBP", "110", "EUR")
         )
-        self.assertEqual(self.account_eur.balance(), Balance("110", "EUR"))
+        self.assertEqual(self.account_eur.get_balance(), Balance("110", "EUR"))
 
     def test_no_source_account(self):
         form = CurrencyTradeForm(

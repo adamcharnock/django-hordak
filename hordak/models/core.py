@@ -66,7 +66,7 @@ def get_currency_choices():
 
 class AccountQuerySet(models.QuerySet):
     def net_balance(self, raw=False):
-        return sum((account.balance(raw) for account in self), Balance())
+        return sum((account.get_balance(raw) for account in self), Balance())
 
     def with_balances(self, to_field_name="balance", as_of: date = None):
         """Annotate the account queryset with account balances
@@ -263,7 +263,7 @@ class Account(MPTTModel):
         name = self.name or "Unnamed Account"
         if self.is_leaf_node():
             try:
-                balance = self.balance()
+                balance = self.get_balance()
             except (ValueError, CurrencyDoesNotExist):
                 if self.full_code:
                     return "{} {}".format(self.full_code, name)
@@ -320,10 +320,10 @@ class Account(MPTTModel):
         """
         if "raw" in kwargs:
             raise DeprecationWarning(
-                "The `raw` parameter to Account.balance() is no longer available."
+                "The `raw` parameter to Account.get_balance() is no longer available."
             )
         balances = [
-            account.simple_balance(as_of=as_of, leg_query=leg_query, **kwargs)
+            account.get_simple_balance(as_of=as_of, leg_query=leg_query, **kwargs)
             for account in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
@@ -344,7 +344,7 @@ class Account(MPTTModel):
         """
         if "raw" in kwargs:
             raise DeprecationWarning(
-                "The `raw` parameter to Account.simple_balance() is no longer available."
+                "The `raw` parameter to Account.get_simple_balance() is no longer available."
             )
         legs = self.legs
         if as_of:
@@ -507,10 +507,10 @@ class LegQuerySet(models.QuerySet):
 
         if not account_type:
             warnings.warn(
-                "Could not auto-determine account type for the current queryset in sum_to_balance() "
-                "(we found {account_type} account types for the selected legs)."
-                "This may result in an unexpected sign on the returned balance. We recommend you "
-                "provide sum_to_balance(account_type=...) to avoid this ambiguity."
+                f"Could not auto-determine account type for the current queryset in sum_to_balance() "
+                f"(we found account types {account_type} for the selected legs)."
+                f"This may result in an unexpected sign on the returned balance. We recommend you "
+                f"provide sum_to_balance(account_type=...) to avoid this ambiguity."
             )
 
         if account_type in (AccountType.asset, AccountType.expense):
@@ -683,7 +683,7 @@ class Leg(models.Model):
         #       particularly once we can count on Django 1.11's subquery support
         #       Or use the new LegView.
         transaction_date = self.transaction.date
-        return self.account.balance(
+        return self.account.get_balance(
             leg_query=(
                 models.Q(transaction__date__lt=transaction_date)
                 | (
@@ -699,7 +699,7 @@ class Leg(models.Model):
         #       particularly once we can count on Django 1.11's subquery support.
         #       Or use the new LegView.
         transaction_date = self.transaction.date
-        return self.account.balance(
+        return self.account.get_balance(
             leg_query=(
                 models.Q(transaction__date__lt=transaction_date)
                 | (

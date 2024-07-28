@@ -52,8 +52,8 @@ class TransactionCreateViewTestCase(DataProvider, TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "/")
-        self.assertEqual(self.bank_account.balance(), Balance("-123.45", "EUR"))
-        self.assertEqual(self.income_account.balance(), Balance("-123.45", "EUR"))
+        self.assertEqual(self.bank_account.get_balance(), Balance("-123.45", "EUR"))
+        self.assertEqual(self.income_account.get_balance(), Balance("-123.45", "EUR"))
 
         transaction = Transaction.objects.get()
         self.assertEqual(str(transaction.date), "2000-06-15")
@@ -135,11 +135,11 @@ class CurrencyTradeView(DataProvider, TestCase):
             ),
         )
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(self.account_gbp.balance(), Balance("-100", "GBP"))
+        self.assertEqual(self.account_gbp.get_balance(), Balance("-100", "GBP"))
         self.assertEqual(
-            self.trading_gbp_eur.balance(), Balance("-100", "GBP", "110", "EUR")
+            self.trading_gbp_eur.get_balance(), Balance("-100", "GBP", "110", "EUR")
         )
-        self.assertEqual(self.account_eur.balance(), Balance("110", "EUR"))
+        self.assertEqual(self.account_eur.get_balance(), Balance("110", "EUR"))
 
 
 class ReconcileTransactionsViewTestCase(DataProvider, TestCase):

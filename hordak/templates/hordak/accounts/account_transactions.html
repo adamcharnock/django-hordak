@@ -5,7 +5,7 @@
 {% block page_description %}See all transactions for an account{% endblock %}
 
 {% block content %}
-    <h5>Balance: {{ account.balance }}</h5>
+    <h5>Balance: {{ account.get_balance }}</h5>
 
     <table class="table table-striped">
         <thead>

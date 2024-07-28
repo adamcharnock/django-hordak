@@ -51,18 +51,20 @@ class Command(BaseCommand):
         print("Done")
         print("")
 
-        print(f"Bank:         {str(bank.balance()):<15}  {str(bank.legs.count()):<15}")
         print(
-            f"Assets:       {str(assets.balance()):<15}  {str(assets.legs.count()):<15}"
+            f"Bank:         {str(bank.get_balance()):<15}  {str(bank.legs.count()):<15}"
         )
         print(
-            f"Expenses:     {str(expenses.balance()):<15}  {str(expenses.legs.count()):<15}"
+            f"Assets:       {str(assets.get_balance()):<15}  {str(assets.legs.count()):<15}"
         )
         print(
-            f"Liabilities:  {str(liabilities.balance()):<15}  {str(liabilities.legs.count()):<15}"
+            f"Expenses:     {str(expenses.get_balance()):<15}  {str(expenses.legs.count()):<15}"
         )
         print(
-            f"Capital:      {str(capital.balance()):<15}  {str(capital.legs.count()):<15}"
+            f"Liabilities:  {str(liabilities.get_balance()):<15}  {str(liabilities.legs.count()):<15}"
+        )
+        print(
+            f"Capital:      {str(capital.get_balance()):<15}  {str(capital.legs.count()):<15}"
         )
 
 

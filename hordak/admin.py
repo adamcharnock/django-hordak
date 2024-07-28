@@ -20,7 +20,6 @@ class AccountAdmin(MPTTModelAdmin):
         "credits",
         "debits",
     )
-    readonly_fields = ("balance",)
     raw_id_fields = ("parent",)
     search_fields = (
         "code",
