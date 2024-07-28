@@ -1,34 +1,29 @@
 Version 2.0.0 (unreleased)
 ==========================
 
-**Important:** It is strongly recommended that you
-**upgrade to Hordak 1.17 before upgrading to Hordak 2.0**. Hordak
-1.17 will issue deprecation warnings for most issues you may encounter in the
-2.0 upgrade. Fix those warnings and your upgrade should be smooth.
+.. note::
+
+    **Upgrade to Hordak 1.17 before upgrading to 2.0**
+
+    Hordak 1.17 will issue deprecation warnings for most issues you may encounter in the
+    2.0 upgrade. Fix those warnings and your upgrade should be smooth.
 
 * **Breaking**: ``transfer_to()`` was deprecated in 1.16. This old implementation has now been removed
   and the newer ``transfer_to_accounting()`` has been renamed to take its place.
   Existing uses of ``transfer_to_accounting()`` should be updated to
   point to ``transfer_to()``. This change standardises the behaviour of this method on industry norms.
-* **Breaking**: `Leg.account_balance_after()` and `Leg.account_balance_before()` have been removed and replaced
+* **Breaking**: ``Leg.account_balance_after()`` and ``Leg.account_balance_before()`` have been removed and replaced
   with annotations which populate properties of the same name. Enable this annotations using
-  `Leg.objects.with_account_balance_after()` and `Leg.objects.with_account_balance_before()`
+  ``Leg.objects.with_account_balance_after()`` and ``Leg.objects.with_account_balance_before()``
 * **Breaking**: New account currencies now default to ``DEFAULT_CURRENCY`` rather than all available currencies
   (trading accounts should be the only accounts with multiple currencies).
 * **Breaking**: Removed ``django-smalluuid``. UUIDs in URLs will now be rendered in the regular UUID format.
 * **Breaking**: Balance methods have be renamed to make way for (more performant) annotated properties.
   Deprecation notices are issued by Hordak 1.17:
 
-  * `Account.balance()` -> `Account.get_balance()`
-  * `Account.simple_balance()` -> `Account.get_simple_balance()`
-  * `Transaction.balance()` -> `Transaction.get_balance()`
-
-* Removed use of ``django-model-utils``. Model choices have the same values, but the data
-  structures have changed to use the Django-native ``models.TextChoices``. The old syntax will continue to work until Hordak 3.0:
-
-  * ``Account.TYPES`` is now ``AccountType``
-  * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
-  * ``TransactionCsvImport.STATES`` is now ``TransactionCsvImportState``
+  * ``Account.balance()`` -> ``Account.get_balance()``
+  * ``Account.simple_balance()`` -> ``Account.get_simple_balance()``
+  * ``Transaction.balance()`` -> ``Transaction.get_balance()``
 
 * **Feature:** New accounting-oriented database view on the Legs table (keep your accountants happier). Adds columns
 
@@ -44,10 +39,18 @@ Version 2.0.0 (unreleased)
   * Shows the transaction amount (JSON list, one value per currency)
   * Shows credited/debited account IDs & names
 
-* **Feature:** Added ``GET_BALANCE(account_id: BIGINT, as_of: DATE = NULL)`` database function. Will get the balance of an account.
+* **Feature:** Added ``GET_BALANCE(account_id: BIGINT, as_of: DATE = NULL, as_of_leg_id: INT = NULL)`` database function. Will get the balance of an account.
+* **Feature**: Many balance calculations are now available as query annotations, and are performed in-database. This represents a
+  significant performance improvement. See the ``AccountQueryset`` and ``LegQueryset``.
 * **Enhancement:** Account code max length increased from 3 to 6
 * ``Balance.__eq__()`` now returns False rather than raising an exception if the other object is not a ``Balance``
 * Removed used of ``django-sql-utils``
+* Removed use of ``django-model-utils``. Model choices have the same values, but the data
+  structures have changed to use the Django-native ``models.TextChoices``. The old syntax will continue to work until Hordak 3.0:
+
+  * ``Account.TYPES`` is now ``AccountType``
+  * ``TransactionCsvImportColumn.TO_FIELDS`` is now ``ToField``
+  * ``TransactionCsvImport.STATES`` is now ``TransactionCsvImportState``
 
 Version 1.17.0 (unreleased)
 ===========================
