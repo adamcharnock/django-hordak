@@ -303,7 +303,7 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (AccountType.asset, AccountType.expense) else 1
 
-    def balance(self, as_of=None, leg_query=None, **kwargs):
+    def get_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
 
         Args:
@@ -328,7 +328,7 @@ class Account(MPTTModel):
         ]
         return sum(balances, Balance())
 
-    def simple_balance(self, as_of=None, leg_query=None, **kwargs):
+    def get_simple_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
@@ -476,7 +476,7 @@ class Transaction(models.Model):
         get_latest_by = "date"
         verbose_name = _("transaction")
 
-    def balance(self):
+    def get_balance(self):
         return self.legs.sum_to_balance()
 
     def natural_key(self):
