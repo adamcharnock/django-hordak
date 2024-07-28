@@ -8,6 +8,7 @@ from django.db.models.expressions import Combinable, Value
 from djmoney.models.fields import MoneyField
 from moneyed import Money
 
+from hordak import defaults
 from hordak.utilities.currency import Balance
 
 
@@ -51,6 +52,8 @@ class GetBalance(Func):
         # Convert the JSON output into a Balance object. Example of a JSON response:
         #    [{"amount": 100.00, "currency": "EUR"}]
         def convertor(value, expression, connection):
+            if not value:
+                return Balance([Money("0", defaults.DEFAULT_CURRENCY)])
             value = json.loads(value)
             return Balance([Money(v["amount"], v["currency"]) for v in value])
 

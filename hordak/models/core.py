@@ -249,9 +249,9 @@ class Account(MPTTModel):
     @classmethod
     def validate_accounting_equation(cls):
         """Check that all accounts sum to 0"""
-        balances = [
-            account.balance(raw=True) for account in Account.objects.root_nodes()
-        ]
+        accounts = Account.objects.root_nodes().with_balances()
+        balances = [a.balance * a.sign for a in accounts]
+
         if sum(balances, Balance()) != 0:
             raise exceptions.AccountingEquationViolationError(
                 "Account balances do not sum to zero. They sum to {}".format(
@@ -303,7 +303,7 @@ class Account(MPTTModel):
         """
         return -1 if self.type in (AccountType.asset, AccountType.expense) else 1
 
-    def balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, including child accounts
 
         Args:
@@ -318,13 +318,17 @@ class Account(MPTTModel):
         See Also:
             :meth:`simple_balance()`
         """
+        if "raw" in kwargs:
+            raise DeprecationWarning(
+                "The `raw` parameter to Account.balance() is no longer available."
+            )
         balances = [
-            account.simple_balance(as_of=as_of, raw=raw, leg_query=leg_query, **kwargs)
+            account.simple_balance(as_of=as_of, leg_query=leg_query, **kwargs)
             for account in self.get_descendants(include_self=True)
         ]
         return sum(balances, Balance())
 
-    def simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
+    def simple_balance(self, as_of=None, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
         Args:
@@ -338,6 +342,10 @@ class Account(MPTTModel):
         Returns:
             Balance
         """
+        if "raw" in kwargs:
+            raise DeprecationWarning(
+                "The `raw` parameter to Account.simple_balance() is no longer available."
+            )
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
@@ -346,7 +354,7 @@ class Account(MPTTModel):
             leg_query = leg_query or models.Q()
             legs = legs.filter(leg_query, **kwargs)
 
-        return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
+        return legs.sum_to_balance(account_type=self.type) + self._zero_balance()
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
