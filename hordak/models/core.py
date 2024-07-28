@@ -72,7 +72,7 @@ class AccountQuerySet(models.QuerySet):
         self,
         to_field_name="balance",
         as_of: date = None,
-        as_of_transaction_id: int = None,
+        as_of_leg_id: int = None,
     ):
         """Annotate the account queryset with account balances
 
@@ -83,9 +83,7 @@ class AccountQuerySet(models.QuerySet):
         to `None` (the default). This is because the underlying custom database function
         can avoid a join.
         """
-        field = GetBalance(
-            F("id"), as_of=as_of, as_of_transaction_id=as_of_transaction_id
-        )
+        field = GetBalance(F("id"), as_of=as_of, as_of_leg_id=as_of_leg_id)
         return self.annotate(
             **{
                 to_field_name: field,
@@ -533,17 +531,17 @@ class LegQuerySet(models.QuerySet):
             account_balance_after=GetBalance(
                 F("account_id"),
                 as_of=F("transaction__date"),
-                as_of_transaction_id=F("transaction_id"),
+                as_of_leg_id=F("id"),
             )
         )
 
     def with_account_balance_before(self):
         """Get the balance of the account associated with each leg before the transaction"""
         return self.annotate(
-            account_balance_after=GetBalance(
+            account_balance_before=GetBalance(
                 F("account_id"),
                 as_of=F("transaction__date"),
-                as_of_transaction_id=F("transaction_id") - 1,
+                as_of_leg_id=F("id") - 1,
             )
         )
 

@@ -911,11 +911,13 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(50, "EUR"))
         dst.transfer_to(src, Money(70, "EUR"))
 
-        legs = Leg.objects.filter(account=src).order_by("pk").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
+        legs = (
+            Leg.objects.filter(account=src).order_by("pk").with_account_balance_after()
+        )
+        self.assertEqual(legs[0].account_balance_after, Balance("100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after, Balance("200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after, Balance("250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after, Balance("180", "EUR"))
 
     def test_account_balance_after_out_of_order_ids(self):
         src = self.account()
@@ -928,11 +930,15 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-01")
 
-        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
+        legs = (
+            Leg.objects.filter(account=src)
+            .order_by("transaction__date")
+            .with_account_balance_after()
+        )
+        self.assertEqual(legs[0].account_balance_after, Balance("100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after, Balance("200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after, Balance("250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after, Balance("180", "EUR"))
 
     def test_account_balance_after_out_of_order_ids_on_same_day(self):
         src = self.account()
@@ -947,11 +953,15 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
-        self.assertEqual(legs[0].account_balance_after(), Balance("110", "EUR"))
-        self.assertEqual(legs[1].account_balance_after(), Balance("210", "EUR"))
-        self.assertEqual(legs[2].account_balance_after(), Balance("260", "EUR"))
-        self.assertEqual(legs[3].account_balance_after(), Balance("190", "EUR"))
+        legs = (
+            Leg.objects.filter(account=src)
+            .order_by("transaction__date")
+            .with_account_balance_after()
+        )
+        self.assertEqual(legs[0].account_balance_after, Balance("110", "EUR"))
+        self.assertEqual(legs[1].account_balance_after, Balance("210", "EUR"))
+        self.assertEqual(legs[2].account_balance_after, Balance("260", "EUR"))
+        self.assertEqual(legs[3].account_balance_after, Balance("190", "EUR"))
 
     def test_account_balance_before_out_of_order_ids_on_same_day(self):
         src = self.account()
@@ -966,11 +976,15 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = Leg.objects.filter(account=src).order_by("transaction__date").all()
-        self.assertEqual(legs[0].account_balance_before(), Balance("0", "EUR"))
-        self.assertEqual(legs[1].account_balance_before(), Balance("110", "EUR"))
-        self.assertEqual(legs[2].account_balance_before(), Balance("210", "EUR"))
-        self.assertEqual(legs[3].account_balance_before(), Balance("260", "EUR"))
+        legs = (
+            Leg.objects.filter(account=src)
+            .order_by("transaction__date")
+            .with_account_balance_before()
+        )
+        self.assertEqual(legs[0].account_balance_before, Balance("0", "EUR"))
+        self.assertEqual(legs[1].account_balance_before, Balance("110", "EUR"))
+        self.assertEqual(legs[2].account_balance_before, Balance("210", "EUR"))
+        self.assertEqual(legs[3].account_balance_before, Balance("260", "EUR"))
 
 
 class TransactionTestCase(DataProvider, DbTransactionTestCase):

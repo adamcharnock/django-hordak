@@ -306,7 +306,7 @@ ALTER TABLE hordak_leg DROP CONSTRAINT zero_amount_check_debit;
 
 
 ------
-CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL, as_of_transaction_id BIGINT = NULL)
+CREATE OR REPLACE FUNCTION get_balance_table(account_id BIGINT, as_of DATE = NULL, as_of_leg_id BIGINT = NULL)
     RETURNS TABLE (amount DECIMAL, currency VARCHAR) AS
 $$
 DECLARE
@@ -338,8 +338,8 @@ BEGIN
         account_sign := 1;
     END IF;
 
-    IF as_of IS NULL AND as_of_transaction_id IS NOT NULL THEN
-        RAISE EXCEPTION 'get_balance_table(): You must specify the as_of parameter if also specifying the as_of_transaction_id parameter';
+    IF as_of IS NULL AND as_of_leg_id IS NOT NULL THEN
+        RAISE EXCEPTION 'get_balance_table(): You must specify the as_of parameter if also specifying the as_of_leg_id parameter';
     end if;
 
     IF as_of IS NOT NULL THEN
@@ -361,7 +361,7 @@ BEGIN
                 (
                     T.date < as_of
                         OR
-                    T.date = as_of AND (CASE WHEN as_of_transaction_id IS NOT NULL THEN T.id <= as_of_transaction_id ELSE TRUE END)
+                    T.date = as_of AND (CASE WHEN as_of_leg_id IS NOT NULL THEN L.id <= as_of_leg_id ELSE TRUE END)
                 )
             GROUP BY L.currency;
     ELSE
@@ -459,7 +459,7 @@ DROP FUNCTION get_balance;
 
 ------
 
-CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE = NULL, as_of_transaction_id BIGINT = NULL)
+CREATE OR REPLACE FUNCTION get_balance(account_id BIGINT, as_of DATE = NULL, as_of_leg_id BIGINT = NULL)
     RETURNS JSONB AS
 $$
 BEGIN
@@ -467,7 +467,7 @@ BEGIN
     --     [{"amount": 100.00, "currency": "EUR"}]
     RETURN
         (SELECT jsonb_agg(jsonb_build_object('amount', amount, 'currency', currency)))
-        FROM get_balance_table(account_id, as_of, as_of_transaction_id);
+        FROM get_balance_table(account_id, as_of, as_of_leg_id);
 END;
 $$
 LANGUAGE plpgsql;
