@@ -241,11 +241,19 @@ BEGIN
     DECLARE account_rght INT;
     DECLARE account_tree_id INT;
     DECLARE result_json JSON;
+    DECLARE account_type TEXT;
+    DECLARE account_sign INT;
 
     -- Fetch the account's hierarchical information
-    SELECT lft, rght, tree_id INTO account_lft, account_rght, account_tree_id
+    SELECT lft, rght, tree_id, type INTO account_lft, account_rght, account_tree_id, account_type
     FROM hordak_account
     WHERE id = account_id;
+
+    IF account_type = 'EX' OR account_type = 'AS' THEN
+        SET account_sign = -1;
+    ELSE
+        SET account_sign = 1;
+    END IF;
 
     -- Prepare the result set with sums calculated in a derived table (subquery)
     IF as_of IS NOT NULL THEN
@@ -257,7 +265,7 @@ BEGIN
                 )
             )
             FROM (
-                SELECT SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) AS amount, L.currency AS currency
+                SELECT SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * account_sign AS amount, L.currency AS currency
                 FROM hordak_account A2
                 JOIN hordak_leg L ON L.account_id = A2.id
                 JOIN hordak_transaction T ON L.transaction_id = T.id
@@ -274,7 +282,7 @@ BEGIN
                 )
             )
             FROM (
-                SELECT SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) AS amount, L.currency AS currency
+                SELECT SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * account_sign AS amount, L.currency AS currency
                 FROM hordak_account A2
                 JOIN hordak_leg L ON L.account_id = A2.id
                 WHERE A2.lft >= account_lft AND A2.rght <= account_rght AND A2.tree_id = account_tree_id

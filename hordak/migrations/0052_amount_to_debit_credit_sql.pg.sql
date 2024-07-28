@@ -313,27 +313,37 @@ DECLARE
     account_lft int;
     account_rght int;
     account_tree_id int;
+    account_type TEXT;
+    account_sign INT;
 BEGIN
     -- Get the account's information
     SELECT
         lft,
         rght,
-        tree_id
+        tree_id,
+        type
     INTO
         account_lft,
         account_rght,
-        account_tree_id
+        account_tree_id,
+        account_type
     FROM hordak_account
     WHERE id = account_id;
     -- TODO: OPTIMISATION: Crate get_balance_table_simple() for use when this is a leaf account,
     --       and defer to it when lft + 1 = rght
+
+    IF account_type = 'EX' OR account_type = 'AS' THEN
+        account_sign := -1;
+    ELSE
+        account_sign := 1;
+    END IF;
 
     IF as_of IS NOT NULL THEN
         -- If `as_of` is specified then we need an extra join onto the
         -- transactions table to get the transaction date
         RETURN QUERY
             SELECT
-                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * (CASE WHEN A2.type IN ('EX', 'AS') THEN -1 ELSE 1 END) as amount,
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * account_sign as amount,
                 L.currency as currency
             FROM hordak_account A2
             INNER JOIN hordak_leg L on L.account_id = A2.id
@@ -345,11 +355,11 @@ BEGIN
                 A2.tree_id = account_tree_id AND
                 -- Also respect the as_of parameter
                 T.date <= as_of
-            GROUP BY A2.type, L.currency;
+            GROUP BY L.currency;
     ELSE
         RETURN QUERY
             SELECT
-                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * (CASE WHEN A2.type IN ('EX', 'AS') THEN -1 ELSE 1 END) as amount,
+                SUM(COALESCE(L.credit, 0) - COALESCE(L.debit, 0)) * account_sign as amount,
                 L.currency as currency
             FROM hordak_account A2
             INNER JOIN hordak_leg L on L.account_id = A2.id
@@ -358,7 +368,7 @@ BEGIN
                 A2.lft >= account_lft AND
                 A2.rght <= account_rght AND
                 A2.tree_id = account_tree_id
-            GROUP BY A2.type, L.currency;
+            GROUP BY L.currency;
     END IF;
 END;
 $$
