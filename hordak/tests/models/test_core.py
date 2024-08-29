@@ -712,13 +712,14 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(transaction=transaction, account=account, credit=100)
 
         with self.assertRaises(DatabaseError), db_transaction.atomic():
-            # Also ensure we distinguish between currencies
-            Leg.objects.create(
-                transaction=transaction, account=account, credit=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account, debit=Money(100, "GBP")
-            )
+            with db_transaction.atomic():
+                # Also ensure we distinguish between currencies
+                Leg.objects.create(
+                    transaction=transaction, account=account, credit=Money(100, "EUR")
+                )
+                Leg.objects.create(
+                    transaction=transaction, account=account, debit=Money(100, "GBP")
+                )
 
     def test_postgres_trigger_currency(self):
         """Check the database enforces that leg currencies must be supported by the leg's account"""
@@ -726,6 +727,26 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         transaction = Transaction.objects.create()
 
         with self.assertRaises(DatabaseError):
+            with db_transaction.atomic():
+                Leg.objects.create(
+                    transaction=transaction, account=account, credit=Money(100, "EUR")
+                )
+                Leg.objects.create(
+                    transaction=transaction, account=account, debit=Money(100, "EUR")
+                )
+
+    def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
+        """Check the database enforces that only asset accounts can be bank accounts"""
+        self.account(is_bank_account=True, type=AccountType.asset)
+        with self.assertRaises(DatabaseError):
+            self.account(is_bank_account=True, type=AccountType.income)
+
+    def test_debit_and_credit_positive(self):
+        """Check the database enforces that the debit & credit columns must be positive"""
+        account = self.account()
+        transaction = Transaction.objects.create()
+
+        with db_transaction.atomic():
             Leg.objects.create(
                 transaction=transaction, account=account, credit=Money(100, "EUR")
             )
@@ -733,11 +754,15 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account, debit=Money(100, "EUR")
             )
 
-    def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
-        """Check the database enforces that only asset accounts can be bank accounts"""
-        self.account(is_bank_account=True, type=AccountType.asset)
-        with self.assertRaises(DatabaseError):
-            self.account(is_bank_account=True, type=AccountType.income)
+        with self.assertRaises(DatabaseError) as e:
+            # use .update() to bypass the Django models checks
+            Leg.objects.update(
+                credit=Money(-100, "EUR"),
+                debit=Money(-100, "EUR"),
+            )
+        # Should be either an hordak_leg_chk_credit_positive or hordak_leg_chk_debit_positive
+        self.assertIn("hordak_leg_chk_", str(e.exception))
+        self.assertIn("_positive", str(e.exception))
 
     def test_type(self):
         account1 = self.account()
