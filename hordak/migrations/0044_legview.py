@@ -3,6 +3,8 @@
 import djmoney.models.fields
 from django.db import migrations, models
 
+from hordak.defaults import DECIMAL_PLACES
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -350,7 +352,7 @@ class Migration(migrations.Migration):
                 (
                     "amount",
                     djmoney.models.fields.MoneyField(
-                        decimal_places=6,
+                        decimal_places=DECIMAL_PLACES,
                         default_currency="EUR",
                         max_digits=20,
                         verbose_name="amount",
@@ -368,7 +370,7 @@ class Migration(migrations.Migration):
                 (
                     "credit",
                     models.DecimalField(
-                        decimal_places=6,
+                        decimal_places=DECIMAL_PLACES,
                         help_text="Amount of this credit, or NULL if not a credit",
                         max_digits=20,
                         verbose_name="credit amount",
@@ -377,7 +379,7 @@ class Migration(migrations.Migration):
                 (
                     "debit",
                     models.DecimalField(
-                        decimal_places=6,
+                        decimal_places=DECIMAL_PLACES,
                         help_text="Amount of this debit, or NULL if not a debit",
                         max_digits=20,
                         verbose_name="debit amount",
@@ -386,7 +388,7 @@ class Migration(migrations.Migration):
                 (
                     "account_balance",
                     models.DecimalField(
-                        decimal_places=6,
+                        decimal_places=DECIMAL_PLACES,
                         help_text="Account balance following this transaction. For multiple-currency accounts this will be the balance of the same currency as the leg amount.",
                         max_digits=20,
                         verbose_name="account balance",

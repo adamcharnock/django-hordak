@@ -30,7 +30,7 @@
                                     {% for leg in line.transaction.legs.all %}
                                         {% if leg.account != line.statement_import.bank_account %}
                                             <dt>{{ leg.account.name }}</dt>
-                                            <dd>{{ leg.amount|abs }}</dd>
+                                            <dd>{{ leg.type_short }} {{ leg.amount }}</dd>
                                         {% endif %}
                                     {% endfor %}
                                     </dl>

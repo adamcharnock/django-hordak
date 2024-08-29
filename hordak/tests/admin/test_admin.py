@@ -19,11 +19,9 @@ class AdminTestCase(DataProvider, TestCase):
             is_bank_account=False, type=AccountType.income
         )
         transaction = Transaction.objects.create()
+        Leg.objects.create(debit=10, account=self.bank_account, transaction=transaction)
         Leg.objects.create(
-            amount=-10, account=self.bank_account, transaction=transaction
-        )
-        Leg.objects.create(
-            amount=10, account=self.income_account, transaction=transaction
+            credit=10, account=self.income_account, transaction=transaction
         )
 
     def test_account_list(self):
@@ -37,15 +35,15 @@ class AdminTestCase(DataProvider, TestCase):
             f'<a href="/admin/hordak/account/{self.bank_account.id}/change/">Bank account</a>',
             html=True,
         )
-        self.assertContains(
-            res, '<td class="field-balance_sum">10.000000</td>', html=True
-        )
-        self.assertContains(res, '<td class="field-balance_sum">-</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">-</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">Income</td>', html=True)
-        self.assertContains(res, '<td class="field-type_">Asset</td>', html=True)
 
-    def test_search_query(self):
+        qs = res.context_data["cl"].queryset
+        self.assertEqual(qs.count(), 4)
+        self.assertEqual(qs[0].balance, 0)
+        self.assertEqual(qs[1].balance, 0)
+        self.assertEqual(qs[2].balance, 10)
+        self.assertEqual(qs[3].balance, 10)
+
+    def test_account_search_query(self):
         """Test that search query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -59,7 +57,7 @@ class AdminTestCase(DataProvider, TestCase):
         )
         self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
 
-    def test_filter_query(self):
+    def test_account_filter_query(self):
         """Test that filter query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -73,7 +71,7 @@ class AdminTestCase(DataProvider, TestCase):
         )
         self.assertContains(res, '<p class="paginator">1 account</p>', html=True)
 
-    def test_filter_query_liability(self):
+    def test_account_filter_query_liability(self):
         """Test that filter query works"""
         superuser = get_user_model().objects.create_superuser(username="superuser")
         self.client.force_login(superuser)
@@ -108,10 +106,10 @@ class AdminTestCase(DataProvider, TestCase):
         for _ in range(0, 50):
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                amount=-10, account=self.bank_account, transaction=transaction
+                debit=10, account=self.bank_account, transaction=transaction
             )
             Leg.objects.create(
-                amount=10, account=self.income_account, transaction=transaction
+                credit=10, account=self.income_account, transaction=transaction
             )
 
         superuser = get_user_model().objects.create_superuser(username="superuser")

@@ -2,7 +2,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
 
-from hordak.defaults import DECIMAL_PLACES, MAX_DIGITS, get_internal_currency
+from hordak.defaults import (
+    DECIMAL_PLACES,
+    MAX_DIGITS,
+    default_currency,
+    get_internal_currency,
+)
 from hordak.models import Account, AccountType, Transaction
 from hordak.utilities.db import BalanceField
 
@@ -14,6 +19,11 @@ class LegType(models.TextChoices):
 
 class LegView(models.Model):
     """An accounting view onto the Legs table
+
+    .. warning::
+
+        Hordak's database views are still experimental and may change or be
+        removed in a future version.
 
     This provides a number of features on top of the raw Legs table:
 
@@ -84,34 +94,61 @@ class LegView(models.Model):
     )
 
     date = models.DateField(
+        editable=False,
         help_text="The date on which this transaction leg occurred",
         verbose_name=_("date"),
     )
     amount = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
-        default_currency=get_internal_currency,
+        default_currency=default_currency,
+        currency_field_name="currency",
         verbose_name=_("amount"),
     )
+    legacy_amount = MoneyField(
+        editable=False,
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        currency_field_name="currency",
+        verbose_name=_("legacy amount"),
+        help_text=(
+            "The leg amount, credits are positive, debit are negative "
+            "(Legacy for Hordak 1.0 compatability)"
+        ),
+    )
     type = models.CharField(
+        editable=False,
         max_length=2,
         help_text="Type of this transaction leg: debit or credit",
         verbose_name=_("type"),
         choices=LegType.choices,
     )
-    credit = models.DecimalField(
+    credit = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Amount of this credit, or NULL if not a credit",
+        currency_field_name="currency",
         verbose_name=_("credit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
-    debit = models.DecimalField(
+    debit = MoneyField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text="Amount of this debit, or NULL if not a debit",
+        default_currency=get_internal_currency,
+        currency_field_name="currency",
         verbose_name=_("debit amount"),
+        default=None,
+        null=True,
+        blank=True,
     )
     account_balance = models.DecimalField(
+        editable=False,
         max_digits=MAX_DIGITS,
         decimal_places=DECIMAL_PLACES,
         help_text=(
@@ -121,9 +158,11 @@ class LegView(models.Model):
         verbose_name=_("account balance"),
     )
     leg_description = models.TextField(
+        editable=False,
         verbose_name=_("leg description"),
     )
     transaction_description = models.TextField(
+        editable=False,
         verbose_name=_("transaction description"),
     )
 
@@ -140,6 +179,11 @@ class LegView(models.Model):
 class TransactionView(models.Model):
     """An accounting view onto the Transaction table
 
+    .. warning::
+
+        Hordak's database views are still experimental and may change or be
+        removed in a future version.
+
     This provides a number of features on top of the raw Transaction table:
 
     1. Shows the transaction amount (JSON list, one value per currency)
@@ -150,12 +194,14 @@ class TransactionView(models.Model):
     You can also improve query performance (in Postgresql) by deferring unneeded
     fields. For example:
 
-        HordakLegView.objects.defer(
-            'credit_account_ids',
-            'debit_account_ids',
-            'credit_account_names',
-            'debit_account_names',
-        )
+        .. code-block:: python
+
+            HordakLegView.objects.defer(
+                'credit_account_ids',
+                'debit_account_ids',
+                'credit_account_names',
+                'debit_account_names',
+            )
     """
 
     parent = models.OneToOneField(

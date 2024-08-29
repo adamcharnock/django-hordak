@@ -11,7 +11,8 @@
                 <th>Leg UUID</th>
                 <th>Type</th>
                 <th>Account</th>
-                <th>Amount</th>
+                <th>Debit</th>
+                <th>Credit</th>
                 <th>Description</th>
             </tr>
         </thead>
@@ -22,7 +23,8 @@
                 <td><code>{{ leg.uuid }}</code></td>
                 <td>{{ leg.type|title }}</td>
                 <td>{{ leg.account.name }}</td>
-                <td style="text-align: right;">{{ leg.amount }}</td>
+                <td style="text-align: right;">{{ leg.debit }}</td>
+                <td style="text-align: right;">{{ leg.credit }}</td>
                 <td>{{ leg.description }}</td>
              </tr>
             {% empty %}

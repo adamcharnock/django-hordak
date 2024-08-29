@@ -22,7 +22,7 @@
                         <dl>
                         {% for leg in transaction.legs.all %}
                           <dt>{{ leg.type|title }} <strong>{{ leg.account.name }}</strong></dt>
-                          <dd style="margin: 5px 0 10px 20px; text-align: right">{{ leg.amount }}</dd>
+                          <dd style="margin: 5px 0 10px 20px; text-align: right">{{ leg.type_short }} {{ leg.amount }}</dd>
                         {% endfor %}
                         </dl>
 
