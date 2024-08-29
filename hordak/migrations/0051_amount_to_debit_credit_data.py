@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                     hordak_leg
                 SET
                     credit = CASE WHEN amount > 0 THEN amount END,
-                    debit = CASE WHEN amount < 0 THEN amount END,
+                    debit = CASE WHEN amount < 0 THEN -amount END,
                     currency = amount_currency
             """,
             "",
