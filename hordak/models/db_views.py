@@ -65,6 +65,14 @@ class LegView(models.Model):
 
     """
 
+    leg = models.OneToOneField(
+        "hordak.Leg",
+        verbose_name=_("leg"),
+        on_delete=models.DO_NOTHING,
+        related_name="view",
+        db_column="id",
+        primary_key=True,
+    )
     uuid = models.UUIDField(verbose_name=_("uuid"), editable=False)
     transaction = models.ForeignKey(
         Transaction,

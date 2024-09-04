@@ -45,6 +45,7 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
         transaction, leg1, leg2 = self.create_transaction(Money(100, "USD"))
         leg_view = LegView.objects.get(account=self.account1)
         self.assertEqual(leg_view.uuid, leg1.uuid)
+        self.assertEqual(leg_view.leg, leg1)
         self.assertEqual(leg_view.transaction_id, transaction.pk)
         self.assertEqual(leg_view.account, self.account1)
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
@@ -62,6 +63,7 @@ class LegViewTestCase(DataProvider, DbTransactionTestCase):
 
         leg_view = LegView.objects.get(account=self.account2)
         self.assertEqual(leg_view.uuid, leg2.uuid)
+        self.assertEqual(leg_view.leg, leg2)
         self.assertEqual(leg_view.transaction_id, transaction.pk)
         self.assertEqual(leg_view.account, self.account2)
         self.assertEqual(leg_view.date.isoformat(), "2000-01-01")
