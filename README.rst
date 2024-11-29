@@ -41,9 +41,6 @@ Interfaces which build on Hordak include:
  * `swiftwind`_ – Accounting for communal households (work in progress)
 
 
-django-hordak is packaged using seed_.
-
-.. _seed: https://github.com/adamcharnock/seed/
 .. _swiftwind: https://github.com/adamcharnock/swiftwind/
 .. _simple model layer: https://github.com/adamcharnock/django-hordak/blob/master/hordak/models/core.py
 .. _battlecat: https://github.com/adamcharnock/battlecat

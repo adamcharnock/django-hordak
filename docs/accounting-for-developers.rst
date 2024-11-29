@@ -11,9 +11,16 @@ If you are learning about accounting as developer you may feel – as I did – 
 most of the material available doesn't quite relate to the developer/STEM mindset. I
 therefore provide some resources here that may be of use.
 
-
 Accounting in six bullet points (& three footnotes)
 ---------------------------------------------------
+
+.. note::
+
+    This is no longer how Hordak is implemented internally as of version 2.
+    We now store each leg's amount in either the `credit` or `debit` field.
+    While the previous system worked, it also had downsides.
+
+    I leave this description here for posterity (and to outrage accountants).
 
 I found the core explanation of double entry accounting to be confusing. After some
 time I distilled it down to the following. This is just one way of
