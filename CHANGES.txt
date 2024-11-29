@@ -1,18 +1,5 @@
-2.0.0a3 (unreleased)
-====================
-
-- Nothing changed yet.
-
-
-2.0.0a2 (2024-09-04)
-====================
-
-* Added a relation between the `LegView` model and the `Leg` model. This makes traversing models from
-  `LegView` possible.
-
-
-2.0.0a1 (2024-08-29)
-====================
+2.0.0 (2024-11-29)
+==================
 
 .. note::
 
