@@ -3,12 +3,15 @@ django-hordak
 
 **Double entry bookkeeping in Django.**
 
-Django Hordak provides a `simple model layer`_ for a double-entry accounting
-system. The intention is not to provide a full-featured app, but rather
-to provide a reliable foundation on which to build such apps.
+Django Hordak is the core functionality of a double entry accounting system.
+It provides thoroughly tested core models with relational integrity constrains to ensure consistency.
 
-Tested under Python: 3.8, 3.9, 3.10, 3.11, 3.12
-Django: 4.2, 5.0
+Hordak also includes a basic accounting interface. This should allow you to get up-and-running quickly.
+However, the expectation is that you will either heavily build on this example or use one of the interfaces detailed below.
+
+Tested under Python: 3.8, 3.9, 3.10, 3.11, 3.12. Django: 4.2, 5.0
+
+`Adam Charnock`_ **is available for freelance/contract work.**
 
 .. image:: https://img.shields.io/pypi/v/django-hordak.svg
     :target: https://badge.fury.io/py/django-hordak
@@ -28,19 +31,8 @@ Documentation
 
 Documentation can be found at: http://django-hordak.readthedocs.io/
 
-Related Projects
-----------------
-
-Django Hordak is the core functionality of a double entry accounting system.
-It provides thoroughly tested core models with relational integrity constrains
-to ensure consistency.
-
-Interfaces which build on Hordak include:
-
- * `battlecat`_ – General purpose accounting interface (work in progress)
- * `swiftwind`_ – Accounting for communal households (work in progress)
-
 
 .. _swiftwind: https://github.com/adamcharnock/swiftwind/
 .. _simple model layer: https://github.com/adamcharnock/django-hordak/blob/master/hordak/models/core.py
 .. _battlecat: https://github.com/adamcharnock/battlecat
+.. _Adam Charnock: https://adamcharnock.com
