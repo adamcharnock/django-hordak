@@ -49,7 +49,7 @@ def create_trigger(apps, schema_editor):
         # we have to call this procedure in python via mysql_simulate_trigger(), because MySQL does not support deferred triggers
         schema_editor.execute(
             """
-            CREATE OR REPLACE PROCEDURE check_leg(_transaction_id INT)
+            CREATE PROCEDURE check_leg(_transaction_id INT)
             BEGIN
             DECLARE transaction_sum DECIMAL(13, 2);
             DECLARE transaction_currency VARCHAR(3);
@@ -62,7 +62,7 @@ def create_trigger(apps, schema_editor):
                 HAVING ABS(SUM(amount)) > 0
                 LIMIT 1;
 
-            IF FOUND_ROWS() > 0 THEN
+            IF COUNT(*) > 0 THEN
                 SET @msg= CONCAT('Sum of transaction amounts must be 0, got ', transaction_sum);
                 SIGNAL SQLSTATE '45000' SET
                 MESSAGE_TEXT = @msg;
