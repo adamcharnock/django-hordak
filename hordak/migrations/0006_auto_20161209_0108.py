@@ -62,7 +62,7 @@ def create_trigger(apps, schema_editor):
                 HAVING ABS(SUM(amount)) > 0
                 LIMIT 1;
 
-            IF FOUND_ROWS() > 0 THEN
+            IF COUNT(*) > 0 THEN
                 SET @msg= CONCAT('Sum of transaction amounts must be 0, got ', transaction_sum);
                 SIGNAL SQLSTATE '45000' SET
                 MESSAGE_TEXT = @msg;
