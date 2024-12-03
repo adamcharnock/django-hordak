@@ -49,7 +49,7 @@ def create_trigger(apps, schema_editor):
         # we have to call this procedure in python via mysql_simulate_trigger(), because MySQL does not support deferred triggers
         schema_editor.execute(
             """
-            CREATE OR REPLACE PROCEDURE check_leg(_transaction_id INT)
+            CREATE PROCEDURE check_leg(_transaction_id INT)
             BEGIN
             DECLARE transaction_sum DECIMAL(13, 2);
             DECLARE transaction_currency VARCHAR(3);
