@@ -59,13 +59,13 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
               python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}-${{ matrix.import-export }}
@@ -75,11 +75,12 @@ jobs:
            sudo apt-get update
            sudo apt-get install -y mariadb-client
            pip install -r requirements_test.txt
-           python setup.py develop
            pip install -e .
            pip install Django==${{ matrix.DJANGO_VERSION }} --pre
            pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
+           # Pin dj-database-url for Python 3.8 compatibility (3.1.0+ requires Python 3.9+)
+           if [ "${{ matrix.python-version }}" = "3.8" ]; then pip install "dj-database-url<3.0"; fi
 
       - name: Check All Migrations Exist
         run: |
@@ -92,10 +93,11 @@ jobs:
 
       - name: Archive created migrations for debugging
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
-          name: created-migrations
+          name: created-migrations-${{ github.run_id }}-${{ strategy.job-index }}
           path: hordak/migrations
+          if-no-files-found: error
 
       - name: Testing (PostgreSQL)
         run: |
@@ -119,10 +121,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
-      - uses: actions/cache@v2
+        uses: actions/setup-python@v5
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}
@@ -132,7 +134,6 @@ jobs:
           pip install flake8 isort black django-stubs dj_database_url types-six types-requests types-mock
           pip install "django-stubs<1.13.0"  # Remove this line once https://github.com/typeddjango/django-stubs/issues/1227 is fixed
           pip install -r requirements_test.txt
-          python setup.py develop
           pip install -e .
       - name: Running Flake8
         run: flake8
