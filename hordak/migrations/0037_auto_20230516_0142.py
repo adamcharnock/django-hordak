@@ -5,8 +5,7 @@ from django.db import migrations
 
 def create_triggers(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
                 RETURNS trigger AS
             $$
@@ -30,8 +29,7 @@ def create_triggers(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         pass  # nothing to do here, we've already created the procedure in 0007_auto_20161209_0111.py
     else:
@@ -43,8 +41,7 @@ def create_triggers(apps, schema_editor):
 def drop_triggers(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
         # Recreate check_leg_and_account_currency_match as it was in migration 0007
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_leg_and_account_currency_match()
                 RETURNS trigger AS
             $$
@@ -66,8 +63,7 @@ def drop_triggers(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         pass
     else:

@@ -43,6 +43,7 @@ Currency conversion makes use of Django's cache. It is therefore recommended tha
 .. _setup your Django cache: https://docs.djangoproject.com/en/1.10/topics/cache/
 
 """
+
 from __future__ import division
 
 import copy

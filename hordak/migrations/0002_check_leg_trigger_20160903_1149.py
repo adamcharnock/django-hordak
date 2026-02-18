@@ -7,8 +7,7 @@ from django.db import migrations
 
 def create_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_leg()
                 RETURNS trigger AS
             $$
@@ -29,16 +28,13 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql
-        """
-        )
-        schema_editor.execute(
-            """
+        """)
+        schema_editor.execute("""
             CREATE CONSTRAINT TRIGGER check_leg_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_leg
             DEFERRABLE INITIALLY DEFERRED
             FOR EACH ROW EXECUTE PROCEDURE check_leg();
-        """
-        )
+        """)
 
     elif schema_editor.connection.vendor == "mysql":
         pass  # we don't care about MySQL here since support is added in 0006

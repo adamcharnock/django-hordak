@@ -5,8 +5,7 @@ from django.db import migrations
 
 def create_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -42,12 +41,10 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
+        """)
 
     elif schema_editor.connection.vendor == "mysql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE PROCEDURE update_full_account_codes()
             BEGIN
                 -- Set empty string codes to be NULL
@@ -77,8 +74,7 @@ def create_trigger(apps, schema_editor):
                     ) > 0
                     AND full_code IS NOT NULL;  -- search only account trees without null codes
             END
-        """
-        )
+        """)
 
     else:
         raise NotImplementedError(
@@ -89,8 +85,7 @@ def create_trigger(apps, schema_editor):
 def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
         # Recreate update_full_account_codes as it was in migration 0024
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -123,8 +118,7 @@ def drop_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         # the triggers will have to be called within django again...
         schema_editor.execute("DROP PROCEDURE update_full_account_codes")
