@@ -29,7 +29,6 @@ from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 from hordak.utilities.test import postgres_only
 
-
 warnings.simplefilter("ignore", category=DeprecationWarning)
 
 

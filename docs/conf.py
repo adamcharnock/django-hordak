@@ -21,14 +21,12 @@ import os
 import sys
 from datetime import datetime
 
-
 # sys.path.insert(0, os.path.abspath('.'))
 
 hordak_dir = os.path.abspath("..")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.settings")
 sys.path.insert(0, hordak_dir)
 import django  # noqa E402
-
 
 django.setup()
 
@@ -94,7 +92,6 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 import sphinx_rtd_theme  # noqa E402
-
 
 html_theme = "sphinx_rtd_theme"
 
