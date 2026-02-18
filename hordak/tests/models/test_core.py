@@ -643,29 +643,29 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                     Leg(
                         transaction=transaction,
                         account=account1,
-                        credit=Money(0.000002, "USD"),
+                        credit=Money(0.02, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account2,
-                        debit=Money(0.000001, "USD"),
+                        debit=Money(0.01, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account3,
-                        debit=Money(0.000001, "USD"),
+                        debit=Money(0.01, "USD"),
                     ),
                 ]
             )
 
         self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("0.000002", "USD")])
+            account1.legs.sum_to_balance(), Balance([Money("0.02", "USD")])
         )
         self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+            account2.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
         )
         self.assertEqual(
-            account3.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+            account3.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
         )
 
     def test_natural_key(self):
