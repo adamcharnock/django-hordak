@@ -7,8 +7,7 @@ from django.db import migrations
 
 def create_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_account_type()
                 RETURNS TRIGGER AS
             $$
@@ -20,17 +19,14 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
-        schema_editor.execute(
-            """
+        """)
+        schema_editor.execute("""
             CREATE TRIGGER check_account_type_trigger
             BEFORE INSERT OR UPDATE ON hordak_account
             FOR EACH ROW
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE check_account_type();
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         pass  # we don't care about MySQL here since support is added in 0032
 

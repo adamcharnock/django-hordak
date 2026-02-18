@@ -9,8 +9,7 @@ def forward(apps, schema_editor):
         schema_editor.execute(
             "DROP TRIGGER update_full_account_codes_trigger ON hordak_account"
         )
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -51,25 +50,21 @@ def forward(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
+        """)
         # The function above requires 'FOR EACH ROW' on the trigger
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE TRIGGER update_full_account_codes_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_account
             FOR EACH ROW
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE update_full_account_codes();
-        """
-        )
+        """)
 
     elif schema_editor.connection.vendor == "mysql":
         # Performance improvement not implemented in mysql (a port is welcome)
         # But we do fix an issue that surfaced
         schema_editor.execute("DROP PROCEDURE update_full_account_codes")
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE PROCEDURE update_full_account_codes(changed_lft int, changed_rght int, changed_tree int)
             BEGIN
                 UPDATE
@@ -95,8 +90,7 @@ def forward(apps, schema_editor):
                 WHERE a.lft >= changed_lft AND a.rght <= changed_rght AND a.tree_id = changed_tree
                 ;
             END
-        """
-        )
+        """)
 
     else:
         raise NotImplementedError(
@@ -110,8 +104,7 @@ def reverse(apps, schema_editor):
         schema_editor.execute(
             "DROP TRIGGER update_full_account_codes_trigger ON hordak_account"
         )
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -147,16 +140,13 @@ def reverse(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
-        schema_editor.execute(
-            """
+        """)
+        schema_editor.execute("""
             CREATE TRIGGER update_full_account_codes_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_account
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE update_full_account_codes();
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         # the triggers will have to be called within django again...
         schema_editor.execute("DROP PROCEDURE update_full_account_codes")

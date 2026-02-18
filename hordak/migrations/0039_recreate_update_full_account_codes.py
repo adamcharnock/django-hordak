@@ -11,8 +11,7 @@ from django.db import migrations
 
 def create_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_account_type()
                 RETURNS TRIGGER AS
             $$
@@ -24,8 +23,7 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
+        """)
 
     elif schema_editor.connection.vendor == "mysql":
         # we have to call this procedure in python via mysql_simulate_trigger(), because MySQL does not support deferred triggers
@@ -40,8 +38,7 @@ def drop_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
         schema_editor.execute("DROP FUNCTION check_account_type() CASCADE")
         # Recreate check_account_type as it was in migration 0016
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION check_account_type()
                 RETURNS TRIGGER AS
             $$
@@ -53,17 +50,14 @@ def drop_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
-        schema_editor.execute(
-            """
+        """)
+        schema_editor.execute("""
             CREATE TRIGGER check_account_type_trigger
             BEFORE INSERT OR UPDATE ON hordak_account
             FOR EACH ROW
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE check_account_type();
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         pass
     else:

@@ -7,8 +7,7 @@ from django.db import migrations
 
 def create_trigger(apps, schema_editor):
     if schema_editor.connection.vendor == "postgresql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE OR REPLACE FUNCTION update_full_account_codes()
                 RETURNS TRIGGER AS
             $$
@@ -25,16 +24,13 @@ def create_trigger(apps, schema_editor):
             END;
             $$
             LANGUAGE plpgsql;
-        """
-        )
-        schema_editor.execute(
-            """
+        """)
+        schema_editor.execute("""
             CREATE TRIGGER update_full_account_codes_trigger
             AFTER INSERT OR UPDATE OR DELETE ON hordak_account
             WHEN (pg_trigger_depth() = 0)
             EXECUTE PROCEDURE update_full_account_codes();
-        """
-        )
+        """)
     elif schema_editor.connection.vendor == "mysql":
         pass  # we don't care about MySQL here since support is added in xxxx
     else:
