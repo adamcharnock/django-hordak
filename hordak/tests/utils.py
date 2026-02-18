@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from hordak.models import Account, AccountType, StatementImport
 from hordak.utilities.currency import Balance
 
-
 Empty = object()
 
 
