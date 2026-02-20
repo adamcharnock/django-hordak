@@ -99,6 +99,10 @@ jobs:
           path: hordak/migrations
           if-no-files-found: error
 
+      - name: Test Fresh Installation (PostgreSQL) with configurable settings
+        run: |
+          PYTHONPATH=`pwd` python scripts/check_fresh_install_matrix.py
+
       - name: Testing (PostgreSQL)
         run: |
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
