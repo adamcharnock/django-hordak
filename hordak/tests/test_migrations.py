@@ -58,12 +58,11 @@ class MigrationConsistencyTestCase(TestCase):
                         )
                         errors.append(msg)
 
-        if errors:
-            self.fail(
-                "Migrations with hardcoded max_digits values:\n  "
-                + "\n  ".join(errors)
-                + "\n\nMigrations should use MAX_DIGITS from hordak.defaults"
-            )
+        self.assertFalse(
+            errors,
+            "Migrations with hardcoded max_digits values:\n  {}\n\nMigrations should "
+            "use MAX_DIGITS from hordak.defaults".format("\n  ".join(errors)),
+        )
 
     def test_migrations_use_decimal_places_variable(self):
         """Check that migrations use DECIMAL_PLACES variable instead of hardcoded values."""
@@ -90,12 +89,11 @@ class MigrationConsistencyTestCase(TestCase):
                             )
                             errors.append(msg)
 
-        if errors:
-            self.fail(
-                "Migrations with hardcoded decimal_places values:\n  "
-                + "\n  ".join(errors)
-                + "\n\nMigrations should use DECIMAL_PLACES from hordak.defaults"
-            )
+        self.assertFalse(
+            errors,
+            "Migrations with hardcoded decimal_places values:\n  {}\n\nMigrations should "
+            "use DECIMAL_PLACES from hordak.defaults".format("\n  ".join(errors)),
+        )
 
     def test_migrations_use_get_internal_currency(self):
         """Check that migrations use get_internal_currency instead of hardcoded currency."""
@@ -118,12 +116,11 @@ class MigrationConsistencyTestCase(TestCase):
                         ).format(migration_file.name, i, match.group(1))
                         errors.append(msg)
 
-        if errors:
-            self.fail(
-                "Migrations with hardcoded default_currency:\n  "
-                + "\n  ".join(errors)
-                + "\n\nMigrations should use hordak.defaults.get_internal_currency"
-            )
+        self.assertFalse(
+            errors,
+            "Migrations with hardcoded default_currency:\n  {}\n\nMigrations should use "
+            "hordak.defaults.get_internal_currency".format("\n  ".join(errors)),
+        )
 
     def test_migrations_use_get_currency_choices(self):
         """Check that migrations use get_currency_choices() instead of hardcoded choices."""
@@ -153,12 +150,11 @@ class MigrationConsistencyTestCase(TestCase):
                             ).format(migration_file.name, i, tuple_count)
                             errors.append(msg)
 
-        if errors:
-            self.fail(
-                "Migrations with hardcoded currency choices:\n  "
-                + "\n  ".join(errors)
-                + "\n\nMigrations should use hordak.models.core.get_currency_choices()"
-            )
+        self.assertFalse(
+            errors,
+            "Migrations with hardcoded currency choices:\n  {}\n\nMigrations should use "
+            "hordak.models.core.get_currency_choices()".format("\n  ".join(errors)),
+        )
 
     def test_migration_imports_match_usage(self):
         """Check that migrations import the variables they use."""
@@ -197,5 +193,7 @@ class MigrationConsistencyTestCase(TestCase):
                     f"Uses get_currency_choices() but doesn't import hordak.models.core"
                 )
 
-        if errors:
-            self.fail("Migrations with missing imports:\n  " + "\n  ".join(errors))
+        self.assertFalse(
+            errors,
+            "Migrations with missing imports:\n  {}".format("\n  ".join(errors)),
+        )
