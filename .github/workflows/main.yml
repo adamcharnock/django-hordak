@@ -99,17 +99,9 @@ jobs:
           path: hordak/migrations
           if-no-files-found: error
 
-      - name: Test Fresh Installation (PostgreSQL)
+      - name: Test Fresh Installation (PostgreSQL) with configurable settings
         run: |
-          # Create a fresh database
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS fresh_install_test;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE fresh_install_test;"
-          # Run migrations on fresh database
-          PYTHONPATH=`pwd` DATABASE_URL="postgresql://postgres:postgres@localhost/fresh_install_test" ./manage.py migrate --run-syncdb
-          # Check if any new migrations would be created (should be none)
-          PYTHONPATH=`pwd` DATABASE_URL="postgresql://postgres:postgres@localhost/fresh_install_test" ./manage.py makemigrations --check --dry-run hordak
-        env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost/fresh_install_test"
+          PYTHONPATH=`pwd` python scripts/check_fresh_install_matrix.py
 
       - name: Testing (PostgreSQL)
         run: |
