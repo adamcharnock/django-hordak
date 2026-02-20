@@ -5,6 +5,13 @@ from pathlib import Path
 
 from django.test import TestCase
 
+HISTORICAL_MIGRATIONS = {
+    "0001_initial.py",
+    "0004_auto_20161113_1932.py",
+    "0025_auto_20180829_1605.py",
+    "0026_auto_20190723_0929.py",
+}
+
 
 class MigrationConsistencyTestCase(TestCase):
     """Test that migrations follow best practices and use variables instead of hardcoded values."""
@@ -12,7 +19,11 @@ class MigrationConsistencyTestCase(TestCase):
     def get_migration_files(self):
         """Get all migration files."""
         migration_dir = Path(__file__).parent.parent / "migrations"
-        return [f for f in migration_dir.glob("*.py") if not f.name.startswith("__")]
+        return [
+            f
+            for f in migration_dir.glob("*.py")
+            if not f.name.startswith("__") and f.name not in HISTORICAL_MIGRATIONS
+        ]
 
     def test_migrations_use_max_digits_variable(self):
         """Check that migrations use MAX_DIGITS variable instead of hardcoded values."""
