@@ -9,6 +9,13 @@ import re
 import sys
 from pathlib import Path
 
+HISTORICAL_MIGRATIONS = {
+    "0001_initial.py",
+    "0004_auto_20161113_1932.py",
+    "0025_auto_20180829_1605.py",
+    "0026_auto_20190723_0929.py",
+}
+
 
 def check_migration_file(filepath):
     """Check a single migration file for common hardcoding issues."""
@@ -24,12 +31,6 @@ def check_migration_file(filepath):
 
     # Skip historical migrations that predate this validation (before issue #138 fix)
     # These migrations are already deployed and shouldn't be modified
-    HISTORICAL_MIGRATIONS = [
-        "0001_initial.py",
-        "0004_auto_20161113_1932.py",
-        "0025_auto_20180829_1605.py",
-        "0026_auto_20190723_0929.py",
-    ]
     if filepath.name in HISTORICAL_MIGRATIONS:
         return errors
 
