@@ -49,7 +49,6 @@ from hordak.utilities.currency import Balance
 from hordak.utilities.db_functions import GetBalance
 from hordak.utilities.dreprecation import deprecated
 
-
 #: Debit
 DEBIT = "debit"
 #: Credit

@@ -10,7 +10,6 @@ from hordak.models import AccountType, StatementImport, StatementLine, Transacti
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
-
 warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
@@ -338,7 +337,7 @@ class ReconcileTransactionsViewTestCase(DataProvider, TestCase):
 
         leg_formset = response.context["leg_formset"]
         self.assertEqual(
-            leg_formset.non_form_errors(), ["Amounts must add up to 100.160000"]
+            leg_formset.non_form_errors(), ["Amounts must add up to 100.16"]
         )
         self.assertIn("Amounts must add up to 100.16", response.content.decode("utf8"))
 

@@ -2,7 +2,6 @@ from uuid import uuid4
 
 from django.conf import settings
 
-
 INTERNAL_CURRENCY = getattr(settings, "HORDAK_INTERNAL_CURRENCY", "EUR")
 
 get_internal_currency = INTERNAL_CURRENCY
@@ -19,6 +18,6 @@ CURRENCIES = getattr(settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIE
 
 DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)
 
-MAX_DIGITS = getattr(settings, "HORDAK_MAX_DIGITS", 13)
+MAX_DIGITS = getattr(settings, "HORDAK_MAX_DIGITS", 20)
 
 UUID_DEFAULT = getattr(settings, "HORDAK_UUID_DEFAULT", uuid4)

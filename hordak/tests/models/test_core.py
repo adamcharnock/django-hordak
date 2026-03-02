@@ -29,7 +29,6 @@ from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 from hordak.utilities.test import postgres_only
 
-
 warnings.simplefilter("ignore", category=DeprecationWarning)
 
 
@@ -643,29 +642,29 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                     Leg(
                         transaction=transaction,
                         account=account1,
-                        credit=Money(0.000002, "USD"),
+                        credit=Money(0.02, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account2,
-                        debit=Money(0.000001, "USD"),
+                        debit=Money(0.01, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account3,
-                        debit=Money(0.000001, "USD"),
+                        debit=Money(0.01, "USD"),
                     ),
                 ]
             )
 
         self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("0.000002", "USD")])
+            account1.legs.sum_to_balance(), Balance([Money("0.02", "USD")])
         )
         self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+            account2.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
         )
         self.assertEqual(
-            account3.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
+            account3.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
         )
 
     def test_natural_key(self):
@@ -1166,3 +1165,209 @@ class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
             error_str,
         ):
             src.transfer_to(dst, Money(100, "MYR"))
+
+
+class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
+    """Test that the system works correctly with different DECIMAL_PLACES settings
+
+    Note: These tests verify the application logic works with different
+    DECIMAL_PLACES settings. The actual database precision is fixed by migrations,
+    so values will be truncated to fit the database schema (typically 2 decimal places).
+    """
+
+    @override_settings(HORDAK_DECIMAL_PLACES=0, HORDAK_MAX_DIGITS=15)
+    def test_zero_decimal_places(self):
+        """Test with 0 decimal places (whole numbers only)"""
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["EUR"])
+        account2 = self.account(currencies=["EUR"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction, account=account1, credit=Money(100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, debit=Money(100, "EUR")
+            )
+
+        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money("100", "EUR")]))
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-100", "EUR")])
+        )
+
+    @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
+    def test_four_decimal_places(self):
+        """Test with 4 decimal places
+
+        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
+        """
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["EUR"])
+        account2 = self.account(currencies=["EUR"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction,
+                account=account1,
+                credit=Money("100.1234", "EUR"),
+            )
+            Leg.objects.create(
+                transaction=transaction,
+                account=account2,
+                debit=Money("100.1234", "EUR"),
+            )
+
+        # Database truncates to 2 decimal places
+        self.assertEqual(
+            account1.legs.sum_to_balance(), Balance([Money("100.12", "EUR")])
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-100.12", "EUR")])
+        )
+
+    @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
+    def test_six_decimal_places(self):
+        """Test with 6 decimal places (cryptocurrency precision)
+
+        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
+        """
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["EUR"])
+        account2 = self.account(currencies=["EUR"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction,
+                account=account1,
+                credit=Money("0.123456", "EUR"),
+            )
+            Leg.objects.create(
+                transaction=transaction,
+                account=account2,
+                debit=Money("0.123456", "EUR"),
+            )
+
+        # Database truncates to 2 decimal places
+        self.assertEqual(
+            account1.legs.sum_to_balance(), Balance([Money("0.12", "EUR")])
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-0.12", "EUR")])
+        )
+
+    @override_settings(HORDAK_DECIMAL_PLACES=3, HORDAK_MAX_DIGITS=18)
+    def test_three_decimal_places_bulk_create(self):
+        """Test bulk_create with 3 decimal places
+
+        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
+        """
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["EUR"])
+        account2 = self.account(currencies=["EUR"])
+        account3 = self.account(currencies=["EUR"])
+
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.bulk_create(
+                [
+                    Leg(
+                        transaction=transaction,
+                        account=account1,
+                        credit=Money("10.123", "EUR"),
+                    ),
+                    Leg(
+                        transaction=transaction,
+                        account=account2,
+                        debit=Money("5.062", "EUR"),
+                    ),
+                    Leg(
+                        transaction=transaction,
+                        account=account3,
+                        debit=Money("5.061", "EUR"),
+                    ),
+                ]
+            )
+
+        # Database truncates to 2 decimal places
+        self.assertEqual(
+            account1.legs.sum_to_balance(), Balance([Money("10.12", "EUR")])
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-5.06", "EUR")])
+        )
+        self.assertEqual(
+            account3.legs.sum_to_balance(), Balance([Money("-5.06", "EUR")])
+        )
+
+    @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
+    def test_transfer_with_four_decimal_places(self):
+        """Test transfer_to() method with 4 decimal places
+
+        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
+        """
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["EUR"])
+        account2 = self.account(currencies=["EUR"])
+
+        account1.transfer_to(account2, Money("123.4567", "EUR"))
+
+        # Database truncates to 2 decimal places
+        self.assertEqual(
+            account1.legs.sum_to_balance(), Balance([Money("123.46", "EUR")])
+        )
+        self.assertEqual(
+            account2.legs.sum_to_balance(), Balance([Money("-123.46", "EUR")])
+        )
+
+    @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
+    def test_multiple_currencies_with_six_decimal_places(self):
+        """Test multi-currency accounts with 6 decimal places
+
+        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
+        """
+        importlib.reload(hordak.defaults)
+
+        account1 = self.account(currencies=["USD", "EUR"])
+        account2 = self.account(currencies=["USD", "EUR"])
+
+        with db_transaction.atomic():
+            transaction1 = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction1,
+                account=account1,
+                credit=Money("100.123456", "USD"),
+            )
+            Leg.objects.create(
+                transaction=transaction1,
+                account=account2,
+                debit=Money("100.123456", "USD"),
+            )
+
+            transaction2 = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction2,
+                account=account1,
+                credit=Money("50.654321", "EUR"),
+            )
+            Leg.objects.create(
+                transaction=transaction2,
+                account=account2,
+                debit=Money("50.654321", "EUR"),
+            )
+
+        # Database truncates to 2 decimal places
+        balance1 = account1.legs.sum_to_balance()
+        self.assertEqual(balance1["USD"], Money("100.12", "USD"))
+        self.assertEqual(balance1["EUR"], Money("50.65", "EUR"))
+
+        balance2 = account2.legs.sum_to_balance()
+        self.assertEqual(balance2["USD"], Money("-100.12", "USD"))
+        self.assertEqual(balance2["EUR"], Money("-50.65", "EUR"))

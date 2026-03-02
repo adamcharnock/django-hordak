@@ -23,7 +23,6 @@ from hordak.utilities.currency import (
     currency_exchange,
 )
 
-
 DUMMY_CACHE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
