@@ -24,7 +24,7 @@ Additionally, there are models which related to the import of external bank stat
 from django.db import connection, models
 from django.db import transaction
 from django.db import transaction as db_transaction
-from django.db.models import JSONField
+from django.db.models import JSONField, Max
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_smalluuid.models import SmallUUIDField, uuid_default
@@ -81,17 +81,12 @@ def _enforce_account():
 
 class RunningTotal(models.Model):
     """
-    A running total of the balance of an account.
+    Checkpoint of the signed simple balance for an account in one currency.
 
-    This is used to speed up the calculation of account balances.
-
-    This field should be considered an estimated value calculated for performance reasons.
-    It is not guaranteed to be accurate:
-    * Running totals are calculated through post_delete and pre_save signals on the Transaction model.
-        This means that they are not updated when a transaction is mass updated.
-    * They don't take into account children accounts - the total value of a parent
-        account needs to be calculated from its children manually now
-
+    Legs with ``id <= includes_leg_id`` are fully reflected in ``balance``; newer legs
+    are included via a delta sum in :meth:`Account.simple_balance`. Multiple rows per
+    (account, currency) are allowed (history). INSERT on :class:`Leg` does not update
+    this table; UPDATE/DELETE on a leg trigger a full rebuild for that account.
     """
 
     account = models.ForeignKey(
@@ -107,10 +102,18 @@ class RunningTotal(models.Model):
         null=True,
         blank=True,
     )
+    includes_leg_id = models.BigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = _("Running Total")
         verbose_name_plural = _("Running Totals")
+        indexes = [
+            models.Index(
+                fields=["account", "currency", "-includes_leg_id"],
+                name="hordak_runtot_acc_cur_ilid",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.account}: {self.balance}"
@@ -321,6 +324,17 @@ class Account(MPTTModel):
         ]
         return sum(balances, Balance())
 
+    def _simple_balance_full_sum(self, as_of=None, raw=False, leg_query=None, **kwargs):
+        legs = self.legs
+        if as_of:
+            legs = legs.filter(transaction__date__lte=as_of)
+
+        if leg_query or kwargs:
+            leg_query = leg_query or models.Q()
+            legs = legs.filter(leg_query, **kwargs)
+
+        return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
+
     def simple_balance(self, as_of=None, raw=False, leg_query=None, **kwargs):
         """Get the balance for this account, ignoring all child accounts
 
@@ -335,15 +349,44 @@ class Account(MPTTModel):
         Returns:
             Balance
         """
-        legs = self.legs
-        if as_of:
-            legs = legs.filter(transaction__date__lte=as_of)
+        if as_of is not None or leg_query is not None or kwargs or raw:
+            return self._simple_balance_full_sum(
+                as_of=as_of, raw=raw, leg_query=leg_query, **kwargs
+            )
 
-        if leg_query or kwargs:
-            leg_query = leg_query or models.Q()
-            legs = legs.filter(leg_query, **kwargs)
+        if not self.pk:
+            return self._zero_balance()
 
-        return legs.sum_to_balance() * (1 if raw else self.sign) + self._zero_balance()
+        sign = 1 if raw else self.sign
+        checkpoints = {}
+        for rt in RunningTotal.objects.filter(account_id=self.pk).order_by(
+            "-includes_leg_id"
+        ):
+            checkpoints.setdefault(rt.currency, rt)
+
+        if not checkpoints:
+            return self._simple_balance_full_sum(
+                as_of=as_of, raw=raw, leg_query=leg_query, **kwargs
+            )
+
+        result = Balance()
+        for currency, rt in checkpoints.items():
+            delta_legs = self.legs.filter(
+                models.Q(id__gt=rt.includes_leg_id) & models.Q(amount_currency=currency)
+            )
+            implied = Balance([rt.balance]) + delta_legs.sum_to_balance() * sign
+            result += implied
+
+        leg_currencies = set(
+            self.legs.values_list("amount_currency", flat=True).distinct()
+        )
+        for currency in leg_currencies:
+            if currency in checkpoints:
+                continue
+            subset = self.legs.filter(amount_currency=currency)
+            result += subset.sum_to_balance() * sign
+
+        return result + self._zero_balance()
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
@@ -483,45 +526,73 @@ class Account(MPTTModel):
         )
         return transaction
 
-    def update_running_totals(self, check_only=False):
+    def _running_total_full_signed_balance(self):
+        return self.legs.sum_to_balance() * self.sign + self._zero_balance()
+
+    def _append_running_totals_from_full_sum(self):
+        total = self._running_total_full_signed_balance()
+        max_id = Leg.objects.filter(account_id=self.pk).aggregate(m=Max("id"))["m"] or 0
+        for money in total.monies():
+            RunningTotal.objects.create(
+                account=self,
+                currency=money.currency.code,
+                balance=money,
+                includes_leg_id=max_id,
+            )
+
+    def rebuild_running_totals(self, keep_history=False):
+        with db_transaction.atomic():
+            if not keep_history:
+                self.running_totals.all().delete()
+            self._append_running_totals_from_full_sum()
+
+    def _check_running_totals(self):
+        faulty_values = []
+        full = self._running_total_full_signed_balance()
+        for money in full.monies():
+            currency = money.currency.code
+            correct = money
+            latest = (
+                self.running_totals.filter(currency=currency)
+                .order_by("-includes_leg_id")
+                .first()
+            )
+            if latest is None:
+                if correct.amount != 0:
+                    print(f"No running total for {self} ({currency})")
+                    faulty_values.append((currency, None, correct))
+                continue
+            delta_legs = self.legs.filter(
+                models.Q(id__gt=latest.includes_leg_id)
+                & models.Q(amount_currency=currency)
+            )
+            implied = (
+                Balance([latest.balance]) + delta_legs.sum_to_balance() * self.sign
+            )
+            if implied[currency] != correct:
+                print(
+                    f"Running totals difference is {implied[currency] - correct} "
+                    f"(running total: {latest.balance}, effective: {implied[currency]}, total: {correct}) "
+                    f"for account {self}",
+                )
+                faulty_values.append((currency, latest.balance, correct))
+        return faulty_values
+
+    def update_running_totals(self, check_only=False, keep_history=False):
         """
         Update the running totals for this account by counting all transactions
 
         Args:
             check_only (bool): If true, don't actually update the running totals,
                 just check that they are correct.
+            keep_history (bool): If true, append new checkpoint rows instead of replacing.
         Returns:
             list: A list of currencies that have been updated or didn't pass the check
         """
-        total = self.balance()
-        faulty_values = []
-
-        for money in total.monies():
-            currency = money.currency.code
-            try:
-                running_total = self.running_totals.get(currency=currency)
-                if running_total.balance != total[currency]:
-                    print(
-                        f"Running totals difference is {running_total.balance - total[currency]}\t"
-                        f"(running total: {running_total.balance},\ttotal: {total[currency]})\t",
-                        f"for account {self}",
-                    )
-                    faulty_values.append(
-                        (currency, running_total.balance, total[currency])
-                    )
-                    if not check_only:
-                        self.running_totals.filter(currency=currency).update(
-                            balance=total[currency]
-                        )
-            except RunningTotal.DoesNotExist:
-                print(f"No running total for {self} ({currency})")
-                faulty_values.append((currency, None, total[currency]))
-                if not check_only:
-                    RunningTotal.objects.create(
-                        account=self,
-                        currency=currency,
-                        balance=total[currency],
-                    )
+        faulty_values = self._check_running_totals()
+        if check_only:
+            return faulty_values
+        self.rebuild_running_totals(keep_history=keep_history)
         return faulty_values
 
 

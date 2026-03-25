@@ -22,6 +22,13 @@ class Command(BaseCommand):
             default=False,
             help="Mail admins if the running totals are incorrect",
         )
+        parser.add_argument(
+            "--keep-history",
+            action="store_true",
+            dest="keep_history",
+            default=False,
+            help="Append new checkpoint rows instead of replacing existing ones",
+        )
 
     def handle(self, *args, **options):
         print(
@@ -36,7 +43,10 @@ class Command(BaseCommand):
             i += 1
             if i % 100 == 0:
                 print(f"Processed {i} accounts")
-            faulty_values = account.update_running_totals(check_only=options["check"])
+            faulty_values = account.update_running_totals(
+                check_only=options["check"],
+                keep_history=options["keep_history"],
+            )
             if faulty_values:
                 for currency, rt_value, correct_value in faulty_values:
                     output_string += f"Account {account.name} has faulty running total for {currency}"

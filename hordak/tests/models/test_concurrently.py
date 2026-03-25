@@ -4,6 +4,7 @@ from django_concurrent_tests.helpers import call_concurrently, make_concurrent_c
 from moneyed import Money
 
 from hordak.models import Account, Leg, Transaction
+from hordak.utilities.currency import Balance
 
 
 @transaction.atomic
@@ -35,8 +36,8 @@ class ConcurrentRunningTotalsTest(TransactionTestCase):
         account2 = Account.objects.create(name="account2", currencies=["USD"])
         account1.update_running_totals()
         account2.update_running_totals()
-        self.assertEqual(account1.running_totals.all()[0].balance, Money(0, "USD"))
-        self.assertEqual(account2.running_totals.all()[0].balance, Money(0, "USD"))
+        self.assertEqual(account1.simple_balance(), Balance([Money(0, "USD")]))
+        self.assertEqual(account2.simple_balance(), Balance([Money(0, "USD")]))
         call_count = 10
         call_concurrently(
             call_count,
@@ -44,11 +45,11 @@ class ConcurrentRunningTotalsTest(TransactionTestCase):
             account1_id=account1.id,
             account2_id=account2.id,
         )
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        self.assertEqual(account1.simple_balance(), Balance([Money(call_count, "USD")]))
         self.assertEqual(
-            account1.running_totals.all()[0].balance, Money(call_count, "USD")
-        )
-        self.assertEqual(
-            account2.running_totals.all()[0].balance, Money(-call_count, "USD")
+            account2.simple_balance(), Balance([Money(-call_count, "USD")])
         )
 
         # Not delete the transactions one by one to check if the
@@ -58,5 +59,7 @@ class ConcurrentRunningTotalsTest(TransactionTestCase):
             for transaction in Transaction.objects.all()
         ]
         make_concurrent_calls(*calls)
-        self.assertEqual(account1.running_totals.all()[0].balance, Money(0, "USD"))
-        self.assertEqual(account2.running_totals.all()[0].balance, Money(0, "USD"))
+        account1.refresh_from_db()
+        account2.refresh_from_db()
+        self.assertEqual(account1.simple_balance(), Balance([Money(0, "USD")]))
+        self.assertEqual(account2.simple_balance(), Balance([Money(0, "USD")]))
