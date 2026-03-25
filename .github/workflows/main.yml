@@ -70,6 +70,8 @@ jobs:
            pip install Django==${{ matrix.DJANGO_VERSION }} --pre
            pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
+           # Pin dj-database-url for Python 3.8 compatibility (3.1.0+ requires Python 3.9+)
+           if [ "${{ matrix.python-version }}" = "3.8" ]; then pip install "dj-database-url<3.0"; fi
 
       - name: Check Migrations
         run: |
