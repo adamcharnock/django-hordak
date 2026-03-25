@@ -29,3 +29,8 @@ def project_currencies() -> list:
 DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)
 
 MAX_DIGITS = getattr(settings, "HORDAK_MAX_DIGITS", 13)
+
+# Auto-advance checkpoints when the gap between the latest checkpoint's
+# includes_leg_id and the current max leg id exceeds this threshold.
+# Set to 0 or None to disable auto-advance.
+CHECKPOINT_THRESHOLD = getattr(settings, "HORDAK_CHECKPOINT_THRESHOLD", 1000)
