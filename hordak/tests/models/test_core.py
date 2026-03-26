@@ -18,7 +18,6 @@ from hordak.models import (
     CREDIT,
     DEBIT,
     Account,
-    AccountType,
     Leg,
     StatementImport,
     StatementLine,
@@ -27,6 +26,9 @@ from hordak.models import (
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 from hordak.utilities.test import postgres_only
+
+
+AccountType = Account.TYPES
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
