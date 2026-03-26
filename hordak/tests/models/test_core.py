@@ -60,7 +60,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         """
         account1 = self.account(name="Account 1", currencies=["GBP"])
         account2 = self.account(name="Account 2", currencies=["GBP"])
-        with transaction.atomic():
+        with db_transaction.atomic():
             trans = Transaction.objects.create()
 
             leg = Leg.objects.create(
@@ -1169,7 +1169,7 @@ class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
 
 class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     """Test that the system works correctly with different DECIMAL_PLACES settings
-    
+
     Note: These tests verify the application logic works with different
     DECIMAL_PLACES settings. The actual database precision is fixed by migrations,
     so values will be truncated to fit the database schema (typically 2 decimal places).
@@ -1192,9 +1192,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
                 transaction=transaction, account=account2, debit=Money(100, "EUR")
             )
 
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("100", "EUR")])
-        )
+        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money("100", "EUR")]))
         self.assertEqual(
             account2.legs.sum_to_balance(), Balance([Money("-100", "EUR")])
         )
@@ -1202,7 +1200,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
     def test_four_decimal_places(self):
         """Test with 4 decimal places
-        
+
         Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
         """
         importlib.reload(hordak.defaults)
@@ -1234,7 +1232,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
     def test_six_decimal_places(self):
         """Test with 6 decimal places (cryptocurrency precision)
-        
+
         Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
         """
         importlib.reload(hordak.defaults)
@@ -1266,7 +1264,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     @override_settings(HORDAK_DECIMAL_PLACES=3, HORDAK_MAX_DIGITS=18)
     def test_three_decimal_places_bulk_create(self):
         """Test bulk_create with 3 decimal places
-        
+
         Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
         """
         importlib.reload(hordak.defaults)
@@ -1311,7 +1309,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
     def test_transfer_with_four_decimal_places(self):
         """Test transfer_to() method with 4 decimal places
-        
+
         Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
         """
         importlib.reload(hordak.defaults)
@@ -1332,7 +1330,7 @@ class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
     @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
     def test_multiple_currencies_with_six_decimal_places(self):
         """Test multi-currency accounts with 6 decimal places
-        
+
         Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
         """
         importlib.reload(hordak.defaults)
