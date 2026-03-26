@@ -546,66 +546,70 @@ class Account(MPTTModel):
         O(legs since last checkpoint) instead of O(all legs). Falls back to
         full rebuild if no checkpoint exists yet.
         """
-        max_id = Leg.objects.filter(account_id=self.pk).aggregate(m=Max("id"))["m"]
-        if max_id is None:
-            return
+        with db_transaction.atomic():
+            Account.objects.select_for_update().filter(pk=self.pk).first()
 
-        checkpoints = {}
-        for rt in self.running_totals.order_by("-includes_leg_id"):
-            checkpoints.setdefault(rt.currency, rt)
+            max_id = Leg.objects.filter(account_id=self.pk).aggregate(m=Max("id"))["m"]
+            if max_id is None:
+                return
 
-        if not checkpoints:
-            self._append_running_totals_from_full_sum()
-            return
+            checkpoints = {}
+            for rt in self.running_totals.order_by("-includes_leg_id"):
+                checkpoints.setdefault(rt.currency, rt)
 
-        all_up_to_date = all(
-            rt.includes_leg_id >= max_id for rt in checkpoints.values()
-        )
-        if all_up_to_date:
-            return
+            if not checkpoints:
+                self._append_running_totals_from_full_sum()
+                return
 
-        sign = self.sign
-        for currency, rt in checkpoints.items():
-            if rt.includes_leg_id >= max_id:
-                continue
-            delta = (
-                self.legs.filter(
-                    models.Q(id__gt=rt.includes_leg_id)
-                    & models.Q(id__lte=max_id)
-                    & models.Q(amount_currency=currency)
-                ).sum_to_balance()
-                * sign
+            all_up_to_date = all(
+                rt.includes_leg_id >= max_id for rt in checkpoints.values()
             )
-            new_balance = Balance([rt.balance]) + delta
-            RunningTotal.objects.create(
-                account=self,
-                currency=currency,
-                balance=new_balance[currency],
-                includes_leg_id=max_id,
-            )
+            if all_up_to_date:
+                return
 
-        uncovered = set(
-            self.legs.filter(id__gt=0)
-            .values_list("amount_currency", flat=True)
-            .distinct()
-        ) - set(checkpoints.keys())
-        for currency in uncovered:
-            total = (
-                self.legs.filter(
-                    amount_currency=currency, id__lte=max_id
-                ).sum_to_balance()
-                * sign
-            )
-            for money in total.monies():
+            sign = self.sign
+            for currency, rt in checkpoints.items():
+                if rt.includes_leg_id >= max_id:
+                    continue
+                delta = (
+                    self.legs.filter(
+                        models.Q(id__gt=rt.includes_leg_id)
+                        & models.Q(id__lte=max_id)
+                        & models.Q(amount_currency=currency)
+                    ).sum_to_balance()
+                    * sign
+                )
+                new_balance = Balance([rt.balance]) + delta
                 RunningTotal.objects.create(
                     account=self,
                     currency=currency,
-                    balance=money,
+                    balance=new_balance[currency],
                     includes_leg_id=max_id,
                 )
 
+            uncovered = set(
+                self.legs.filter(id__gt=0)
+                .values_list("amount_currency", flat=True)
+                .distinct()
+            ) - set(checkpoints.keys())
+            for currency in uncovered:
+                total = (
+                    self.legs.filter(
+                        amount_currency=currency, id__lte=max_id
+                    ).sum_to_balance()
+                    * sign
+                )
+                for money in total.monies():
+                    RunningTotal.objects.create(
+                        account=self,
+                        currency=currency,
+                        balance=money,
+                        includes_leg_id=max_id,
+                    )
+
     def rebuild_running_totals(self, keep_history=False):
         with db_transaction.atomic():
+            Account.objects.select_for_update().filter(pk=self.pk).first()
             if not keep_history:
                 self.running_totals.all().delete()
             self._append_running_totals_from_full_sum()

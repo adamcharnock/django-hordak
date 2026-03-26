@@ -142,7 +142,7 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account2, amount=Money(-100, "EUR")
             )
 
-        running_total = account1.running_totals.get()
+        running_total = account1.running_totals.order_by("-includes_leg_id").first()
         running_total.balance = Money(200, "EUR")
         running_total.save()
 
@@ -170,7 +170,7 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
                 transaction=transaction, account=account2, amount=Money(-100, "EUR")
             )
 
-        running_total = account1.running_totals.get()
+        running_total = account1.running_totals.order_by("-includes_leg_id").first()
         running_total.balance = Money(200, "EUR")
         running_total.save()
 
