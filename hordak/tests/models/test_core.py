@@ -4,13 +4,18 @@ import warnings
 from datetime import date
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction as db_transaction
-from django.db.utils import DatabaseError, IntegrityError, OperationalError
+from django.db.utils import (
+    DatabaseError,
+    IntegrityError,
+    InternalError,
+    OperationalError,
+)
 from django.test import TestCase, override_settings
 from django.test.testcases import TransactionTestCase as DbTransactionTestCase
 from django.utils.translation import activate, get_language, to_locale
 from moneyed.classes import Money
-from parameterized import parameterized
 
 import hordak.defaults
 from hordak import exceptions
@@ -23,12 +28,9 @@ from hordak.models import (
     StatementLine,
     Transaction,
 )
+from hordak.models.core import project_currencies
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
-from hordak.utilities.test import postgres_only
-
-
-AccountType = Account.TYPES
 
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -41,51 +43,6 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     def tearDown(self):
         activate(self.orig_locale)
-
-    def test_legacy_creation_save(self):
-        """Check legs can be created when specifying the legacy `amount` argument.
-
-        To be removed in Hordak 2.0
-        """
-        leg = Leg(amount=Money(100, "GBP"))
-        self.assertEqual(leg.credit, Money(100, "GBP"))
-        self.assertEqual(leg.debit, None)
-
-        leg = Leg(amount=-Money(100, "GBP"))
-        self.assertEqual(leg.debit, Money(100, "GBP"))
-        self.assertEqual(leg.credit, None)
-
-    def test_legacy_creation_create_via_manager(self):
-        """Check legs can be created when specifying the legacy `amount` argument.
-
-        To be removed in Hordak 2.0
-        """
-        account1 = self.account(name="Account 1", currencies=["GBP"])
-        account2 = self.account(name="Account 2", currencies=["GBP"])
-        with db_transaction.atomic():
-            trans = Transaction.objects.create()
-
-            leg = Leg.objects.create(
-                amount=Money(100, "GBP"), transaction=trans, account=account1
-            )
-            leg.refresh_from_db()
-            self.assertEqual(leg.credit, Money(100, "GBP"))
-            self.assertEqual(leg.debit, None)
-
-            leg = Leg.objects.create(
-                amount=-Money(100, "GBP"), transaction=trans, account=account2
-            )
-            leg.refresh_from_db()
-            self.assertEqual(leg.debit, Money(100, "GBP"))
-            self.assertEqual(leg.credit, None)
-
-    def test_legacy_creation_warning(self):
-        """Check warning is shown when using legacy `amount` argument.
-
-        To be removed in Hordak 2.0
-        """
-        with self.assertWarns(DeprecationWarning):
-            Leg(amount=-Money(100, "GBP"))
 
     def test_str_root(self):
         # Account code should not be rendered as we should not
@@ -142,55 +99,54 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
 
     @override_settings(
         HORDAK_CURRENCIES=lambda: ["EUR", "GBP"],
-        DEFFAULT_CURRENCY=lambda: ["EUR"],
     )
     def test_function_hordak_currencies(self):
         importlib.reload(hordak.defaults)  # reload to pick up settings change in test
 
         account = Account()
-        self.assertEqual(account.currencies, ("EUR",))
+        self.assertEqual(account.currencies, ["EUR", "GBP"])
 
     def test_type_root(self):
         """Check we can set the type on a root account"""
-        account1 = self.account(type=AccountType.asset)
-        self.assertEqual(account1.type, AccountType.asset)
+        account1 = self.account(type=Account.TYPES.asset)
+        self.assertEqual(account1.type, Account.TYPES.asset)
 
     def test_type_leaf(self):
         """Check the type gets set on the leaf account (via db trigger)"""
-        account1 = self.account(type=AccountType.asset)
+        account1 = self.account(type=Account.TYPES.asset)
         account2 = self.account(parent=account1)
         account2.refresh_from_db()
-        self.assertEqual(account2.type, AccountType.asset)
+        self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_type_leaf_create(self):
         """Check set the type upon creation has no effect on child accounts
 
         Account types are determined by the root node
         """
-        account1 = self.account(type=AccountType.asset)
+        account1 = self.account(type=Account.TYPES.asset)
         account2 = Account.objects.create(
-            parent=account1, type=AccountType.income, code="1", currencies=["EUR"]
+            parent=account1, type=Account.TYPES.income, code="1", currencies=["EUR"]
         )
-        self.assertEqual(account2.type, AccountType.asset)
+        self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_type_leaf_set(self):
         """Check setting account type leaf account has not effect
 
         Account types are determined by the root node
         """
-        account1 = self.account(type=AccountType.asset)
+        account1 = self.account(type=Account.TYPES.asset)
         account2 = self.account(parent=account1)
-        account2.type = AccountType.income
+        account2.type = Account.TYPES.income
         account2.save()
-        self.assertEqual(account2.type, AccountType.asset)
+        self.assertEqual(account2.type, Account.TYPES.asset)
 
     def test_sign(self):
-        asset = self.account(type=AccountType.asset)
-        liability = self.account(type=AccountType.liability)
-        income = self.account(type=AccountType.income)
-        expense = self.account(type=AccountType.expense)
-        equity = self.account(type=AccountType.equity)
-        trading = self.account(type=AccountType.trading)
+        asset = self.account(type=Account.TYPES.asset)
+        liability = self.account(type=Account.TYPES.liability)
+        income = self.account(type=Account.TYPES.income)
+        expense = self.account(type=Account.TYPES.expense)
+        equity = self.account(type=Account.TYPES.equity)
+        trading = self.account(type=Account.TYPES.trading)
 
         self.assertEqual(asset.sign, -1)
         self.assertEqual(expense.sign, -1)
@@ -201,7 +157,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(trading.sign, 1)
 
         self.assertEqual(
-            len(AccountType),
+            len(Account.TYPES),
             6,
             msg="Did not test all account types. Update this test.",
         )
@@ -213,14 +169,14 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "EUR")
+                transaction=transaction, account=account1, amount=Money(100, "EUR")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(100, "EUR")
+                transaction=transaction, account=account2, amount=Money(-100, "EUR")
             )
 
-        self.assertEqual(account1.get_simple_balance(), Balance(100, "EUR"))
-        self.assertEqual(account2.get_simple_balance(), Balance(-100, "EUR"))
+        self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(account2.simple_balance(), Balance(-100, "EUR"))
 
     def test_balance_3legs(self):
         account1 = self.account()
@@ -230,18 +186,18 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "EUR")
+                transaction=transaction, account=account1, amount=Money(100, "EUR")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(40, "EUR")
+                transaction=transaction, account=account2, amount=Money(-40, "EUR")
             )
             Leg.objects.create(
-                transaction=transaction, account=account3, debit=Money(60, "EUR")
+                transaction=transaction, account=account3, amount=Money(-60, "EUR")
             )
 
-        self.assertEqual(account1.get_simple_balance(), Balance(100, "EUR"))
-        self.assertEqual(account2.get_simple_balance(), Balance(-40, "EUR"))
-        self.assertEqual(account3.get_simple_balance(), Balance(-60, "EUR"))
+        self.assertEqual(account1.simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(account2.simple_balance(), Balance(-40, "EUR"))
+        self.assertEqual(account3.simple_balance(), Balance(-60, "EUR"))
 
     def test_balance_simple_as_of(self):
         account1 = self.account()
@@ -250,42 +206,42 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create(date="2016-06-01")
             Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "EUR")
+                transaction=transaction, account=account1, amount=Money(100, "EUR")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(100, "EUR")
+                transaction=transaction, account=account2, amount=Money(-100, "EUR")
             )
 
             transaction = Transaction.objects.create(date="2016-06-15")
             Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(50, "EUR")
+                transaction=transaction, account=account1, amount=Money(50, "EUR")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(50, "EUR")
+                transaction=transaction, account=account2, amount=Money(-50, "EUR")
             )
 
         self.assertEqual(
-            account1.get_simple_balance(as_of="2016-01-01"), Balance(0, "EUR")
+            account1.simple_balance(as_of="2016-01-01"), Balance(0, "EUR")
         )  # before any transactions
         self.assertEqual(
-            account1.get_simple_balance(as_of="2016-06-01"), Balance(100, "EUR")
+            account1.simple_balance(as_of="2016-06-01"), Balance(100, "EUR")
         )  # same date as first transaction
         self.assertEqual(
-            account1.get_simple_balance(as_of="2016-06-10"), Balance(100, "EUR")
+            account1.simple_balance(as_of="2016-06-10"), Balance(100, "EUR")
         )  # between two transactions
         self.assertEqual(
-            account1.get_simple_balance(as_of="2016-06-15"), Balance(150, "EUR")
+            account1.simple_balance(as_of="2016-06-15"), Balance(150, "EUR")
         )  # same date as second transaction
         self.assertEqual(
-            account1.get_simple_balance(as_of="2020-01-01"), Balance(150, "EUR")
+            account1.simple_balance(as_of="2020-01-01"), Balance(150, "EUR")
         )  # after transactions
 
     def test_balance_simple_zero(self):
         account1 = self.account()
         account2 = self.account()
 
-        self.assertEqual(account1.get_simple_balance(), Balance(0, "EUR"))
-        self.assertEqual(account2.get_simple_balance(), Balance(0, "EUR"))
+        self.assertEqual(account1.simple_balance(), Balance(0, "EUR"))
+        self.assertEqual(account2.simple_balance(), Balance(0, "EUR"))
 
     def test_balance_kwargs(self):
         account1 = self.account()
@@ -296,80 +252,74 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
             Leg.objects.create(
                 transaction=transaction,
                 account=account1,
-                credit=100,
-                currency="EUR",
+                amount=100,
+                amount_currency="EUR",
             )
             Leg.objects.create(
                 transaction=transaction,
                 account=account2,
-                debit=100,
-                currency="EUR",
+                amount=-100,
+                amount_currency="EUR",
             )
 
             transaction = Transaction.objects.create(date="2016-06-15")
             Leg.objects.create(
                 transaction=transaction,
                 account=account1,
-                credit=50,
-                currency="EUR",
+                amount=50,
+                amount_currency="EUR",
             )
             Leg.objects.create(
                 transaction=transaction,
                 account=account2,
-                debit=50,
-                currency="EUR",
+                amount=-50,
+                amount_currency="EUR",
             )
 
         self.assertEqual(
-            account1.get_balance(transaction__date__gte="2016-06-15"),
-            Balance(50, "EUR"),
+            account1.balance(transaction__date__gte="2016-06-15"), Balance(50, "EUR")
         )
 
     def test_balance(self):
-        account1 = self.account(type=AccountType.income)
-        account1_child = self.account(type=AccountType.income, parent=account1)
-        account2 = self.account(type=AccountType.income)
+        account1 = self.account(type=Account.TYPES.income)
+        account1_child = self.account(type=Account.TYPES.income, parent=account1)
+        account2 = self.account(type=Account.TYPES.income)
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
                 transaction=transaction,
                 account=account1,
-                credit=50,
-                currency="EUR",
+                amount=50,
+                amount_currency="EUR",
             )
             Leg.objects.create(
                 transaction=transaction,
                 account=account1_child,
-                credit=50,
-                currency="EUR",
+                amount=50,
+                amount_currency="EUR",
             )
             Leg.objects.create(
                 transaction=transaction,
                 account=account2,
-                debit=100,
-                currency="EUR",
+                amount=-100,
+                amount_currency="EUR",
             )
 
-        self.assertEqual(account1.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(account1.balance(), Balance(100, "EUR"))
 
-    def test_asset_to_expense(self):
-        bank = self.account(type=AccountType.asset)
-        expense = self.account(type=AccountType.expense)
+    def test_net_balance(self):
+        bank = self.account(type=Account.TYPES.asset)
+        account1 = self.account(type=Account.TYPES.income)
+        account2 = self.account(type=Account.TYPES.income)
 
-        bank.transfer_to(expense, Money(100, "EUR"))
+        bank.transfer_to(account1, Money(100, "EUR"))
+        bank.transfer_to(account2, Money(50, "EUR"))
 
-        self.assertEqual(bank.get_simple_balance(), Balance(-100, "EUR"))
-        self.assertEqual(expense.get_simple_balance(), Balance(100, "EUR"))
-
-    def test_income_to_asset(self):
-        income = self.account(type=AccountType.income)
-        bank = self.account(type=AccountType.asset)
-
-        income.transfer_to(bank, Money(100, "EUR"))
-
-        self.assertEqual(income.get_simple_balance(), Balance(100, "EUR"))
-        self.assertEqual(bank.get_simple_balance(), Balance(100, "EUR"))
+        self.assertEqual(
+            Account.objects.filter(type=Account.TYPES.income).net_balance(),
+            Balance(150, "EUR"),
+        )
 
     def test_zero_balance_single(self):
         account = self.account(currencies=["GBP"])._zero_balance()
@@ -383,22 +333,81 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account = self.account(currencies=[])._zero_balance()
         self.assertEqual(account, Balance())
 
+    def test_transfer_to(self):
+        account1 = self.account(type=Account.TYPES.income)
+        account2 = self.account(type=Account.TYPES.income)
+        transaction = account1.transfer_to(account2, Money(500, "EUR"))
+        self.assertEqual(transaction.legs.count(), 2)
+        self.assertEqual(account1.balance(), Balance(-500, "EUR"))
+        self.assertEqual(account2.balance(), Balance(500, "EUR"))
+
     def test_transfer_to_not_money(self):
-        account1 = self.account(type=AccountType.income)
+        account1 = self.account(type=Account.TYPES.income)
         with self.assertRaisesRegex(TypeError, "amount must be of type Money"):
             account1.transfer_to(account1, 500)
 
+    def test_transfer_pos_to_pos(self):
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.income)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        Account.validate_accounting_equation()
+
+    def test_transfer_pos_to_neg(self):
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.asset)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        Account.validate_accounting_equation()
+
+    def test_transfer_neg_to_pos(self):
+        src = self.account(type=Account.TYPES.asset)
+        dst = self.account(type=Account.TYPES.income)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        Account.validate_accounting_equation()
+
+    def test_transfer_neg_to_neg(self):
+        src = self.account(type=Account.TYPES.asset)
+        dst = self.account(type=Account.TYPES.asset)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        Account.validate_accounting_equation()
+
+    def test_transfer_liability_to_expense(self):
+        # When doing this it is probably safe to assume we want to the
+        # liability account to contribute to an expense, therefore both should decrease
+        src = self.account(type=Account.TYPES.liability)
+        dst = self.account(type=Account.TYPES.expense)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(-100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(-100, "EUR"))
+        Account.validate_accounting_equation()
+
+    def test_transfer_expense_to_liability(self):
+        # This should perform the reverse action to that in the above test_transfer_liability_to_expense()
+        src = self.account(type=Account.TYPES.expense)
+        dst = self.account(type=Account.TYPES.liability)
+        src.transfer_to(dst, Money(100, "EUR"))
+        self.assertEqual(src.balance(), Balance(100, "EUR"))
+        self.assertEqual(dst.balance(), Balance(100, "EUR"))
+        Account.validate_accounting_equation()
+
     def test_currency_exchange(self):
-        src = self.account(type=AccountType.asset, currencies=["GBP"])
-        trading = self.account(type=AccountType.trading, currencies=["GBP", "EUR"])
-        dst = self.account(type=AccountType.asset, currencies=["EUR"])
+        src = self.account(type=Account.TYPES.asset, currencies=["GBP"])
+        trading = self.account(type=Account.TYPES.trading, currencies=["GBP", "EUR"])
+        dst = self.account(type=Account.TYPES.asset, currencies=["EUR"])
         src.transfer_to(trading, Money("100", "GBP"))
         trading.transfer_to(dst, Money("110", "EUR"))
-        self.assertEqual(src.get_balance(), Balance("-100", "GBP"))
-        self.assertEqual(trading.get_balance(), Balance("-100", "GBP", "110", "EUR"))
-        self.assertEqual(dst.get_balance(), Balance("110", "EUR"))
+        self.assertEqual(src.balance(), Balance("-100", "GBP"))
+        self.assertEqual(trading.balance(), Balance("-100", "GBP", "110", "EUR"))
+        self.assertEqual(dst.balance(), Balance("110", "EUR"))
 
-    def test_full_code_simple(self):
+    def test_full_code(self):
         """
         Check that the full code for a account is correctly set by the db trigger
         """
@@ -410,18 +419,6 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account2.full_code, "50")
         self.assertEqual(account3.full_code, "509")
 
-    def test_full_code_long(self):
-        """
-        Check that the full code for a account is correctly set by the db trigger
-        """
-        account1 = self.account(code="555555")
-        account2 = self.account(parent=account1, code="000000")
-        account3 = self.account(parent=account2, code="999999")
-
-        self.assertEqual(account1.full_code, "555555")
-        self.assertEqual(account2.full_code, "555555000000")
-        self.assertEqual(account3.full_code, "555555000000999999")
-
     def test_full_code_error_on_non_unique(self):
         account1 = self.account(code="5")
         self.account(parent=account1, code="0")
@@ -429,7 +426,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         with self.assertRaises(DatabaseError):
             self.account(parent=account1, code="0")
 
-    def test_full_code_changes_on_update_simple(self):
+    def test_full_code_changes_on_update(self):
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -448,7 +445,6 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(account3.full_code, "A09")
 
     def test_full_code_changes_on_update_with_null_code(self):
-        account0 = self.account(code="1")
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -459,13 +455,11 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2.refresh_from_db()
         account3.refresh_from_db()
 
-        self.assertEqual(account0.full_code, "1")
         self.assertEqual(account1.full_code, None)
         self.assertEqual(account2.full_code, None)
         self.assertEqual(account3.full_code, None)
 
     def test_full_code_changes_on_update_with_empty_string_code(self):
-        account0 = self.account(code="1")
         account1 = self.account(code="5")
         account2 = self.account(parent=account1, code="0")
         account3 = self.account(parent=account2, code="9")
@@ -476,34 +470,7 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         account2.refresh_from_db()
         account3.refresh_from_db()
 
-        self.assertEqual(account0.full_code, "1")
         self.assertEqual(account1.full_code, None)
-        self.assertEqual(account2.full_code, None)
-        self.assertEqual(account3.full_code, None)
-
-    def test_full_code_changes_on_create_with_null_code(self):
-        account1 = self.account(code="5")
-        account2 = self.account(parent=account1, code=None)
-        account3 = self.account(parent=account2, code="9")
-
-        account1.refresh_from_db()
-        account2.refresh_from_db()
-        account3.refresh_from_db()
-
-        self.assertEqual(account1.full_code, "5")
-        self.assertEqual(account2.full_code, None)
-        self.assertEqual(account3.full_code, None)
-
-    def test_full_code_changes_on_create_with_empty_string_code(self):
-        account1 = self.account(code="5")
-        account2 = self.account(parent=account1, code="")
-        account3 = self.account(parent=account2, code="9")
-
-        account1.refresh_from_db()
-        account2.refresh_from_db()
-        account3.refresh_from_db()
-
-        self.assertEqual(account1.full_code, "5")
         self.assertEqual(account2.full_code, None)
         self.assertEqual(account3.full_code, None)
 
@@ -514,122 +481,36 @@ class AccountTestCase(DataProvider, DbTransactionTestCase):
         See Also:
             https://github.com/adamcharnock/django-hordak/issues/4
         """
-        account1 = self.account(type=AccountType.asset)
+        account1 = self.account(type=Account.TYPES.asset)
         account2 = self.account(parent=account1, is_bank_account=True)
         account2.refresh_from_db()
-        self.assertEqual(account2.type, AccountType.asset)
+        self.assertEqual(account2.type, Account.TYPES.asset)
         self.assertEqual(account2.is_bank_account, True)
-
-    def test_with_balances_simple(self):
-        """Ensure with_balances() returns a valid value in the simplest case"""
-        src = self.account(type=AccountType.liability)
-        dst = self.account(type=AccountType.expense)
-        src.transfer_to(dst, Money(100, "EUR"))
-        src.transfer_to(dst, Money(10, "EUR"))
-
-        # Just some other transaction that should be ignored
-        self.account().transfer_to(self.account(), Money(50, "EUR"))
-
-        src = Account.objects.filter(type=AccountType.liability).with_balances().get()
-        self.assertEqual(src.balance, Balance([Money("110", "EUR")]))
-
-    def test_with_balances_child_accounts(self):
-        """Ensure with_balances() returns a valid value for child accounts"""
-        parent = self.account(type=AccountType.liability, name="Parent")
-
-        src = self.account(type=AccountType.liability, parent=parent)
-        dst = self.account(type=AccountType.expense)
-        src.transfer_to(dst, Money(100, "EUR"))
-
-        # Just some other transaction that should be ignored
-        self.account().transfer_to(self.account(), Money(50, "EUR"))
-
-        parent = Account.objects.filter(name="Parent").with_balances().get()
-        self.assertEqual(parent.balance, Balance([Money("100", "EUR")]))
-
-    def test_with_balances_as_of(self):
-        src = self.account(type=AccountType.liability)
-        dst = self.account(type=AccountType.expense)
-        src.transfer_to(dst, Money(100, "EUR"), date="2000-01-15")
-        src.transfer_to(dst, Money(110, "EUR"), date="2000-01-16")
-
-        # Just some other transaction that should be ignored
-        self.account().transfer_to(self.account(), Money(50, "EUR"))
-
-        src = (
-            Account.objects.filter(type=AccountType.liability)
-            .with_balances(as_of="2000-01-15")
-            .get()
-        )
-        self.assertEqual(src.balance, Balance([Money("100", "EUR")]))
-
-    @parameterized.expand(
-        [
-            (None, AccountType.expense),
-            ("2000-01-30", AccountType.expense),
-            (None, AccountType.asset),
-            ("2000-01-30", AccountType.asset),
-        ]
-    )
-    def test_with_balances_expense_sign(self, as_of, type):
-        """Expense & asset accounts should have their sign flipped"""
-        src = self.account(type=AccountType.liability)
-        dst = self.account(type=type)
-
-        src.transfer_to(dst, Money(100, "EUR"), date="2000-01-15")
-        src.transfer_to(dst, Money(10, "EUR"), date="2000-01-16")
-
-        # Just some other transaction that should be ignored
-        self.account().transfer_to(self.account(), Money(50, "EUR"))
-
-        src = Account.objects.filter(pk=src.pk).with_balances(as_of=as_of).get()
-        self.assertEqual(src.balance, Balance([Money("110", "EUR")]))
-
-        dst = Account.objects.filter(pk=dst.pk).with_balances().get()
-        # Balance is positive, not negative
-        self.assertEqual(dst.balance, Balance([Money("110", "EUR")]))
 
 
 class LegTestCase(DataProvider, DbTransactionTestCase):
     def test_manager(self):
-        account1 = self.account(currencies=["USD"], type=AccountType.liability)
-        account2 = self.account(currencies=["USD"], type=AccountType.asset)
+        account1 = self.account(currencies=["USD"])
+        account2 = self.account(currencies=["USD"])
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100.12, "USD")
+                transaction=transaction, account=account1, amount=Money(100.12, "USD")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(80.06, "USD")
+                transaction=transaction, account=account2, amount=Money(-80.06, "USD")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(20.06, "USD")
+                transaction=transaction, account=account2, amount=Money(-20.06, "USD")
             )
 
-        # Multiple account types, but signing disambiguated by passing account_type
+        self.assertEqual(Leg.objects.sum_to_balance(), Balance())
         self.assertEqual(
-            Leg.objects.sum_to_balance(account_type=account1.type), Balance()
-        )
-
-        # Single account types
-        self.assertEqual(
-            account1.legs.sum_to_balance(account_type=account1.type),
-            Balance([Money("100.12", "USD")]),
+            account1.legs.sum_to_balance(), Balance([Money("100.12", "USD")])
         )
         self.assertEqual(
-            account2.legs.sum_to_balance(account_type=account2.type),
-            Balance([Money("100.12", "USD")]),
-        )
-
-        # Account type auto-detected
-        self.assertEqual(
-            account1.legs.sum_to_balance(account_type=None),
-            Balance([Money("100.12", "USD")]),
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(account_type=None),
-            Balance([Money("100.12", "USD")]),
+            account2.legs.sum_to_balance(), Balance([Money("-100.12", "USD")])
         )
 
     def test_bulk_create(self):
@@ -644,29 +525,29 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
                     Leg(
                         transaction=transaction,
                         account=account1,
-                        credit=Money(0.02, "USD"),
+                        amount=Money(0.000002, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account2,
-                        debit=Money(0.01, "USD"),
+                        amount=Money(-0.000001, "USD"),
                     ),
                     Leg(
                         transaction=transaction,
                         account=account3,
-                        debit=Money(0.01, "USD"),
+                        amount=Money(-0.000001, "USD"),
                     ),
                 ]
             )
 
         self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("0.02", "USD")])
+            account1.legs.sum_to_balance(), Balance([Money("0.000002", "USD")])
         )
         self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
+            account2.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
         )
         self.assertEqual(
-            account3.legs.sum_to_balance(), Balance([Money("-0.01", "USD")])
+            account3.legs.sum_to_balance(), Balance([Money("-0.000001", "USD")])
         )
 
     def test_natural_key(self):
@@ -676,10 +557,10 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg = Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "USD")
+                transaction=transaction, account=account1, amount=Money(100, "USD")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(100, "USD")
+                transaction=transaction, account=account2, amount=Money(-100, "USD")
             )
         self.assertEqual(leg.natural_key(), (leg.uuid,))
 
@@ -690,10 +571,10 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg = Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "USD")
+                transaction=transaction, account=account1, amount=Money(100, "USD")
             )
             Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(100, "USD")
+                transaction=transaction, account=account2, amount=Money(-100, "USD")
             )
         self.assertEqual(Leg.objects.get_by_natural_key(*leg.natural_key()), leg)
 
@@ -710,17 +591,16 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         transaction = Transaction.objects.create()
 
         with self.assertRaises(DatabaseError):
-            Leg.objects.create(transaction=transaction, account=account, credit=100)
+            Leg.objects.create(transaction=transaction, account=account, amount=100)
 
         with self.assertRaises(DatabaseError), db_transaction.atomic():
-            with db_transaction.atomic():
-                # Also ensure we distinguish between currencies
-                Leg.objects.create(
-                    transaction=transaction, account=account, credit=Money(100, "EUR")
-                )
-                Leg.objects.create(
-                    transaction=transaction, account=account, debit=Money(100, "GBP")
-                )
+            # Also ensure we distinguish between currencies
+            Leg.objects.create(
+                transaction=transaction, account=account, amount=Money(100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account, amount=Money(-100, "GBP")
+            )
 
     def test_postgres_trigger_currency(self):
         """Check the database enforces that leg currencies must be supported by the leg's account"""
@@ -728,42 +608,18 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         transaction = Transaction.objects.create()
 
         with self.assertRaises(DatabaseError):
-            with db_transaction.atomic():
-                Leg.objects.create(
-                    transaction=transaction, account=account, credit=Money(100, "EUR")
-                )
-                Leg.objects.create(
-                    transaction=transaction, account=account, debit=Money(100, "EUR")
-                )
+            Leg.objects.create(
+                transaction=transaction, account=account, amount=Money(100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account, amount=Money(-100, "EUR")
+            )
 
     def test_postgres_trigger_bank_accounts_are_asset_accounts(self):
         """Check the database enforces that only asset accounts can be bank accounts"""
-        self.account(is_bank_account=True, type=AccountType.asset)
+        self.account(is_bank_account=True, type=Account.TYPES.asset)
         with self.assertRaises(DatabaseError):
-            self.account(is_bank_account=True, type=AccountType.income)
-
-    def test_debit_and_credit_positive(self):
-        """Check the database enforces that the debit & credit columns must be positive"""
-        account = self.account()
-        transaction = Transaction.objects.create()
-
-        with db_transaction.atomic():
-            Leg.objects.create(
-                transaction=transaction, account=account, credit=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account, debit=Money(100, "EUR")
-            )
-
-        with self.assertRaises(DatabaseError) as e:
-            # use .update() to bypass the Django models checks
-            Leg.objects.update(
-                credit=Money(-100, "EUR"),
-                debit=Money(-100, "EUR"),
-            )
-        # Should be either an hordak_leg_chk_credit_positive or hordak_leg_chk_debit_positive
-        self.assertIn("hordak_leg_chk_", str(e.exception))
-        self.assertIn("_positive", str(e.exception))
+            self.account(is_bank_account=True, type=Account.TYPES.income)
 
     def test_type(self):
         account1 = self.account()
@@ -772,10 +628,10 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg1 = Leg.objects.create(
-                transaction=transaction, account=account1, credit=100
+                transaction=transaction, account=account1, amount=100
             )
             leg2 = Leg.objects.create(
-                transaction=transaction, account=account2, debit=100
+                transaction=transaction, account=account2, amount=-100
             )
 
         self.assertEqual(leg1.type, CREDIT)
@@ -787,73 +643,24 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         self.assertEqual(leg2.is_credit(), False)
 
     def test_type_zero(self):
-        leg = Leg(credit=0)
+        leg = Leg(amount=0)
 
-        with self.assertRaises(exceptions.InvalidOrMissingAccountTypeError):
+        with self.assertRaises(exceptions.ZeroAmountError):
             leg.type
 
-    def test_model_zero_check_django(self):
+    def test_model_zero_check(self):
         """Check the model ensures non-zero leg amounts"""
         account1 = self.account()
         account2 = self.account()
 
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, credit=100)
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+            Leg.objects.create(transaction=transaction, account=account1, amount=100)
+            Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
-        leg3 = Leg(transaction=transaction, account=account2, credit=Money(0, "EUR"))
-        with self.assertRaises(exceptions.ZeroAmountError):
-            leg3.save()
+        leg3 = Leg(transaction=transaction, account=account2, amount=Money(0, "EUR"))
+        self.assertRaises(exceptions.ZeroAmountError, leg3.save)
 
-        leg4 = Leg(transaction=transaction, account=account2, debit=Money(0, "EUR"))
-        with self.assertRaises(exceptions.ZeroAmountError):
-            leg4.save()
-
-    def test_model_credit_debit_set(self):
-        """Check the model ensures non-zero leg amounts"""
-        account1 = self.account()
-        account2 = self.account()
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, credit=100)
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
-
-        leg3 = Leg(transaction=transaction, account=account2, credit=None, debit=None)
-        with self.assertRaises(exceptions.NeitherCreditNorDebitPresentError):
-            leg3.save()
-
-        leg4 = Leg(
-            transaction=transaction,
-            account=account2,
-            credit=Money(1, "EUR"),
-            debit=Money(1, "EUR"),
-        )
-        with self.assertRaises(exceptions.BothCreditAndDebitPresentError):
-            leg4.save()
-
-    def test_model_credit_debit_negative(self):
-        """Check the model ensures non-zero leg amounts"""
-        account1 = self.account()
-        account2 = self.account()
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, credit=100)
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
-
-        leg3 = Leg(transaction=transaction, account=account2, credit=Money(-1, "EUR"))
-        with self.assertRaises(exceptions.CreditOrDebitIsNegativeError):
-            leg3.save()
-
-        leg4 = Leg(transaction=transaction, account=account2, debit=Money(-1, "EUR"))
-        with self.assertRaises(exceptions.CreditOrDebitIsNegativeError):
-            leg4.save()
-
-    @postgres_only(
-        "Only postgres can enforce transaction-level checks in the way we need"
-    )
     def test_db_zero_check(self):
         """Check the DB ensures non-zero leg amounts"""
         account1 = self.account()
@@ -862,74 +669,29 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             leg1 = Leg.objects.create(
-                transaction=transaction, account=account1, credit=100
+                transaction=transaction, account=account1, amount=100
             )
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
+            Leg.objects.create(transaction=transaction, account=account2, amount=-100)
 
         with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
-            Leg.objects.filter(pk=leg1.pk).update(credit=Money(0, "EUR"))
+            Leg.objects.filter(pk=leg1.pk).update(amount=Money(0, "EUR"))
 
         with self.assertRaises(IntegrityError):
             # Use update() to bypass the check in Leg.save()
-            Leg.objects.filter(pk=leg1.pk).update(credit=Money(0.0000001, "EUR"))
-
-        with self.assertRaises(IntegrityError):
-            # Use update() to bypass the check in Leg.save()
-            Leg.objects.filter(pk=leg1.pk).update(debit=Money(0, "EUR"))
-
-        with self.assertRaises(IntegrityError):
-            # Use update() to bypass the check in Leg.save()
-            Leg.objects.filter(pk=leg1.pk).update(debit=Money(0.0000001, "EUR"))
-
-    @postgres_only(
-        "Only postgres can enforce transaction-level checks in the way we need"
-    )
-    def test_db_credit_debit_set(self):
-        account1 = self.account()
-        account2 = self.account()
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, credit=100)
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
-
-        with self.assertRaises(IntegrityError):
-            Leg.objects.filter(transaction=transaction).update(debit=None, credit=None)
-
-        with self.assertRaises(IntegrityError):
-            Leg.objects.filter(transaction=transaction).update(
-                debit=Money(1, "EUR"), credit=Money(1, "EUR")
-            )
-
-    @postgres_only(
-        "Only postgres can enforce transaction-level checks in the way we need"
-    )
-    def test_db_credit_debit_negative(self):
-        account1 = self.account()
-        account2 = self.account()
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(transaction=transaction, account=account1, credit=100)
-            Leg.objects.create(transaction=transaction, account=account2, debit=100)
-
-        with self.assertRaises(IntegrityError):
-            Leg.objects.filter(transaction=transaction).update(
-                debit=Money(-1, "EUR"), credit=Money(-1, "EUR")
-            )
+            Leg.objects.filter(pk=leg1.pk).update(amount=Money(0.0000001, "EUR"))
 
     def test_debits(self):
-        src = self.account(type=AccountType.asset)
-        dst = self.account(type=AccountType.asset)
+        src = self.account(type=Account.TYPES.asset)
+        dst = self.account(type=Account.TYPES.asset)
         src.transfer_to(dst, Money(100, "EUR"))
 
         debit = Leg.objects.debits().get()
         credit = Leg.objects.credits().get()
-        self.assertEqual(debit.account, dst)
-        self.assertEqual(credit.account, src)
+        self.assertEqual(debit.account, src)
+        self.assertEqual(credit.account, dst)
 
-    def test_account_balance_after_simple(self):
+    def test_account_balance_after(self):
         src = self.account()
         dst = self.account()
         src.transfer_to(dst, Money(100, "EUR"))
@@ -937,13 +699,11 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(50, "EUR"))
         dst.transfer_to(src, Money(70, "EUR"))
 
-        legs = (
-            Leg.objects.filter(account=src).order_by("pk").with_account_balance_after()
-        )
-        self.assertEqual(legs[0].account_balance_after, Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after, Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after, Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after, Balance("180", "EUR"))
+        legs = Leg.objects.filter(account=dst).order_by("pk").all()
+        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
 
     def test_account_balance_after_out_of_order_ids(self):
         src = self.account()
@@ -956,15 +716,11 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-01")
 
-        legs = (
-            Leg.objects.filter(account=src)
-            .order_by("transaction__date")
-            .with_account_balance_after()
-        )
-        self.assertEqual(legs[0].account_balance_after, Balance("100", "EUR"))
-        self.assertEqual(legs[1].account_balance_after, Balance("200", "EUR"))
-        self.assertEqual(legs[2].account_balance_after, Balance("250", "EUR"))
-        self.assertEqual(legs[3].account_balance_after, Balance("180", "EUR"))
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        self.assertEqual(legs[0].account_balance_after(), Balance("100", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("200", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("250", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("180", "EUR"))
 
     def test_account_balance_after_out_of_order_ids_on_same_day(self):
         src = self.account()
@@ -979,15 +735,11 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = (
-            Leg.objects.filter(account=src)
-            .order_by("transaction__date")
-            .with_account_balance_after()
-        )
-        self.assertEqual(legs[0].account_balance_after, Balance("110", "EUR"))
-        self.assertEqual(legs[1].account_balance_after, Balance("210", "EUR"))
-        self.assertEqual(legs[2].account_balance_after, Balance("260", "EUR"))
-        self.assertEqual(legs[3].account_balance_after, Balance("190", "EUR"))
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        self.assertEqual(legs[0].account_balance_after(), Balance("110", "EUR"))
+        self.assertEqual(legs[1].account_balance_after(), Balance("210", "EUR"))
+        self.assertEqual(legs[2].account_balance_after(), Balance("260", "EUR"))
+        self.assertEqual(legs[3].account_balance_after(), Balance("190", "EUR"))
 
     def test_account_balance_before_out_of_order_ids_on_same_day(self):
         src = self.account()
@@ -1002,15 +754,11 @@ class LegTestCase(DataProvider, DbTransactionTestCase):
         src.transfer_to(dst, Money(110, "EUR"), date="2000-01-05")
         src.transfer_to(dst, Money(100, "EUR"), date="2000-01-05")
 
-        legs = (
-            Leg.objects.filter(account=src)
-            .order_by("transaction__date")
-            .with_account_balance_before()
-        )
-        self.assertEqual(legs[0].account_balance_before, Balance("0", "EUR"))
-        self.assertEqual(legs[1].account_balance_before, Balance("110", "EUR"))
-        self.assertEqual(legs[2].account_balance_before, Balance("210", "EUR"))
-        self.assertEqual(legs[3].account_balance_before, Balance("260", "EUR"))
+        legs = Leg.objects.filter(account=dst).order_by("transaction__date").all()
+        self.assertEqual(legs[0].account_balance_before(), Balance("0", "EUR"))
+        self.assertEqual(legs[1].account_balance_before(), Balance("110", "EUR"))
+        self.assertEqual(legs[2].account_balance_before(), Balance("210", "EUR"))
+        self.assertEqual(legs[3].account_balance_before(), Balance("260", "EUR"))
 
 
 class TransactionTestCase(DataProvider, DbTransactionTestCase):
@@ -1032,29 +780,29 @@ class TransactionTestCase(DataProvider, DbTransactionTestCase):
         with db_transaction.atomic():
             transaction = Transaction.objects.create()
             Leg.objects.create(
-                transaction=transaction, account=self.account1, credit=100
+                transaction=transaction, account=self.account1, amount=100
             )
             Leg.objects.create(
-                transaction=transaction, account=self.account2, debit=100
+                transaction=transaction, account=self.account2, amount=-100
             )
 
-        self.assertEqual(transaction.get_balance(), 0)
+        self.assertEqual(transaction.balance(), 0)
 
     def test_balance_no_legs(self):
         transaction = Transaction.objects.create()
-        self.assertEqual(transaction.get_balance(), 0)
+        self.assertEqual(transaction.balance(), 0)
 
 
 class StatementLineTestCase(DataProvider, DbTransactionTestCase):
     def setUp(self):
         self.bank = self.account(
-            name="Bank", type=AccountType.asset, currencies=["EUR"]
+            name="Bank", type=Account.TYPES.asset, currencies=["EUR"]
         )
         self.sales = self.account(
-            name="Sales", type=AccountType.income, currencies=["EUR"]
+            name="Sales", type=Account.TYPES.income, currencies=["EUR"]
         )
         self.expenses = self.account(
-            name="Expenses", type=AccountType.expense, currencies=["EUR"]
+            name="Expenses", type=Account.TYPES.expense, currencies=["EUR"]
         )
 
         self.statement_import = StatementImport.objects.create(
@@ -1111,8 +859,8 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         transaction = line.create_transaction(self.sales)
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(transaction.date, date(2016, 1, 1))
-        self.assertEqual(self.bank.get_balance(), Balance(100, "EUR"))
-        self.assertEqual(self.sales.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(self.bank.balance(), Balance(100, "EUR"))
+        self.assertEqual(self.sales.balance(), Balance(100, "EUR"))
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()
@@ -1127,8 +875,8 @@ class StatementLineTestCase(DataProvider, DbTransactionTestCase):
         transaction = line.create_transaction(self.expenses)
         self.assertEqual(transaction.legs.count(), 2)
         self.assertEqual(transaction.date, date(2016, 1, 1))
-        self.assertEqual(self.bank.get_balance(), Balance(-100, "EUR"))
-        self.assertEqual(self.expenses.get_balance(), Balance(100, "EUR"))
+        self.assertEqual(self.bank.balance(), Balance(-100, "EUR"))
+        self.assertEqual(self.expenses.balance(), Balance(100, "EUR"))
         line.refresh_from_db()
         self.assertEqual(line.transaction, transaction)
         Account.validate_accounting_equation()
@@ -1150,10 +898,45 @@ class TestQueryAccount(DataProvider, TestCase):
         self.assertIn(account3, Account.objects.filter(currencies__contains=["MYR"]))
 
 
+class TestCoreDeprecations(DataProvider, DbTransactionTestCase):
+    def test_transfer_to_deprecation(self):
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.asset)
+
+        with self.assertWarns(DeprecationWarning) as warning_cm:
+            src.transfer_to(dst, Money(100, "EUR"))
+
+        self.assertIn("transfer_to() has been deprecated.", str(warning_cm.warning))
+
+
+class TestCoreDefaultCurrenciesAsArr(TestCase):
+    @override_settings(CURRENCIES=["EUR", "USD"])
+    def test_project_currencies(self):
+        del settings.HORDAK_CURRENCIES
+
+        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
+
+        self.assertEqual(project_currencies(), ["EUR", "USD"])
+
+
+def project_currencies_func():
+    return ["SGD", "MYR"]
+
+
+class TestCoreDefaultCurrenciesAsFunc(TestCase):
+    @override_settings(CURRENCIES=project_currencies_func)
+    def test_project_currencies(self):
+        del settings.HORDAK_CURRENCIES
+
+        importlib.reload(hordak.defaults)  # reload to pick up settings change in test
+
+        self.assertEqual(project_currencies(), ["SGD", "MYR"])
+
+
 class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
     def test_non_matching(self):
-        src = self.account(type=AccountType.income)
-        dst = self.account(type=AccountType.asset)
+        src = self.account(type=Account.TYPES.income)
+        dst = self.account(type=Account.TYPES.asset)
 
         currency_arr_str = json.dumps(["EUR"])
         error_str = f"Destination Account#{src.id} does not support currency MYR. "
@@ -1161,215 +944,9 @@ class TestLegNotMatchAccountCurrency(DataProvider, DbTransactionTestCase):
 
         with self.assertRaisesMessage(
             (
-                IntegrityError,
+                InternalError,
                 OperationalError,
             ),
             error_str,
         ):
             src.transfer_to(dst, Money(100, "MYR"))
-
-
-class DecimalPlacesConfigurationTestCase(DataProvider, TestCase):
-    """Test that the system works correctly with different DECIMAL_PLACES settings
-
-    Note: These tests verify the application logic works with different
-    DECIMAL_PLACES settings. The actual database precision is fixed by migrations,
-    so values will be truncated to fit the database schema (typically 2 decimal places).
-    """
-
-    @override_settings(HORDAK_DECIMAL_PLACES=0, HORDAK_MAX_DIGITS=15)
-    def test_zero_decimal_places(self):
-        """Test with 0 decimal places (whole numbers only)"""
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["EUR"])
-        account2 = self.account(currencies=["EUR"])
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction, account=account1, credit=Money(100, "EUR")
-            )
-            Leg.objects.create(
-                transaction=transaction, account=account2, debit=Money(100, "EUR")
-            )
-
-        self.assertEqual(account1.legs.sum_to_balance(), Balance([Money("100", "EUR")]))
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-100", "EUR")])
-        )
-
-    @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
-    def test_four_decimal_places(self):
-        """Test with 4 decimal places
-
-        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
-        """
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["EUR"])
-        account2 = self.account(currencies=["EUR"])
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction,
-                account=account1,
-                credit=Money("100.1234", "EUR"),
-            )
-            Leg.objects.create(
-                transaction=transaction,
-                account=account2,
-                debit=Money("100.1234", "EUR"),
-            )
-
-        # Database truncates to 2 decimal places
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("100.12", "EUR")])
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-100.12", "EUR")])
-        )
-
-    @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
-    def test_six_decimal_places(self):
-        """Test with 6 decimal places (cryptocurrency precision)
-
-        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
-        """
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["EUR"])
-        account2 = self.account(currencies=["EUR"])
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction,
-                account=account1,
-                credit=Money("0.123456", "EUR"),
-            )
-            Leg.objects.create(
-                transaction=transaction,
-                account=account2,
-                debit=Money("0.123456", "EUR"),
-            )
-
-        # Database truncates to 2 decimal places
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("0.12", "EUR")])
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-0.12", "EUR")])
-        )
-
-    @override_settings(HORDAK_DECIMAL_PLACES=3, HORDAK_MAX_DIGITS=18)
-    def test_three_decimal_places_bulk_create(self):
-        """Test bulk_create with 3 decimal places
-
-        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
-        """
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["EUR"])
-        account2 = self.account(currencies=["EUR"])
-        account3 = self.account(currencies=["EUR"])
-
-        with db_transaction.atomic():
-            transaction = Transaction.objects.create()
-            Leg.objects.bulk_create(
-                [
-                    Leg(
-                        transaction=transaction,
-                        account=account1,
-                        credit=Money("10.123", "EUR"),
-                    ),
-                    Leg(
-                        transaction=transaction,
-                        account=account2,
-                        debit=Money("5.062", "EUR"),
-                    ),
-                    Leg(
-                        transaction=transaction,
-                        account=account3,
-                        debit=Money("5.061", "EUR"),
-                    ),
-                ]
-            )
-
-        # Database truncates to 2 decimal places
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("10.12", "EUR")])
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-5.06", "EUR")])
-        )
-        self.assertEqual(
-            account3.legs.sum_to_balance(), Balance([Money("-5.06", "EUR")])
-        )
-
-    @override_settings(HORDAK_DECIMAL_PLACES=4, HORDAK_MAX_DIGITS=20)
-    def test_transfer_with_four_decimal_places(self):
-        """Test transfer_to() method with 4 decimal places
-
-        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
-        """
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["EUR"])
-        account2 = self.account(currencies=["EUR"])
-
-        account1.transfer_to(account2, Money("123.4567", "EUR"))
-
-        # Database truncates to 2 decimal places
-        self.assertEqual(
-            account1.legs.sum_to_balance(), Balance([Money("123.46", "EUR")])
-        )
-        self.assertEqual(
-            account2.legs.sum_to_balance(), Balance([Money("-123.46", "EUR")])
-        )
-
-    @override_settings(HORDAK_DECIMAL_PLACES=6, HORDAK_MAX_DIGITS=20)
-    def test_multiple_currencies_with_six_decimal_places(self):
-        """Test multi-currency accounts with 6 decimal places
-
-        Note: DB schema has 2 decimal places, so values are truncated to 2 decimals
-        """
-        importlib.reload(hordak.defaults)
-
-        account1 = self.account(currencies=["USD", "EUR"])
-        account2 = self.account(currencies=["USD", "EUR"])
-
-        with db_transaction.atomic():
-            transaction1 = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction1,
-                account=account1,
-                credit=Money("100.123456", "USD"),
-            )
-            Leg.objects.create(
-                transaction=transaction1,
-                account=account2,
-                debit=Money("100.123456", "USD"),
-            )
-
-            transaction2 = Transaction.objects.create()
-            Leg.objects.create(
-                transaction=transaction2,
-                account=account1,
-                credit=Money("50.654321", "EUR"),
-            )
-            Leg.objects.create(
-                transaction=transaction2,
-                account=account2,
-                debit=Money("50.654321", "EUR"),
-            )
-
-        # Database truncates to 2 decimal places
-        balance1 = account1.legs.sum_to_balance()
-        self.assertEqual(balance1["USD"], Money("100.12", "USD"))
-        self.assertEqual(balance1["EUR"], Money("50.65", "EUR"))
-
-        balance2 = account2.legs.sum_to_balance()
-        self.assertEqual(balance2["USD"], Money("-100.12", "USD"))
-        self.assertEqual(balance2["EUR"], Money("-50.65", "EUR"))
