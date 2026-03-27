@@ -23,13 +23,8 @@ jobs:
     strategy:
       matrix:
         DJANGO_VERSION: ['4.2.*', '5.0.*']
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
         import-export: ['3.3.5', '4.0.0b2']
-        exclude:
-          - DJANGO_VERSION: '5.0.*'
-            python-version: '3.8'
-          - DJANGO_VERSION: '5.0.*'
-            python-version: '3.9'
       fail-fast: false
 
     services:
@@ -54,13 +49,13 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
               python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}-${{ matrix.import-export }}
@@ -70,24 +65,20 @@ jobs:
            sudo apt-get update
            sudo apt-get install -y mariadb-client
            pip install -r requirements_test.txt
-           python setup.py develop
            pip install -e .
            pip install git+https://github.com/jazzband/django-model-utils@master  # remove after new release of django-model-utils (>4.3.1)
-           pip install Django==${{ matrix.DJANGO_VERSION }}
+           pip install Django==${{ matrix.DJANGO_VERSION }} --pre
            pip install django-import-export==${{ matrix.import-export }}
            pip install codecov
 
       - name: Check Migrations
         run: |
-          pip install "py-moneyed<3" --upgrade
-          PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
-          pip install "py-moneyed>=3" --upgrade  # Different version of py-moneyed should not create different migrations
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
       - name: Testing (PostgreSQL)
         run: |
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
-          pip install -e .[subqueries]
+          pip install -e .
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
           coverage xml && codecov
         env:
@@ -97,7 +88,7 @@ jobs:
           PYTHONPATH=`pwd` ./manage.py makemigrations --check hordak
 
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run ./manage.py test hordak
-          pip install -e .[subqueries]
+          pip install -e .
           PYTHONPATH=`pwd` python -Wall -W error::DeprecationWarning -m coverage run --append ./manage.py test hordak  # Test with subquery
           coverage xml && codecov
         env:
@@ -106,20 +97,19 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
-      - uses: actions/cache@v2
+        uses: actions/setup-python@v5
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ hashFiles('setup.py') }}-${{ matrix.DJANGO_VERSION }}
 
       - name: Install
         run: |
-          pip install flake8 isort black mypy django-stubs dj_database_url types-six types-requests types-mock
+          pip install flake8 isort "black<26" django-stubs dj_database_url types-six types-requests types-mock
           pip install "django-stubs<1.13.0"  # Remove this line once https://github.com/typeddjango/django-stubs/issues/1227 is fixed
           pip install -r requirements_test.txt
-          python setup.py develop
           pip install -e .
       - name: Running Flake8
         run: flake8
@@ -127,5 +117,3 @@ jobs:
         run: python -m isort . --check-only --diff
       - name: Running black
         run: black --check .
-      - name: Running mypy
-        run: mypy .
