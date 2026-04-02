@@ -1,8 +1,11 @@
 import logging
+from unittest.mock import patch
 
+from django.db import connection
 from django.db import transaction as db_transaction
 from django.db.models import Max
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from moneyed.classes import Money
 
 from hordak.models import Account, Leg, RunningTotal, Transaction
@@ -141,6 +144,43 @@ class RunningTotalCheckpointTests(DataProvider, TestCase):
         RunningTotal.objects.filter(pk=stale.pk).update(balance=Money(999, "EUR"))
         self.assertEqual(account1.simple_balance(), Balance([Money(15, "EUR")]))
 
+    def test_simple_balance_avoids_distinct_amount_currency_scan(self):
+        account1 = self.account(type=Account.TYPES.income, currencies=["EUR"])
+        account2 = self.account(type=Account.TYPES.income, currencies=["EUR"])
+        with db_transaction.atomic():
+            txn = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=txn, account=account1, amount=Money(10, "EUR")
+            )
+            Leg.objects.create(
+                transaction=txn, account=account2, amount=Money(-10, "EUR")
+            )
+        account1.rebuild_running_totals()
+        account1.currencies = ["EUR", "USD"]
+        account1.save()
+        account2.currencies = ["EUR", "USD"]
+        account2.save()
+        with db_transaction.atomic():
+            txn = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=txn, account=account1, amount=Money(20, "USD")
+            )
+            Leg.objects.create(
+                transaction=txn, account=account2, amount=Money(-20, "USD")
+            )
+
+        with CaptureQueriesContext(connection) as queries:
+            balance = account1.simple_balance()
+
+        self.assertEqual(balance, Balance([Money(10, "EUR"), Money(20, "USD")]))
+        self.assertFalse(
+            any(
+                "SELECT DISTINCT" in query["sql"].upper()
+                and "AMOUNT_CURRENCY" in query["sql"].upper()
+                for query in queries.captured_queries
+            )
+        )
+
     def test_no_checkpoint_falls_back_to_full_sum(self):
         account1 = self.account()
         account2 = self.account()
@@ -205,6 +245,24 @@ class RunningTotalCheckpointTests(DataProvider, TestCase):
         self.assertEqual(
             bank.simple_balance(raw=True),
             bank._simple_balance_full_sum(raw=True),
+        )
+
+    def test_append_running_totals_uses_leg_cutoff_for_full_sum(self):
+        account = self.account()
+
+        with patch.object(
+            account, "_running_total_current_leg_id", return_value=42
+        ), patch.object(
+            account,
+            "_running_total_full_signed_balance",
+            return_value=Balance([Money(10, "EUR")]),
+        ) as full_balance_mock:
+            account._append_running_totals_from_full_sum()
+
+        full_balance_mock.assert_called_once_with(as_of_leg_id=42)
+        self.assertEqual(
+            account.running_totals.get(currency="EUR").includes_leg_id,
+            42,
         )
 
 
@@ -599,6 +657,32 @@ class SignCorrectnessTests(DataProvider, TestCase):
 
 
 class CheckRunningTotalsTests(DataProvider, TestCase):
+    def test_check_reports_effective_balance(self):
+        account1 = self.account(type=Account.TYPES.income)
+        account2 = self.account(type=Account.TYPES.income)
+        with db_transaction.atomic():
+            txn = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=txn, account=account1, amount=Money(10, "EUR")
+            )
+            Leg.objects.create(
+                transaction=txn, account=account2, amount=Money(-10, "EUR")
+            )
+        account1.rebuild_running_totals()
+        with db_transaction.atomic():
+            txn = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=txn, account=account1, amount=Money(5, "EUR")
+            )
+            Leg.objects.create(
+                transaction=txn, account=account2, amount=Money(-5, "EUR")
+            )
+        account1.running_totals.update(balance=Money(999, "EUR"))
+
+        faulty = account1._check_running_totals()
+
+        self.assertEqual(faulty, [("EUR", Money(1004, "EUR"), Money(15, "EUR"))])
+
     def test_check_detects_corrupted_checkpoint(self):
         account1 = self.account()
         account2 = self.account()

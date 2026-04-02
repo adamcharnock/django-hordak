@@ -27,7 +27,7 @@ class CreateChartOfAccountsTestCase(TestCase):
         self.assertEqual(account.currencies, ["USD", "EUR"])
 
 
-@override_settings(ADMINS=[("Admin", "foo@bar.cz")])
+@override_settings(ADMINS=["foo@bar.cz"])
 class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
     def setUp(self):
         super().setUp()
@@ -150,7 +150,52 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         self.assertIn("Running totals are INCORRECT", ret_val)
         self.assertIn("Account Account 1 has faulty running total for EUR", ret_val)
         self.assertRegex(ret_val, r"100")
-        self.assertRegex(ret_val, r"200")
+        self.assertIn("effective", ret_val)
+
+    def test_check_reports_effective_balance(self):
+        account1 = self.account(type=Account.TYPES.income)
+        account2 = self.account(type=Account.TYPES.income)
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(10, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-10, "EUR")
+            )
+        account1.rebuild_running_totals()
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(5, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-5, "EUR")
+            )
+        account1.running_totals.update(balance=Money(999, "EUR"))
+
+        ret_val = call_command("recalculate_running_totals", "--check")
+
+        self.assertIn("Account Account 1 has faulty running total for EUR", ret_val)
+        self.assertIn("effective", ret_val)
+        self.assertIn("should be", ret_val)
+
+    def test_rebuild_does_not_report_incorrect(self):
+        account1 = self.account()
+        account2 = self.account()
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction, account=account1, amount=Money(100, "EUR")
+            )
+            Leg.objects.create(
+                transaction=transaction, account=account2, amount=Money(-100, "EUR")
+            )
+
+        ret_val = call_command("recalculate_running_totals")
+
+        self.assertNotIn("INCORRECT", ret_val)
+        self.assertIn("Rebuilt running total checkpoints for 2 accounts.", ret_val)
 
     def test_mail_admins(self):
         """
@@ -174,7 +219,9 @@ class RecalculateRunningTotalsTestCase(DataProvider, DbTransactionTestCase):
         running_total.balance = Money(200, "EUR")
         running_total.save()
 
-        ret_val = call_command("recalculate_running_totals", *["--mail-admins"])
+        ret_val = call_command(
+            "recalculate_running_totals", *["--check", "--mail-admins"]
+        )
         self.assertIn("Running totals are INCORRECT", ret_val)
         self.assertIn("Account Account 1 has faulty running total for EUR", ret_val)
         self.assertEqual(len(mail.outbox), 1)

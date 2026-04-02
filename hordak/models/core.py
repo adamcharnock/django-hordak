@@ -362,11 +362,7 @@ class Account(MPTTModel):
             return self._zero_balance()
 
         sign = 1 if raw else self.sign
-        checkpoints = {}
-        for rt in RunningTotal.objects.filter(account_id=self.pk).order_by(
-            "-includes_leg_id"
-        ):
-            checkpoints.setdefault(rt.currency, rt)
+        checkpoints = self._running_total_latest_checkpoints()
 
         if not checkpoints:
             return self._simple_balance_full_sum(
@@ -381,10 +377,7 @@ class Account(MPTTModel):
             implied = Balance([rt.balance]) + delta_legs.sum_to_balance() * sign
             result += implied
 
-        leg_currencies = set(
-            self.legs.values_list("amount_currency", flat=True).distinct()
-        )
-        for currency in leg_currencies:
+        for currency in self.currencies:
             if currency in checkpoints:
                 continue
             subset = self.legs.filter(amount_currency=currency)
@@ -530,18 +523,38 @@ class Account(MPTTModel):
         )
         return transaction
 
-    def _running_total_full_signed_balance(self):
-        return self.legs.sum_to_balance() * self.sign + self._zero_balance()
+    def _running_total_current_leg_id(self):
+        return self.legs.order_by("-id").values_list("id", flat=True).first() or 0
 
-    def _append_running_totals_from_full_sum(self):
-        total = self._running_total_full_signed_balance()
-        max_id = Leg.objects.filter(account_id=self.pk).aggregate(m=Max("id"))["m"] or 0
+    def _running_total_latest_checkpoints(self, as_of_leg_id=None):
+        running_totals = self.running_totals.order_by("-includes_leg_id")
+        if as_of_leg_id is not None:
+            running_totals = running_totals.filter(includes_leg_id__lte=as_of_leg_id)
+
+        checkpoints = {}
+        for running_total in running_totals:
+            checkpoints.setdefault(running_total.currency, running_total)
+        return checkpoints
+
+    def _running_total_full_signed_balance(self, as_of_leg_id=None):
+        legs = self.legs
+        if as_of_leg_id is not None:
+            legs = legs.filter(id__lte=as_of_leg_id)
+        return legs.sum_to_balance() * self.sign + self._zero_balance()
+
+    def _append_running_totals_from_full_sum(self, current_leg_id=None):
+        current_leg_id = (
+            self._running_total_current_leg_id()
+            if current_leg_id is None
+            else current_leg_id
+        )
+        total = self._running_total_full_signed_balance(as_of_leg_id=current_leg_id)
         for money in total.monies():
             RunningTotal.objects.create(
                 account=self,
                 currency=money.currency.code,
                 balance=money,
-                includes_leg_id=max_id,
+                includes_leg_id=current_leg_id,
             )
 
     def advance_checkpoint(self):
@@ -553,32 +566,32 @@ class Account(MPTTModel):
         with db_transaction.atomic():
             Account.objects.select_for_update().filter(pk=self.pk).first()
 
-            max_id = Leg.objects.filter(account_id=self.pk).aggregate(m=Max("id"))["m"]
-            if max_id is None:
+            current_leg_id = self._running_total_current_leg_id()
+            if not current_leg_id:
                 return
 
-            checkpoints = {}
-            for rt in self.running_totals.order_by("-includes_leg_id"):
-                checkpoints.setdefault(rt.currency, rt)
+            checkpoints = self._running_total_latest_checkpoints(
+                as_of_leg_id=current_leg_id
+            )
 
             if not checkpoints:
-                self._append_running_totals_from_full_sum()
+                self._append_running_totals_from_full_sum(current_leg_id=current_leg_id)
                 return
 
             all_up_to_date = all(
-                rt.includes_leg_id >= max_id for rt in checkpoints.values()
+                rt.includes_leg_id >= current_leg_id for rt in checkpoints.values()
             )
             if all_up_to_date:
                 return
 
             sign = self.sign
             for currency, rt in checkpoints.items():
-                if rt.includes_leg_id >= max_id:
+                if rt.includes_leg_id >= current_leg_id:
                     continue
                 delta = (
                     self.legs.filter(
                         models.Q(id__gt=rt.includes_leg_id)
-                        & models.Q(id__lte=max_id)
+                        & models.Q(id__lte=current_leg_id)
                         & models.Q(amount_currency=currency)
                     ).sum_to_balance()
                     * sign
@@ -588,18 +601,15 @@ class Account(MPTTModel):
                     account=self,
                     currency=currency,
                     balance=new_balance[currency],
-                    includes_leg_id=max_id,
+                    includes_leg_id=current_leg_id,
                 )
 
-            uncovered = set(
-                self.legs.filter(id__gt=0)
-                .values_list("amount_currency", flat=True)
-                .distinct()
-            ) - set(checkpoints.keys())
-            for currency in uncovered:
+            for currency in self.currencies:
+                if currency in checkpoints:
+                    continue
                 total = (
                     self.legs.filter(
-                        amount_currency=currency, id__lte=max_id
+                        amount_currency=currency, id__lte=current_leg_id
                     ).sum_to_balance()
                     * sign
                 )
@@ -608,52 +618,64 @@ class Account(MPTTModel):
                         account=self,
                         currency=currency,
                         balance=money,
-                        includes_leg_id=max_id,
+                        includes_leg_id=current_leg_id,
                     )
 
     def rebuild_running_totals(self, keep_history=False):
         with db_transaction.atomic():
             Account.objects.select_for_update().filter(pk=self.pk).first()
+            current_leg_id = self._running_total_current_leg_id()
             if not keep_history:
                 self.running_totals.all().delete()
-            self._append_running_totals_from_full_sum()
+            self._append_running_totals_from_full_sum(current_leg_id=current_leg_id)
 
-    def _check_running_totals(self):
+    def check_running_totals(self):
         faulty_values = []
-        full = self._running_total_full_signed_balance()
-        for money in full.monies():
-            currency = money.currency.code
-            correct = money
-            latest = (
-                self.running_totals.filter(currency=currency)
-                .order_by("-includes_leg_id")
-                .first()
-            )
-            if latest is None:
-                if correct.amount != 0:
+        current_leg_id = self._running_total_current_leg_id()
+        checkpoints = self._running_total_latest_checkpoints(
+            as_of_leg_id=current_leg_id
+        )
+        correct = self._running_total_full_signed_balance(as_of_leg_id=current_leg_id)
+        all_currencies = (
+            set(self.currencies)
+            | set(checkpoints)
+            | {money.currency.code for money in correct.monies()}
+        )
+
+        for currency in all_currencies:
+            correct_value = correct[currency]
+            running_total = checkpoints.get(currency)
+            if running_total is None:
+                if correct_value.amount != 0:
                     logger.warning("No running total for %s (%s)", self, currency)
-                    faulty_values.append((currency, None, correct))
+                    faulty_values.append((currency, None, correct_value))
                 continue
             delta_legs = self.legs.filter(
-                models.Q(id__gt=latest.includes_leg_id)
+                models.Q(id__gt=running_total.includes_leg_id)
+                & models.Q(id__lte=current_leg_id)
                 & models.Q(amount_currency=currency)
             )
             implied = (
-                Balance([latest.balance]) + delta_legs.sum_to_balance() * self.sign
+                Balance([running_total.balance])
+                + delta_legs.sum_to_balance() * self.sign
             )
-            if implied[currency] != correct:
+            effective_value = implied[currency]
+            if effective_value != correct_value:
                 logger.warning(
                     "Running totals difference is %s "
                     "(running total: %s, effective: %s, total: %s) "
                     "for account %s",
-                    implied[currency] - correct,
-                    latest.balance,
-                    implied[currency],
-                    correct,
+                    effective_value - correct_value,
+                    running_total.balance,
+                    effective_value,
+                    correct_value,
                     self,
                 )
-                faulty_values.append((currency, latest.balance, correct))
+                faulty_values.append((currency, effective_value, correct_value))
         return faulty_values
+
+    def _check_running_totals(self):
+        return self.check_running_totals()
 
     def update_running_totals(self, check_only=False, keep_history=False):
         """
@@ -666,7 +688,7 @@ class Account(MPTTModel):
         Returns:
             list: A list of currencies that have been updated or didn't pass the check
         """
-        faulty_values = self._check_running_totals()
+        faulty_values = self.check_running_totals()
         if check_only:
             return faulty_values
         self.rebuild_running_totals(keep_history=keep_history)

@@ -31,35 +31,42 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        print(
-            f"{'Checking' if options['check'] else 'Recalculating'} running totals for all accounts"
-        )
-        output_string = ""
         # We are using Legs subquery because it is quicker
         queryset = Account.objects.filter(pk__in=Leg.objects.values("account"))
-        i = 0
-        print(f"Found {queryset.count()} accounts")
+        if options["check"]:
+            problems = []
+            for account in queryset.all():
+                for (
+                    currency,
+                    effective_value,
+                    correct_value,
+                ) in account.check_running_totals():
+                    if effective_value is None:
+                        problems.append(
+                            f"Account {account.name} has no checkpoint for {currency} "
+                            f"(should be {correct_value})"
+                        )
+                        continue
+
+                    problems.append(
+                        f"Account {account.name} has faulty running total for {currency} "
+                        f"(effective {effective_value}, should be {correct_value})"
+                    )
+
+            output_string = "\n".join(problems)
+            if options["mail_admins"] and output_string:
+                mail_admins(
+                    "Running totals are incorrect",
+                    f"Running totals are incorrect for some accounts\n\n{output_string}",
+                )
+
+            return (
+                f"Running totals are INCORRECT: \n\n{output_string}"
+                if output_string
+                else "Running totals are correct"
+            )
+
         for account in queryset.all():
-            i += 1
-            if i % 100 == 0:
-                print(f"Processed {i} accounts")
-            faulty_values = account.update_running_totals(
-                check_only=options["check"],
-                keep_history=options["keep_history"],
-            )
-            if faulty_values:
-                for currency, rt_value, correct_value in faulty_values:
-                    output_string += f"Account {account.name} has faulty running total for {currency}"
-                    output_string += f" (should be {correct_value}, is {rt_value})\n"
+            account.rebuild_running_totals(keep_history=options["keep_history"])
 
-        if options["mail_admins"] and output_string:
-            mail_admins(
-                "Running totals are incorrect",
-                f"Running totals are incorrect for some accounts\n\n{output_string}",
-            )
-
-        return (
-            f"Running totals are INCORRECT: \n\n{output_string}"
-            if output_string
-            else "Running totals are correct"
-        )
+        return f"Rebuilt running total checkpoints for {queryset.count()} accounts."
