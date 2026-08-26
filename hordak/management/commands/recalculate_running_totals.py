@@ -42,13 +42,6 @@ class Command(BaseCommand):
                     effective_value,
                     correct_value,
                 ) in account.check_running_totals():
-                    if effective_value is None:
-                        problems.append(
-                            f"Account {account.name} has no checkpoint for {currency} "
-                            f"(should be {correct_value})"
-                        )
-                        continue
-
                     problems.append(
                         f"Account {account.name} has faulty running total for {currency} "
                         f"(effective {effective_value}, should be {correct_value})"

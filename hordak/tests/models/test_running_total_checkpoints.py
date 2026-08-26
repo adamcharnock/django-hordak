@@ -213,6 +213,15 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
             [("EUR", Money(1004, "EUR"), Money(15, "EUR"))],
         )
 
+    def test_check_running_totals_ignores_missing_checkpoint(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+
+        self._post(account, offset, 10)
+
+        self.assertEqual(account.running_totals.count(), 0)
+        self.assertEqual(account.check_running_totals(), [])
+
     def test_update_running_totals_check_only_preserves_rows(self):
         account = self.account(type=AccountType.income)
         offset = self.account(type=AccountType.income)
@@ -544,7 +553,10 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
             account.running_totals.get(currency="EUR").balance, Money(12, "EUR")
         )
 
-    def test_recalculate_running_totals_command_check_reports_missing_checkpoint(self):
+    def test_recalculate_running_totals_command_check_ignores_missing_checkpoint(self):
+        # Missing checkpoints are a performance concern, not a data error --
+        # the read path falls back to full-sum. Reporting them as incorrect
+        # was generating false alarm admin emails in production.
         account = self.account(type=AccountType.income)
         offset = self.account(type=AccountType.income)
         self._post(account, offset, 12)
@@ -552,10 +564,7 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
 
         call_command("recalculate_running_totals", "--check", stdout=stdout)
 
-        self.assertIn("Running totals are INCORRECT", stdout.getvalue())
-        self.assertIn(
-            f"Account {account.name} has no checkpoint for EUR", stdout.getvalue()
-        )
+        self.assertIn("Running totals are correct", stdout.getvalue())
         self.assertEqual(account.running_totals.count(), 0)
 
     def test_recalculate_running_totals_command_check_reports_faulty_checkpoint(self):
@@ -580,6 +589,8 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
         account = self.account(type=AccountType.income)
         offset = self.account(type=AccountType.income)
         self._post(account, offset, 12)
+        account.rebuild_running_totals()
+        account.running_totals.update(balance=Money(999, "EUR"))
 
         call_command("recalculate_running_totals", "--check", "--mail-admins")
 

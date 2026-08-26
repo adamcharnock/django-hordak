@@ -548,24 +548,25 @@ class Account(MPTTModel):
                     )
 
     def check_running_totals(self):
+        """Check consistency of existing checkpoints against full-sum balances.
+
+        Only reports currencies where a checkpoint exists but is incorrect.
+        Missing checkpoints are not reported -- the read path falls back to
+        full-sum correctly, so absence is a performance concern, not a data
+        error.
+        """
         current_leg_id = self._running_total_current_leg_id()
         checkpoints = self._running_total_latest_checkpoints(
             as_of_leg_id=current_leg_id
         )
+        if not checkpoints:
+            return []
+
         correct = self._running_total_full_signed_balance(as_of_leg_id=current_leg_id)
         faulty_values = []
-        all_currencies = (
-            set(self.currencies) | set(checkpoints) | set(correct.currencies())
-        )
 
-        for currency in all_currencies:
+        for currency, running_total in checkpoints.items():
             correct_value = correct[currency]
-            running_total = checkpoints.get(currency)
-            if running_total is None:
-                if correct_value.amount != 0:
-                    faulty_values.append((currency, None, correct_value))
-                continue
-
             delta = self.legs.filter(
                 id__gt=running_total.includes_leg_id,
                 id__lte=current_leg_id,
