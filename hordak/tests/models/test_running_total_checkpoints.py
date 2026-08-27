@@ -1,4 +1,5 @@
 import importlib
+import threading
 from io import StringIO
 from unittest.mock import patch
 
@@ -322,6 +323,51 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
         )
         self.assertEqual(account.running_totals.filter(currency="USD").count(), 1)
 
+    def test_disabled_leg_insert_costs_no_checkpoint_queries(self):
+        # The feature is opt-in (HORDAK_CHECKPOINT_THRESHOLD defaults to 0):
+        # projects that never enable it must not pay any per-leg query cost.
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+
+        with CaptureQueriesContext(connection) as ctx:
+            self._post(account, offset, 10)
+
+        overhead = [
+            q["sql"]
+            for q in ctx.captured_queries
+            if "runningtotal" in q["sql"].lower()
+            or "hordak_account" in q["sql"].lower()
+        ]
+        self.assertEqual(overhead, [])
+
+    def test_leg_update_invalidates_without_plain_account_fetches(self):
+        # The update path needs no account instance: it deletes checkpoint
+        # rows directly, and the only account query is the on-commit fence
+        # (select_for_update) that serializes against a concurrent advance.
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        self._post(account, offset, 10)
+        account.rebuild_running_totals()
+        credit_leg = account.legs.get()
+        debit_leg = offset.legs.get()
+
+        with CaptureQueriesContext(connection) as ctx:
+            with db_transaction.atomic():
+                credit_leg.credit = Money(20, "EUR")
+                credit_leg.save()
+                debit_leg.debit = Money(20, "EUR")
+                debit_leg.save()
+
+        plain_account_fetches = [
+            q["sql"]
+            for q in ctx.captured_queries
+            if q["sql"].lower().startswith("select")
+            and "hordak_account" in q["sql"].lower()
+            and "for update" not in q["sql"].lower()
+        ]
+        self.assertEqual(plain_account_fetches, [])
+        self.assertEqual(account.running_totals.count(), 0)
+
     def test_leg_update_invalidates_running_totals(self):
         account = self.account(type=AccountType.income)
         offset = self.account(type=AccountType.income)
@@ -632,3 +678,122 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
         call_command("recalculate_running_totals", "--keep-history", stdout=StringIO())
 
         self.assertEqual(account.running_totals.filter(currency="EUR").count(), 2)
+
+
+class ConcurrentCheckpointTests(DataProvider, DbTransactionTestCase):
+    """Concurrency properties of checkpoint maintenance.
+
+    The handlers deliberately keep locking work off the signal paths (they
+    only delete checkpoint rows), and advance_checkpoint serializes per
+    account via select_for_update. These tests exercise both under genuinely
+    concurrent writers; a deadlock shows up as a stuck worker.
+    """
+
+    THREADS = 4
+    POSTS_PER_THREAD = 5
+
+    def _post(self, credit_account, debit_account, amount, currency="EUR"):
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction,
+                account=credit_account,
+                credit=Money(amount, currency),
+            )
+            Leg.objects.create(
+                transaction=transaction,
+                account=debit_account,
+                debit=Money(amount, currency),
+            )
+
+    def _run_workers(self, *worker_fns):
+        barrier = threading.Barrier(len(worker_fns))
+        errors = []
+
+        def wrap(fn):
+            def run():
+                try:
+                    barrier.wait(timeout=10)
+                    fn()
+                except Exception as exc:  # pragma: no cover - reported below
+                    errors.append(exc)
+                finally:
+                    connection.close()
+
+            return run
+
+        threads = [threading.Thread(target=wrap(fn)) for fn in worker_fns]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=60)
+
+        self.assertFalse(
+            any(thread.is_alive() for thread in threads),
+            "worker threads did not finish -- likely deadlocked",
+        )
+        self.assertEqual(errors, [])
+
+    @override_settings(HORDAK_CHECKPOINT_THRESHOLD=1)
+    def test_concurrent_inserts_advance_checkpoints_consistently(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        self._post(account, offset, 1)
+        account.rebuild_running_totals()
+        seed_leg_id = account.running_totals.get(currency="EUR").includes_leg_id
+
+        def insert_worker():
+            for _ in range(self.POSTS_PER_THREAD):
+                self._post(account, offset, 1)
+
+        self._run_workers(*[insert_worker] * self.THREADS)
+
+        total = 1 + self.THREADS * self.POSTS_PER_THREAD
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(account.get_simple_balance(), Balance([Money(total, "EUR")]))
+
+        # The workers may legitimately end with the advanced checkpoints
+        # repaired away (a straggler invalidates whatever raced past it), so
+        # force one deterministic advance to prove the mechanism still works
+        # after the contention.
+        self._post(account, offset, 1)
+        total += 1
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(account.get_simple_balance(), Balance([Money(total, "EUR")]))
+        self.assertGreater(
+            account.running_totals.order_by("-includes_leg_id")
+            .values_list("includes_leg_id", flat=True)
+            .first(),
+            seed_leg_id,
+        )
+
+    @override_settings(HORDAK_CHECKPOINT_THRESHOLD=1)
+    def test_concurrent_updates_and_inserts_stay_consistent(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        self._post(account, offset, 10)
+        account.rebuild_running_totals()
+        credit_leg = account.legs.get()
+        debit_leg = offset.legs.get()
+
+        def insert_worker():
+            for _ in range(self.POSTS_PER_THREAD):
+                self._post(account, offset, 1)
+
+        def update_worker():
+            for amount in (20, 30, 10):
+                with db_transaction.atomic():
+                    leg = Leg.objects.select_for_update().get(pk=credit_leg.pk)
+                    leg.credit = Money(amount, "EUR")
+                    leg.save()
+                    other = Leg.objects.select_for_update().get(pk=debit_leg.pk)
+                    other.debit = Money(amount, "EUR")
+                    other.save()
+
+        self._run_workers(*([insert_worker] * (self.THREADS - 1) + [update_worker]))
+
+        total = 10 + (self.THREADS - 1) * self.POSTS_PER_THREAD
+        # Whatever mix of invalidations and advances won, every surviving
+        # checkpoint must be consistent and reads must see the true balance.
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(account.get_simple_balance(), Balance([Money(total, "EUR")]))
