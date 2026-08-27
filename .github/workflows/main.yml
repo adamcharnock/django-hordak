@@ -148,6 +148,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -162,6 +164,6 @@ jobs:
       - name: Running Flake8
         run: flake8
       - name: Running isort
-        run: python -m isort . --check-only --diff
+        run: isort . --check-only --diff
       - name: Running black
         run: black --check .
