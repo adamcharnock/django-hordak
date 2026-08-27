@@ -1,5 +1,6 @@
 import importlib
 import threading
+import unittest
 from io import StringIO
 from unittest.mock import patch
 
@@ -20,7 +21,17 @@ from hordak.receivers import (
 from hordak.tests.utils import DataProvider
 from hordak.utilities.currency import Balance
 
+# Checkpoints need transaction visibility information only PostgreSQL
+# exposes (see Account._running_total_current_leg_id), so the whole feature
+# -- and therefore its tests -- is PostgreSQL-only. The suite runs against
+# MariaDB as well, where these must skip rather than error.
+requires_postgresql = unittest.skipUnless(
+    connection.vendor == "postgresql",
+    "running total checkpoints are PostgreSQL-only",
+)
 
+
+@requires_postgresql
 class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
     def test_app_ready_imports_receivers(self):
         from hordak.apps import HordakConfig
@@ -680,6 +691,7 @@ class RunningTotalCheckpointTests(DataProvider, DbTransactionTestCase):
         self.assertEqual(account.running_totals.filter(currency="EUR").count(), 2)
 
 
+@requires_postgresql
 class ConcurrentCheckpointTests(DataProvider, DbTransactionTestCase):
     """Concurrency properties of checkpoint maintenance.
 
@@ -797,3 +809,359 @@ class ConcurrentCheckpointTests(DataProvider, DbTransactionTestCase):
         # checkpoint must be consistent and reads must see the true balance.
         self.assertEqual(account.check_running_totals(), [])
         self.assertEqual(account.get_simple_balance(), Balance([Money(total, "EUR")]))
+
+
+@requires_postgresql
+class RedistributionBurstRegressionTests(DataProvider, DbTransactionTestCase):
+    """Regression for a production corruption on a hot ledger account.
+
+    A nightly batch job posted hundreds of tiny transactions to one account
+    in a burst (~17ms apart). Partway through, one committing transaction
+    crossed the checkpoint threshold and advanced. Because the advance ran
+    inside that transaction, it could not see the burst's other, still
+    uncommitted legs -- yet it recorded includes_leg_id at the top of the
+    range, so those legs were permanently excluded from every later
+    checkpoint (each advance builds on the previous balance).
+
+    Observed twice in three months: the stored checkpoint step was short by
+    exactly the value of the stragglers' legs, and the resulting constant
+    offset persisted until a manual rebuild.
+
+    The burst is reproduced deterministically: a writer holds an open
+    transaction containing a low-id leg while a second writer commits legs
+    that cross the threshold and advance.
+    """
+
+    def _post(self, credit_account, debit_account, amount, currency="EUR"):
+        transaction = Transaction.objects.create()
+        Leg.objects.create(
+            transaction=transaction,
+            account=credit_account,
+            credit=Money(amount, currency),
+        )
+        Leg.objects.create(
+            transaction=transaction,
+            account=debit_account,
+            debit=Money(amount, currency),
+        )
+
+    @override_settings(HORDAK_CHECKPOINT_THRESHOLD=2)
+    def test_straggler_leg_is_not_excluded_by_a_concurrent_advance(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+
+        with db_transaction.atomic():
+            self._post(account, offset, 10)
+        account.rebuild_running_totals()
+
+        straggler_inserted = threading.Event()
+        straggler_committed = threading.Event()
+        advancer_done = threading.Event()
+        errors = []
+
+        def straggler():
+            """Opens first (low leg id), commits last -- the burst member
+            whose legs the racing advance cannot see."""
+            try:
+                with db_transaction.atomic():
+                    self._post(account, offset, 1)
+                    straggler_inserted.set()
+                    # Hold the transaction open while the other writer
+                    # commits and advances past us.
+                    advancer_done.wait(timeout=30)
+                straggler_committed.set()
+            except Exception as exc:  # pragma: no cover - surfaced below
+                errors.append(exc)
+                straggler_committed.set()
+            finally:
+                straggler_inserted.set()
+                connection.close()
+
+        def advancer():
+            """Commits later but with higher leg ids, crossing the
+            threshold and advancing the checkpoint."""
+            try:
+                straggler_inserted.wait(timeout=30)
+                for _ in range(4):
+                    with db_transaction.atomic():
+                        self._post(account, offset, 1)
+            except Exception as exc:  # pragma: no cover - surfaced below
+                errors.append(exc)
+            finally:
+                advancer_done.set()
+                connection.close()
+
+        threads = [
+            threading.Thread(target=straggler),
+            threading.Thread(target=advancer),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=60)
+
+        self.assertFalse(
+            any(thread.is_alive() for thread in threads),
+            "workers did not finish -- likely deadlocked",
+        )
+        self.assertEqual(errors, [])
+        self.assertTrue(straggler_committed.is_set())
+
+        total = 10 + 1 + 4
+        # The straggler's leg must be accounted for: either no checkpoint
+        # claims to include it, or a checkpoint does and its balance is right.
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(account.get_simple_balance(), Balance([Money(total, "EUR")]))
+
+        # And the corruption must not be inherited: a later advance must
+        # still produce a correct balance.
+        with db_transaction.atomic():
+            self._post(account, offset, 1)
+        with db_transaction.atomic():
+            self._post(account, offset, 1)
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(
+            account.get_simple_balance(), Balance([Money(total + 2, "EUR")])
+        )
+
+
+@requires_postgresql
+class UncommittedLegWatermarkTests(DataProvider, DbTransactionTestCase):
+    """A checkpoint must never claim to include a leg it could not see.
+
+    ``max(leg id)`` is not a safe cutoff: a transaction holding *lower* leg
+    ids may still be in flight and commit afterwards, and because every
+    checkpoint builds on the previous balance the omission is inherited
+    forever. Two properties of Django on PostgreSQL make this ordinary
+    rather than exotic:
+
+    * FK constraints are ``DEFERRABLE INITIALLY DEFERRED``, so an inserting
+      transaction takes no ``FOR KEY SHARE`` lock on the account until it
+      commits -- ``select_for_update()`` here does not serialise against
+      inserters at all.
+    * ``Leg.objects.bulk_create()`` sends no signals, so signal-based
+      repair can never compensate for it.
+
+    Both scenarios reproduce a real production corruption: a nightly batch
+    job posting bursts of small transactions to one hot account left a
+    constant balance offset that persisted until a manual rebuild.
+    """
+
+    def _post(self, credit_account, debit_account, amount, currency="EUR"):
+        transaction = Transaction.objects.create()
+        Leg.objects.create(
+            transaction=transaction,
+            account=credit_account,
+            credit=Money(amount, currency),
+        )
+        Leg.objects.create(
+            transaction=transaction,
+            account=debit_account,
+            debit=Money(amount, currency),
+        )
+
+    def _bulk_post(self, credit_account, debit_account, amount, currency="EUR"):
+        """Insert a balanced pair via bulk_create, which sends no signals."""
+        transaction = Transaction.objects.create()
+        Leg.objects.bulk_create(
+            [
+                Leg(
+                    transaction=transaction,
+                    account=credit_account,
+                    credit=Money(amount, currency),
+                ),
+                Leg(
+                    transaction=transaction,
+                    account=debit_account,
+                    debit=Money(amount, currency),
+                ),
+            ]
+        )
+
+    def _run(self, *workers):
+        threads = [threading.Thread(target=worker) for worker in workers]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=60)
+        self.assertFalse(
+            any(thread.is_alive() for thread in threads),
+            "workers did not finish -- likely deadlocked",
+        )
+
+    def _straggler(self, account, offset, inserted, release):
+        """Holds low leg ids uncommitted until ``release`` is set."""
+
+        def worker():
+            try:
+                with db_transaction.atomic():
+                    self._bulk_post(account, offset, 5)
+                    inserted.set()
+                    release.wait(timeout=30)
+            finally:
+                inserted.set()
+                connection.close()
+
+        return worker
+
+    @override_settings(HORDAK_CHECKPOINT_THRESHOLD=2)
+    def test_advance_does_not_skip_an_uncommitted_bulk_create(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        with db_transaction.atomic():
+            self._post(account, offset, 10)
+        account.rebuild_running_totals()
+
+        inserted = threading.Event()
+        advanced = threading.Event()
+
+        def advancer():
+            try:
+                inserted.wait(timeout=30)
+                for _ in range(4):
+                    with db_transaction.atomic():
+                        self._post(account, offset, 1)
+            finally:
+                advanced.set()
+                connection.close()
+
+        self._run(self._straggler(account, offset, inserted, advanced), advancer)
+
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(
+            account.get_simple_balance(), Balance([Money(10 + 5 + 4, "EUR")])
+        )
+
+    @override_settings(HORDAK_CHECKPOINT_THRESHOLD=0)
+    def test_rebuild_does_not_skip_an_uncommitted_bulk_create(self):
+        # Even with auto-advance disabled, the documented rebuild path must
+        # not write a checkpoint over legs it cannot see.
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        with db_transaction.atomic():
+            self._post(account, offset, 10)
+        account.rebuild_running_totals()
+
+        inserted = threading.Event()
+        committed = threading.Event()
+        rebuilt = threading.Event()
+
+        def higher_committer():
+            try:
+                inserted.wait(timeout=30)
+                with db_transaction.atomic():
+                    self._post(account, offset, 1)
+            finally:
+                committed.set()
+                connection.close()
+
+        def rebuilder():
+            try:
+                committed.wait(timeout=30)
+                account.rebuild_running_totals()
+            finally:
+                rebuilt.set()
+                connection.close()
+
+        self._run(
+            self._straggler(account, offset, inserted, rebuilt),
+            higher_committer,
+            rebuilder,
+        )
+
+        self.assertEqual(account.check_running_totals(), [])
+        self.assertEqual(
+            account.get_simple_balance(), Balance([Money(10 + 5 + 1, "EUR")])
+        )
+
+
+@requires_postgresql
+class SafeCutoffSkipTests(DataProvider, DbTransactionTestCase):
+    """Checkpoint building defers while another transaction inserts legs."""
+
+    def _post(self, credit_account, debit_account, amount, currency="EUR"):
+        with db_transaction.atomic():
+            transaction = Transaction.objects.create()
+            Leg.objects.create(
+                transaction=transaction,
+                account=credit_account,
+                credit=Money(amount, currency),
+            )
+            Leg.objects.create(
+                transaction=transaction,
+                account=debit_account,
+                debit=Money(amount, currency),
+            )
+
+    def _with_open_leg_writer(self, fn):
+        """Run fn() on the main thread while another connection holds an
+        uncommitted leg insert, and return fn's result."""
+        inserted = threading.Event()
+        release = threading.Event()
+        errors = []
+
+        def writer():
+            try:
+                with db_transaction.atomic():
+                    other_a = self.account(type=AccountType.income)
+                    other_b = self.account(type=AccountType.income)
+                    self._post(other_a, other_b, 1)
+                    inserted.set()
+                    release.wait(timeout=30)
+            except Exception as exc:  # pragma: no cover - surfaced below
+                errors.append(exc)
+                inserted.set()
+            finally:
+                connection.close()
+
+        thread = threading.Thread(target=writer)
+        thread.start()
+        self.assertTrue(inserted.wait(timeout=30))
+        try:
+            result = fn()
+        finally:
+            release.set()
+            thread.join(timeout=30)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+        return result
+
+    def test_rebuild_skips_and_reports_while_a_leg_writer_is_active(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        self._post(account, offset, 10)
+
+        ran = self._with_open_leg_writer(account.rebuild_running_totals)
+
+        self.assertFalse(ran)
+        self.assertEqual(account.running_totals.count(), 0)
+        # And succeeds once the writer is gone.
+        self.assertTrue(account.rebuild_running_totals())
+        self.assertEqual(account.running_totals.count(), 1)
+
+    def test_advance_skips_while_a_leg_writer_is_active(self):
+        account = self.account(type=AccountType.income)
+        offset = self.account(type=AccountType.income)
+        self._post(account, offset, 10)
+        account.rebuild_running_totals()
+        seed = account.running_totals.get(currency="EUR").includes_leg_id
+
+        self._post(account, offset, 1)
+        self._with_open_leg_writer(account.advance_checkpoint)
+
+        # Deferred: nothing was built past the seed while the writer held.
+        self.assertEqual(
+            account.running_totals.order_by("-includes_leg_id")
+            .values_list("includes_leg_id", flat=True)
+            .first(),
+            seed,
+        )
+        # Catches up at the next quiet moment.
+        account.advance_checkpoint()
+        self.assertGreater(
+            account.running_totals.order_by("-includes_leg_id")
+            .values_list("includes_leg_id", flat=True)
+            .first(),
+            seed,
+        )
+        self.assertEqual(account.check_running_totals(), [])

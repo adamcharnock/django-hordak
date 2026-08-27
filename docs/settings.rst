@@ -48,3 +48,29 @@ HORDAK_UUID_DEFAULT
 Default: ``uuid.uuid4`` (callable)
 
 A callable to be used to generate UUID values for database entities.
+
+
+HORDAK_CHECKPOINT_THRESHOLD
+---------------------------
+
+Default: ``0`` (int)
+
+Enables running total checkpoints (PostgreSQL only). When set to a positive
+number, an account's balance checkpoint is advanced automatically once that
+many legs have been created since the last checkpoint, making
+``Account.get_simple_balance()`` O(legs since last checkpoint) instead of
+O(all legs) on busy accounts.
+
+Left at ``0`` (the default), no checkpoints are built automatically and leg
+creation performs no extra queries. Checkpoints can still be built manually
+with the ``recalculate_running_totals`` management command, which also
+supports ``--check`` (verify checkpoints against full sums, optionally
+``--mail-admins``) and ``--keep-history``.
+
+Checkpoints require PostgreSQL: choosing a cutoff that cannot race in-flight
+inserts relies on lock visibility (``pg_locks``) that other backends do not
+expose. On other databases the checkpoint-building entry points raise
+``NotImplementedError``; balance reads are unaffected. Checkpoint building
+also skips any round during which another transaction is inserting legs, and
+catches up at the next quiet moment -- on a ledger with continuous writes,
+checkpoints advance in the gaps.

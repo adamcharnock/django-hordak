@@ -61,9 +61,18 @@ class Command(BaseCommand):
             self.stdout.write("Running totals are correct")
             return
 
+        rebuilt = 0
+        skipped = []
         for account in accounts.iterator():
-            account.rebuild_running_totals(keep_history=options["keep_history"])
+            if account.rebuild_running_totals(keep_history=options["keep_history"]):
+                rebuilt += 1
+            else:
+                skipped.append(account.name)
 
-        self.stdout.write(
-            f"Rebuilt running total checkpoints for {accounts.count()} accounts."
-        )
+        self.stdout.write(f"Rebuilt running total checkpoints for {rebuilt} accounts.")
+        if skipped:
+            self.stdout.write(
+                f"Skipped {len(skipped)} accounts because concurrent "
+                f"transactions were inserting legs; run again to retry: "
+                + ", ".join(skipped)
+            )
