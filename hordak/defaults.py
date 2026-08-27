@@ -16,8 +16,11 @@ def default_currency():
 
 CURRENCIES = getattr(settings, "HORDAK_CURRENCIES", getattr(settings, "CURRENCIES", []))
 
+
 DECIMAL_PLACES = getattr(settings, "HORDAK_DECIMAL_PLACES", 2)
 
 MAX_DIGITS = getattr(settings, "HORDAK_MAX_DIGITS", 20)
 
 UUID_DEFAULT = getattr(settings, "HORDAK_UUID_DEFAULT", uuid4)
+
+CHECKPOINT_THRESHOLD = getattr(settings, "HORDAK_CHECKPOINT_THRESHOLD", 0)
