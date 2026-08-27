@@ -21,9 +21,10 @@ Additionally, there are models which related to the import of external bank stat
   create a transaction for the statement line.
 """
 
+import logging
 import warnings
 from datetime import date
-from typing import Tuple
+from typing import Optional, Tuple
 
 from django.db import connection, models
 from django.db import transaction
@@ -54,6 +55,8 @@ DEBIT = "debit"
 #: Credit
 CREDIT = "credit"
 
+logger = logging.getLogger(__name__)
+
 
 def json_default():
     return {}
@@ -75,8 +78,8 @@ class AccountQuerySet(models.QuerySet):
     def with_balances(
         self,
         to_field_name="balance",
-        as_of: date = None,
-        as_of_leg_id: int = None,
+        as_of: Optional[date] = None,
+        as_of_leg_id: Optional[int] = None,
     ):
         """Annotate the account queryset with account balances
 
@@ -138,6 +141,37 @@ class AccountType(models.TextChoices):
 
 def account_default_currencies():
     return (DEFAULT_CURRENCY,)
+
+
+class RunningTotal(models.Model):
+    """Immutable simple-balance checkpoint for one account currency."""
+
+    account = models.ForeignKey(
+        "hordak.Account", on_delete=models.CASCADE, related_name="running_totals"
+    )
+    currency = models.CharField(max_length=15)
+    balance = MoneyField(
+        max_digits=MAX_DIGITS,
+        decimal_places=DECIMAL_PLACES,
+        default_currency=DEFAULT_CURRENCY,
+        null=True,
+        blank=True,
+    )
+    includes_leg_id = models.BigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Running Total")
+        verbose_name_plural = _("Running Totals")
+        indexes = [
+            models.Index(
+                fields=["account", "currency", "-includes_leg_id"],
+                name="hordak_runtot_acc_cur_ilid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account}: {self.balance}"
 
 
 class Account(MPTTModel):
@@ -370,6 +404,40 @@ class Account(MPTTModel):
             raise DeprecationWarning(
                 "The `raw` parameter to Account.get_simple_balance() is no longer available."
             )
+        if not self.pk:
+            return self._zero_balance()
+
+        if as_of or leg_query or kwargs:
+            return self._get_simple_balance_full_sum(
+                as_of=as_of,
+                leg_query=leg_query,
+                **kwargs,
+            )
+
+        checkpoints = self._running_total_latest_checkpoints()
+
+        if not checkpoints:
+            return self._get_simple_balance_full_sum()
+
+        balance = Balance()
+        for currency, running_total in checkpoints.items():
+            delta = self.legs.filter(
+                id__gt=running_total.includes_leg_id,
+                currency=currency,
+            ).sum_to_balance(account_type=self.type)
+            balance += Balance([running_total.balance]) + delta
+
+        covered_currencies = set(checkpoints)
+        for currency in self.currencies:
+            if currency in covered_currencies:
+                continue
+            balance += self.legs.filter(currency=currency).sum_to_balance(
+                account_type=self.type
+            )
+
+        return balance + self._zero_balance()
+
+    def _get_simple_balance_full_sum(self, as_of=None, leg_query=None, **kwargs):
         legs = self.legs
         if as_of:
             legs = legs.filter(transaction__date__lte=as_of)
@@ -379,6 +447,146 @@ class Account(MPTTModel):
             legs = legs.filter(leg_query, **kwargs)
 
         return legs.sum_to_balance(account_type=self.type) + self._zero_balance()
+
+    def _running_total_current_leg_id(self):
+        return self.legs.order_by("-id").values_list("id", flat=True).first() or 0
+
+    def _running_total_latest_checkpoints(self, as_of_leg_id=None):
+        running_totals = self.running_totals.order_by("-includes_leg_id")
+        if as_of_leg_id is not None:
+            running_totals = running_totals.filter(includes_leg_id__lte=as_of_leg_id)
+
+        checkpoints = {}
+        for running_total in running_totals:
+            checkpoints.setdefault(running_total.currency, running_total)
+        return checkpoints
+
+    def _running_total_full_signed_balance(self, as_of_leg_id=None):
+        filters = {}
+        if as_of_leg_id is not None:
+            filters["id__lte"] = as_of_leg_id
+        return self._get_simple_balance_full_sum(**filters)
+
+    def _append_running_totals_from_full_sum(self, current_leg_id=None):
+        current_leg_id = (
+            self._running_total_current_leg_id()
+            if current_leg_id is None
+            else current_leg_id
+        )
+        for money in self._running_total_full_signed_balance(
+            as_of_leg_id=current_leg_id
+        ).monies():
+            RunningTotal.objects.create(
+                account=self,
+                currency=money.currency.code,
+                balance=money,
+                includes_leg_id=current_leg_id,
+            )
+
+    def rebuild_running_totals(self, keep_history=False):
+        with db_transaction.atomic():
+            Account.objects.select_for_update().filter(pk=self.pk).get()
+            current_leg_id = self._running_total_current_leg_id()
+            if not keep_history:
+                self.running_totals.all().delete()
+            self._append_running_totals_from_full_sum(current_leg_id=current_leg_id)
+
+    def advance_checkpoint(self):
+        with db_transaction.atomic():
+            Account.objects.select_for_update().filter(pk=self.pk).get()
+
+            current_leg_id = self._running_total_current_leg_id()
+            if not current_leg_id:
+                return
+
+            checkpoints = self._running_total_latest_checkpoints(
+                as_of_leg_id=current_leg_id
+            )
+
+            if not checkpoints:
+                self._append_running_totals_from_full_sum(current_leg_id=current_leg_id)
+                return
+
+            if all(
+                running_total.includes_leg_id >= current_leg_id
+                for running_total in checkpoints.values()
+            ):
+                return
+
+            for currency, running_total in checkpoints.items():
+                if running_total.includes_leg_id >= current_leg_id:
+                    continue
+
+                delta = self.legs.filter(
+                    id__gt=running_total.includes_leg_id,
+                    id__lte=current_leg_id,
+                    currency=currency,
+                ).sum_to_balance(account_type=self.type)
+                new_balance = Balance([running_total.balance]) + delta
+                RunningTotal.objects.create(
+                    account=self,
+                    currency=currency,
+                    balance=new_balance[currency],
+                    includes_leg_id=current_leg_id,
+                )
+
+            covered_currencies = set(checkpoints)
+            for currency in self.currencies:
+                if currency in covered_currencies:
+                    continue
+
+                balance = self.legs.filter(
+                    currency=currency,
+                    id__lte=current_leg_id,
+                ).sum_to_balance(account_type=self.type)
+                for money in balance.monies():
+                    RunningTotal.objects.create(
+                        account=self,
+                        currency=currency,
+                        balance=money,
+                        includes_leg_id=current_leg_id,
+                    )
+
+    def check_running_totals(self):
+        current_leg_id = self._running_total_current_leg_id()
+        checkpoints = self._running_total_latest_checkpoints(
+            as_of_leg_id=current_leg_id
+        )
+        correct = self._running_total_full_signed_balance(as_of_leg_id=current_leg_id)
+        faulty_values = []
+        all_currencies = (
+            set(self.currencies) | set(checkpoints) | set(correct.currencies())
+        )
+
+        for currency in all_currencies:
+            correct_value = correct[currency]
+            running_total = checkpoints.get(currency)
+            if running_total is None:
+                if correct_value.amount != 0:
+                    faulty_values.append((currency, None, correct_value))
+                continue
+
+            delta = self.legs.filter(
+                id__gt=running_total.includes_leg_id,
+                id__lte=current_leg_id,
+                currency=currency,
+            ).sum_to_balance(account_type=self.type)
+            effective_value = (Balance([running_total.balance]) + delta)[currency]
+            if effective_value != correct_value:
+                faulty_values.append((currency, effective_value, correct_value))
+
+        return faulty_values
+
+    def update_running_totals(self, check_only=False, keep_history=False):
+        faulty_values = self.check_running_totals()
+        if check_only:
+            return faulty_values
+
+        self.rebuild_running_totals(keep_history=keep_history)
+        return faulty_values
+
+    def invalidate_running_totals(self):
+        self.running_totals.all().delete()
 
     def _zero_balance(self):
         """Get a balance for this account with all currencies set to zero"""
@@ -693,7 +901,7 @@ class Leg(models.Model):
             f"({self.account.full_code}) {self.amount} {self.type_short}"
         )
 
-    def __init__(self, *args, amount: Money = None, **kwargs):
+    def __init__(self, *args, amount: Optional[Money] = None, **kwargs):
         if amount is not None:
             warnings.warn(
                 "Specifying `amount` when creating a Leg is deprecated. "
@@ -771,6 +979,12 @@ class Leg(models.Model):
 
     class Meta:
         verbose_name = _("Leg")
+        indexes = [
+            models.Index(
+                fields=["account", "-id"],
+                name="hordak_leg_acc_id_desc_idx",
+            ),
+        ]
 
 
 class StatementImportManager(models.Manager):
